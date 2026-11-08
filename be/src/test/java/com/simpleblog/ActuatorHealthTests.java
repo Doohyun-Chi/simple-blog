@@ -25,6 +25,16 @@ class ActuatorHealthTests {
 	}
 
 	@Test
+	void livenessAndReadinessProbesReportUp() throws Exception {
+		this.mockMvc.perform(get("/actuator/health/liveness"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("UP"));
+		this.mockMvc.perform(get("/actuator/health/readiness"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("UP"));
+	}
+
+	@Test
 	void onlyHealthIsExposed() throws Exception {
 		this.mockMvc.perform(get("/actuator/beans")).andExpect(status().isNotFound());
 		this.mockMvc.perform(get("/actuator/env")).andExpect(status().isNotFound());

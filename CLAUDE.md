@@ -19,9 +19,37 @@
 - git 명령은 루트에서 실행한다.
 - 하나의 기능에 대한 스펙, BE, FE 변경은 하나의 커밋에 함께 담을 수 있다.
 
+### Coding 기본 룰
+- 한 라인은 150자 이하가 되도록 한다.
+- 한 메소드의 Line 수는 최대 20줄이 넘지 않아야 한다.
+- 메소드의 이름은 get 혹은 set으로 시작하지 않는다.
+- 조회를 위한 이름은 명사 혹은 복수 항목을 조회하는 경우에는 `listOf` 를 복수형 명사의 prefix로 사용해 명명한다.
+- 행동을 수행하는 경우 Action에 부합하는 동사를 사용해 명명한다.
+
+### BE 구조
+1. MVC 구조를 따라 Controller/Service/Component/Repository 계층을 따른다.
+2. package 계정은 Application 하위에 계층을 수평 구조로 배치한다.
+3. JPA로 작업하는 경우 OneToOne 혹은 OneToMany 규칙을 적용하고, 이외 복잡도가 있는 경우에는 QueryDSL을 적용하되 반드시 승인을 얻는다.
+
+### FE 구조
+1. Compositor, Component, Model에 따른 구조와 패키지 구조를 갖는다.
+2. CSS를 포함(관련된) 부분은 실제 코드에 포함되지 않도록 한다.
+
+
 ## API contract
 
 `be/apispec.yaml`이 BE와 FE 사이의 유일한 기준이다.
+
+API는 HTTP Method에 따른 용도를 준용한다.
+- GET: 목록을 포함한 조회
+- POST: 신규 생성
+- PUT: 기존 데이터 갱신
+- DELETE: 삭제
+
+API의 endpoint는 다음의 분류에 따라 sub URI를 갖는다.
+-. `/public/api/v{N}/{URI}` FE와의 통신용 API
+-. `/internal/api/v{N}/{URI}` 내부 확인 혹은 어드민용 API
+-. `/mcp/v{N}/{URI}` MCP 용도
 
 API를 추가하거나 변경할 때는 다음 순서를 따른다.
 
@@ -39,7 +67,7 @@ BE는 JDK 25가 필요하다. Homebrew의 `openjdk@25`는 PATH에 자동으로 �
 
 ```sh
 # BE (be/ 에서 실행, http://localhost:8080)
-./gradlew bootRun
+./gradlew bootRun --args='--spring.profiles.active=local'
 ./gradlew test
 ./gradlew build
 

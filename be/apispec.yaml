@@ -25,8 +25,127 @@ paths:
             application/vnd.spring-boot.actuator.v3+json:
               schema:
                 $ref: '#/components/schemas/Health'
+  /actuator/health/liveness:
+    get:
+      summary: Liveness probe
+      description: >
+        Reports whether the process is alive. Does not depend on the database,
+        so use this (not /actuator/health) for restart decisions.
+      operationId: liveness
+      tags:
+        - Operations
+      responses:
+        '200':
+          description: Application is alive
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: Application is broken and should be restarted
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /actuator/health/readiness:
+    get:
+      summary: Readiness probe
+      description: >
+        Reports whether the application can accept traffic. Includes the database.
+      operationId: readiness
+      tags:
+        - Operations
+      responses:
+        '200':
+          description: Application is ready to accept traffic
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: Application is not ready (for example, the database is unreachable)
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /public/api/v1/pages:
+    get:
+      summary: List all published pages
+      description: >
+        Returns every published page, ordered by menuOrder and then id.
+        Page content is not included.
+      operationId: listOfPages
+      tags:
+        - Pages
+      responses:
+        '200':
+          description: Published pages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageList'
+              example:
+                pages:
+                  - id: 2
+                    title: 개발자의 꿈
+                    slug: about
+                    parentId: null
+                    menuOrder: 0
+                    publishedAt: '2016-03-14T02:36:24Z'
+                    modifiedAt: '2024-03-01T23:57:29Z'
+                  - id: 646
+                    title: 글읽기( ~ 2019)
+                    slug: reading-in-2019
+                    parentId: 383
+                    menuOrder: 0
+                    publishedAt: '2019-02-07T00:41:58Z'
+                    modifiedAt: '2020-04-16T15:27:54Z'
 components:
   schemas:
+    PageList:
+      type: object
+      required:
+        - pages
+      properties:
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PageSummary'
+    PageSummary:
+      type: object
+      required:
+        - id
+        - title
+        - slug
+        - parentId
+        - menuOrder
+        - publishedAt
+        - modifiedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        slug:
+          type: string
+          description: URL-friendly page name
+        parentId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: Parent page id, or null for a top-level page
+        menuOrder:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+          description: Publish time in UTC
+        modifiedAt:
+          type: string
+          format: date-time
+          description: Last modified time in UTC
     Health:
       type: object
       required:
