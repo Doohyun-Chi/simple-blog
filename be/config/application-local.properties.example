@@ -1,0 +1,4 @@
+# Copy to config/application-local.properties (gitignored) and fill in.
+# Loaded by: ./gradlew bootRun --args='--spring.profiles.active=local'
+spring.datasource.username=root
+spring.datasource.password=chidoo
