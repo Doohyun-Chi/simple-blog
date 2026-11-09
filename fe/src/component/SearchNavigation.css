@@ -1,0 +1,45 @@
+.search-nav {
+  flex: 0 0 auto;
+  height: 1.5em;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0 1em;
+  border-block: 1px solid var(--border);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.search-nav-input {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 10em;
+  height: 1.25em;
+  padding: 0 0.4em;
+  font: inherit;
+  font-size: 0.85em;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--input-bg);
+  color: var(--text-strong);
+}
+
+.search-nav-pages {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.search-nav-link {
+  color: var(--text);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--accent);
+  }
+}

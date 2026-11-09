@@ -1,0 +1,18 @@
+.footer {
+  flex: 0 0 auto;
+  height: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.footer-text {
+  margin: 0;
+  font-size: 0.8em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
