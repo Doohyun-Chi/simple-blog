@@ -3,7 +3,7 @@ import { Footer } from '../component/Footer.tsx'
 import { Header } from '../component/Header.tsx'
 import { RouteContent } from '../component/RouteContent.tsx'
 import { SearchNavigation } from '../component/SearchNavigation.tsx'
-import { routeOf } from '../model/route.ts'
+import { currentPageSlug, routeOf } from '../model/route.ts'
 import { useListOfPages } from '../model/useListOfPages.ts'
 import './MainPage.css'
 
@@ -14,7 +14,7 @@ export function MainPage() {
   return (
     <div className="main-page">
       <Header />
-      <SearchNavigation pages={pages} />
+      <SearchNavigation pages={pages} currentPageSlug={currentPageSlug(route)} />
       <Contents>
         <RouteContent route={route} />
       </Contents>

@@ -49,4 +49,12 @@
   &:focus-visible {
     color: var(--accent);
   }
+
+  /* The page currently shown in the content area. */
+  &[page-current='selected'] {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
 }

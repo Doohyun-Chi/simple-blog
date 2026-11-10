@@ -24,6 +24,11 @@ export function routeOf(pathname: string): Route {
   return { kind: 'content', type: match[TYPE_INDEX] as ContentType, slug }
 }
 
+/** The slug of the page being shown, or null when the route is not a page (home, a post, or not found). */
+export function currentPageSlug(route: Route): string | null {
+  return route.kind === 'content' && route.type === 'page' ? route.slug : null
+}
+
 /** Builds the URL path for a piece of content, encoding the slug so non-ASCII slugs stay valid. */
 export function contentPath(type: ContentType, slug: string): string {
   return `/${type}/${encodeURIComponent(slug)}`
