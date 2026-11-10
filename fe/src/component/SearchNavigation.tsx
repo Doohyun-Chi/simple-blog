@@ -1,4 +1,5 @@
 import type { PageSummary } from '../model/Page.ts'
+import { contentPath } from '../model/route.ts'
 import './SearchNavigation.css'
 
 interface SearchNavigationProps {
@@ -12,7 +13,7 @@ export function SearchNavigation({ pages }: SearchNavigationProps) {
       <ul className="search-nav-pages">
         {pages.map((page) => (
           <li key={page.id}>
-            <a className="search-nav-link" href={`/${page.slug}`}>
+            <a className="search-nav-link" href={contentPath('page', page.slug)}>
               {page.title}
             </a>
           </li>
