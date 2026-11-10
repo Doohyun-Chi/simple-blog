@@ -100,6 +100,62 @@ paths:
                     menuOrder: 0
                     publishedAt: '2019-02-07T00:41:58Z'
                     modifiedAt: '2020-04-16T15:27:54Z'
+  /public/api/v1/posts:
+    get:
+      summary: List published posts matching a search query
+      description: >
+        Returns published posts (post_type 'post', post_status 'publish', no password) that match the query,
+        ordered by creation date newest first (wp_posts.post_date descending, then ID descending). Post content
+        is not included. The client sends the request when the user presses Enter in the search input, and does
+        not send it when the input is blank.
+      operationId: listOfPosts
+      tags:
+        - Posts
+      parameters:
+        - name: queryType
+          in: query
+          required: false
+          description: >
+            How query is matched. keyword: case-insensitive substring match against wp_posts.post_title or
+            wp_posts.post_content; a post matches if either contains the query. The content match runs on the
+            stored content, so it can also hit block comments and markup.
+            tag: reserved; the matching rule is not defined yet and the server responds with 501.
+          schema:
+            type: string
+            enum:
+              - keyword
+              - tag
+            default: keyword
+        - name: query
+          in: query
+          required: true
+          description: >
+            The search text exactly as the user typed it in the search input. It must contain at least one
+            non-whitespace character; an absent, empty or whitespace-only query is rejected with 400.
+          schema:
+            type: string
+            minLength: 1
+            pattern: '\S'
+          example: KPI
+      responses:
+        '200':
+          description: Matching published posts; an empty list when nothing matches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostList'
+              example:
+                posts:
+                  - id: 7061
+                    title: 큰기업의 배움 - KPI, 조직을 움직이는 힘
+                    slug: '%ed%81%b0%ea%b8%b0%ec%97%85%ec%9d%98-%eb%b0%b0%ec%9b%80-kpi'
+                    date: '2026-11-05T09:45:11'
+        '400':
+          description: >
+            query is absent, empty or whitespace-only, or queryType is not one of the allowed values.
+            The response body is not part of the contract.
+        '501':
+          description: queryType is tag, which is not implemented yet. The response body is not part of the contract.
   /public/api/v1/post/{slug}:
     get:
       summary: Read a body of a post or a page.
@@ -136,6 +192,39 @@ paths:
           description: No row in wp_posts has this slug. The response body is not part of the contract.
 components:
   schemas:
+    PostList:
+      type: object
+      required:
+        - posts
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostSummary'
+    PostSummary:
+      type: object
+      required:
+        - id
+        - title
+        - slug
+        - date
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+          description: wp_posts.post_title
+        slug:
+          type: string
+          description: >
+            wp_posts.post_name as stored. Non-ASCII slugs are lowercase percent-encoded, so decode once
+            to get the slug readers see before building /post/{slug} or calling /public/api/v1/post/{slug}.
+        date:
+          type: string
+          description: wp_posts.post_date in the same local format as PostBody.date
+          examples:
+            - '2026-11-05T09:45:11'
     PostBody:
       type: object
       required:
