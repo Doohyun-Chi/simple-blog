@@ -5,8 +5,10 @@
   --border: #e3ded4;
   --paper: #fbf8f1;
   --input-bg: #fff;
+  --font-main: 'Pretendard Variable', system-ui, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-mono: 'D2Coding', ui-monospace, Menlo, Consolas, monospace;
 
-  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  font: 16px/1.5 var(--font-main);
   color-scheme: light;
   color: var(--text);
   background: var(--paper);
@@ -18,4 +20,11 @@
 
 body {
   margin: 0;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono);
 }
