@@ -100,8 +100,76 @@ paths:
                     menuOrder: 0
                     publishedAt: '2019-02-07T00:41:58Z'
                     modifiedAt: '2020-04-16T15:27:54Z'
+  /public/api/v1/post/{slug}:
+    get:
+      summary: Read a body of a post or a page.
+      description: >
+        Returns the wp_posts row whose slug matches, whatever its type, status or password. For unknown slugs, it responds with 404.
+      operationId: postBody
+      tags:
+        - Posts
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: >
+            The post's slug as readers see it, URL-encoded once like any path segment (e.g. 큰기업 is sent as
+            %ED%81%B0...). WordPress stores non-ASCII slugs in wp_posts.post_name already percent-encoded in
+            lowercase; the server converts to that form before matching, so clients never send the stored form.
+          schema:
+            type: string
+          example: kpi-power-in-big-company
+      responses:
+        '200':
+          description: The post
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostBody'
+              example:
+                title: 큰기업의 배움 - KPI, 조직을 움직이는 힘
+                content: '<!-- wp:paragraph --><p>...</p><!-- /wp:paragraph -->'
+                status: publish
+                date: '2026-11-05T09:45:11'
+                modified: '2026-11-05T09:45:11'
+        '404':
+          description: No row in wp_posts has this slug. The response body is not part of the contract.
 components:
   schemas:
+    PostBody:
+      type: object
+      required:
+        - title
+        - content
+        - status
+        - date
+        - modified
+      properties:
+        title:
+          type: string
+          description: wp_posts.post_title
+        content:
+          type: string
+          description: >
+            wp_posts.post_content as stored, including WordPress block comments and shortcodes.
+            It is not rendered HTML.
+        status:
+          type: string
+          description: wp_posts.post_status as stored (e.g. publish, draft, private); rows of any status are returned
+          examples:
+            - publish
+        date:
+          type: string
+          description: >
+            wp_posts.post_date, the publish time in the site's local time zone (Asia/Seoul),
+            formatted as yyyy-MM-ddTHH:mm:ss with no offset
+          examples:
+            - '2026-11-05T09:45:11'
+        modified:
+          type: string
+          description: wp_posts.post_modified, the last modified time in the same local format as date
+          examples:
+            - '2026-11-05T09:45:11'
     PageList:
       type: object
       required:

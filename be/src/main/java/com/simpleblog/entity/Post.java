@@ -9,7 +9,9 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Immutable;
 
 /**
- * Read-only view of the WordPress {@code wp_posts} table. Pages are rows with {@code post_type = 'page'}.
+ * Read-only view of the WordPress {@code wp_posts} table. Pages are rows with {@code post_type = 'page'} and posts
+ * are rows with {@code post_type = 'post'}. {@code post_date} and {@code post_modified} are in the site's local time;
+ * the {@code *_gmt} columns hold the same moments in UTC.
  */
 @Entity
 @Immutable
@@ -22,6 +24,12 @@ public class Post {
 
 	@Column(name = "post_title")
 	private String title;
+
+	@Column(name = "post_content")
+	private String content;
+
+	@Column(name = "post_password")
+	private String password;
 
 	@Column(name = "post_name")
 	private String slug;
@@ -37,6 +45,12 @@ public class Post {
 
 	@Column(name = "menu_order")
 	private int menuOrder;
+
+	@Column(name = "post_date")
+	private LocalDateTime publishedAtLocal;
+
+	@Column(name = "post_modified")
+	private LocalDateTime modifiedAtLocal;
 
 	@Column(name = "post_date_gmt")
 	private LocalDateTime publishedAtGmt;
@@ -55,8 +69,16 @@ public class Post {
 		return this.title;
 	}
 
+	public String content() {
+		return this.content;
+	}
+
 	public String slug() {
 		return this.slug;
+	}
+
+	public String status() {
+		return this.status;
 	}
 
 	public Long parentId() {
@@ -65,6 +87,14 @@ public class Post {
 
 	public int menuOrder() {
 		return this.menuOrder;
+	}
+
+	public LocalDateTime publishedAtLocal() {
+		return this.publishedAtLocal;
+	}
+
+	public LocalDateTime modifiedAtLocal() {
+		return this.modifiedAtLocal;
 	}
 
 	public LocalDateTime publishedAtGmt() {
