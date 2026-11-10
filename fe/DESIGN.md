@@ -6,7 +6,7 @@
 ### Header
 'Dreaming for the Future' 라는 표제어를 표시하고, 바로 이어 '영원한 개발자를 향해'라는 문구를 표시한다.
 Dreaming for the Future: 2.5em
-영원한 개발자를 향해: 1.5em
+영원한 개발자를 향해: 1.2em
 영역 높이: 6em
 텍스트는 영역의 중간에 배치한다.
 

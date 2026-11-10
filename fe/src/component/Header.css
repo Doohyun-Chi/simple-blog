@@ -1,5 +1,6 @@
 .header {
   flex: 0 0 auto;
+  padding: 1em;
   height: 6em;
   display: flex;
   flex-direction: column;
@@ -20,8 +21,8 @@
 }
 
 .header-subtitle {
-  margin: 0;
-  font-size: 1.5em;
+  margin: 0.5rem;
+  font-size: 1.2em;
   line-height: 1;
   color: var(--text);
 }

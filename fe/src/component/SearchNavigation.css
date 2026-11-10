@@ -27,11 +27,18 @@
 .search-nav-pages {
   display: flex;
   align-items: center;
-  gap: 1em;
   margin: 0;
   padding: 0;
+  font-size: 0.75em;
   list-style: none;
   overflow-x: auto;
+
+  /* '|' between pages. The empty alt text after '/' keeps screen readers from announcing it. */
+  & > li + li::before {
+    content: '|' / '';
+    margin: 0 0.6em;
+    color: var(--border);
+  }
 }
 
 .search-nav-link {

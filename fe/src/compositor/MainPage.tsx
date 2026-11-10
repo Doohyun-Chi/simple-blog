@@ -2,7 +2,6 @@ import { Contents } from '../component/Contents.tsx'
 import { Footer } from '../component/Footer.tsx'
 import { Header } from '../component/Header.tsx'
 import { SearchNavigation } from '../component/SearchNavigation.tsx'
-import { topLevelPages } from '../model/pageApi.ts'
 import { useListOfPages } from '../model/useListOfPages.ts'
 import './MainPage.css'
 
@@ -12,7 +11,7 @@ export function MainPage() {
   return (
     <div className="main-page">
       <Header />
-      <SearchNavigation pages={topLevelPages(pages)} />
+      <SearchNavigation pages={pages} />
       <Contents />
       <Footer />
     </div>
