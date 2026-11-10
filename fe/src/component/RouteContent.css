@@ -1,0 +1,20 @@
+.route-content {
+  display: grid;
+  grid-template-columns: max-content auto;
+  gap: 0.25em 1em;
+  margin: 0;
+
+  & dt {
+    color: var(--text);
+  }
+
+  & dd {
+    margin: 0;
+    color: var(--text-strong);
+  }
+}
+
+.route-content-not-found {
+  margin: 0;
+  color: var(--text);
+}
