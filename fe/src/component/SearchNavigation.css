@@ -10,6 +10,11 @@
   white-space: nowrap;
 }
 
+/* The form only adds Enter-to-submit; it takes no space of its own in the flex row. */
+.search-nav-form {
+  display: contents;
+}
+
 .search-nav-input {
   flex: 0 0 auto;
   box-sizing: border-box;

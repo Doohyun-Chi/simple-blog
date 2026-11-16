@@ -2,8 +2,10 @@
 .contents {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-  padding: 1.5em;
+  /* Never scroll sideways; scroll down only when the content is taller than the area. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 1.5em 2rem;
   text-align: left;
   background-color: var(--paper);
   background-image:
