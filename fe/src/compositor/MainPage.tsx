@@ -7,6 +7,7 @@ import { currentPageSlug, currentQuery, type Route, routeOf } from '../model/rou
 import { useListOfPages } from '../model/useListOfPages.ts'
 import { PostReader } from './PostReader.tsx'
 import { PostSearch } from './PostSearch.tsx'
+import { RecentPosts } from './RecentPosts.tsx'
 import './MainPage.css'
 
 /** Main page layout from fe/DESIGN.md: Header, Search and Navigation, Contents, Footer, stacked vertically. */
@@ -29,7 +30,7 @@ export function MainPage() {
 function RouteContent({ route }: { route: Route }) {
   switch (route.kind) {
     case 'home':
-      return null
+      return <RecentPosts />
     case 'notFound':
       return <StatusMessage>Not found: <code>{route.path}</code></StatusMessage>
     case 'search':

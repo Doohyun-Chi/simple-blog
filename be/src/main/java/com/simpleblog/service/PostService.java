@@ -9,11 +9,17 @@ import com.simpleblog.exception.InvalidPostQueryException;
 import com.simpleblog.exception.PostNotFoundException;
 import com.simpleblog.exception.UnsupportedPostQueryTypeException;
 import com.simpleblog.repository.PostRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PostService {
+
+	private static final int MIN_LIMIT = 1;
+
+	private static final int MAX_LIMIT = 100;
 
 	private final PostRepository postRepository;
 
@@ -27,15 +33,27 @@ public class PostService {
 		this.likePattern = likePattern;
 	}
 
+	/** Without a query every published post matches. Without a limit every match is returned. */
 	@Transactional(readOnly = true)
-	public PostList listOfPosts(PostQueryType queryType, String query) {
-		if (query.isBlank()) {
+	public PostList listOfPosts(PostQueryType queryType, String query, Integer limit) {
+		if (query != null && query.isBlank()) {
 			throw new InvalidPostQueryException("query must contain at least one non-whitespace character");
 		}
 		if (queryType != PostQueryType.KEYWORD) {
 			throw new UnsupportedPostQueryTypeException(queryType);
 		}
-		return new PostList(this.postRepository.listOfPublishedPostsContaining(this.likePattern.containing(query)));
+		String pattern = this.likePattern.containing(query == null ? "" : query);
+		return new PostList(this.postRepository.listOfPublishedPostsContaining(pattern, pageOf(limit)));
+	}
+
+	private Pageable pageOf(Integer limit) {
+		if (limit == null) {
+			return Pageable.unpaged();
+		}
+		if (limit < MIN_LIMIT || limit > MAX_LIMIT) {
+			throw new InvalidPostQueryException("limit must be from " + MIN_LIMIT + " to " + MAX_LIMIT);
+		}
+		return PageRequest.ofSize(limit);
 	}
 
 	@Transactional(readOnly = true)

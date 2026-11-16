@@ -106,8 +106,9 @@ paths:
       description: >
         Returns published posts (post_type 'post', post_status 'publish', no password) that match the query,
         ordered by creation date newest first (wp_posts.post_date descending, then ID descending). Post content
-        is not included. The client sends the request when the user presses Enter in the search input, and does
-        not send it when the input is blank.
+        is not included. Without query, every published post matches, so the call also serves as the recent posts
+        list (use limit). The client sends a search when the user presses Enter in the search input, and does not
+        send it when the input is blank.
       operationId: listOfPosts
       tags:
         - Posts
@@ -128,15 +129,27 @@ paths:
             default: keyword
         - name: query
           in: query
-          required: true
+          required: false
           description: >
-            The search text exactly as the user typed it in the search input. It must contain at least one
-            non-whitespace character; an absent, empty or whitespace-only query is rejected with 400.
+            The search text exactly as the user typed it in the search input. When absent, every published post
+            matches. When present it must contain at least one non-whitespace character; an empty or
+            whitespace-only query is rejected with 400.
           schema:
             type: string
             minLength: 1
             pattern: '\S'
           example: KPI
+        - name: limit
+          in: query
+          required: false
+          description: >
+            The maximum number of posts to return, taken from the newest. When absent, every match is returned.
+            A value outside 1 to 100, or not an integer, is rejected with 400.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          example: 10
       responses:
         '200':
           description: Matching published posts; an empty list when nothing matches
@@ -152,8 +165,8 @@ paths:
                     date: '2026-11-05T09:45:11'
         '400':
           description: >
-            query is absent, empty or whitespace-only, or queryType is not one of the allowed values.
-            The response body is not part of the contract.
+            query is present but empty or whitespace-only, queryType is not one of the allowed values, or limit is
+            not an integer from 1 to 100. The response body is not part of the contract.
         '501':
           description: queryType is tag, which is not implemented yet. The response body is not part of the contract.
   /public/api/v1/post/{slug}:
