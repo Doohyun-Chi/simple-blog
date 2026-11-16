@@ -1,0 +1,53 @@
+.post-article-title {
+  margin: 0 0 0.25em;
+  font-size: 1.8em;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+/* Subdued and smaller than the body text, per fe/DESIGN.md. */
+.post-article-date {
+  display: block;
+  margin-bottom: 2em;
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+.post-article-content {
+  line-height: 1.8;
+  color: var(--text-body);
+  overflow-wrap: anywhere;
+
+  & img,
+  & video,
+  & iframe {
+    max-width: 100%;
+    height: auto;
+  }
+
+  & pre {
+    overflow-x: auto;
+    padding: 1em;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--input-bg);
+    overflow-wrap: normal;
+  }
+
+  & a {
+    color: var(--accent);
+  }
+
+  & table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+/* Classic-editor content separates paragraphs with blank lines, not <p>; keep those breaks. <pre> keeps its own. */
+.post-article-content-classic {
+  white-space: pre-line;
+}
