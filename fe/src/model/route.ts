@@ -6,8 +6,12 @@ export type ContentType = 'page' | 'post'
 export type Route =
   | { kind: 'home' }
   | { kind: 'content'; type: ContentType; slug: string }
+  | { kind: 'list' }
   | { kind: 'search'; queryType: PostQueryType; query: string }
   | { kind: 'notFound'; path: string }
+
+/** The list of all posts, linked as `전체 목록` from the info area. */
+export const LIST_PATH = '/posts'
 
 /** Post search results: /search?query={query}&queryType={queryType}. The parameter names follow be/apispec.yaml. */
 const SEARCH_PATH = /^\/search\/?$/
@@ -21,6 +25,9 @@ const SLUG_INDEX = 2
 export function routeOf(pathname: string, search: string = ''): Route {
   if (pathname === '' || pathname === '/') {
     return { kind: 'home' }
+  }
+  if (pathname.replace(/\/$/, '') === LIST_PATH) {
+    return { kind: 'list' }
   }
   if (SEARCH_PATH.test(pathname)) {
     return searchRouteOf(new URLSearchParams(search))

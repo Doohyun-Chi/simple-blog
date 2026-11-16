@@ -26,3 +26,9 @@
   line-height: 1;
   color: var(--text);
 }
+
+/* A link with no link look: it keeps the text's colour and has no underline or hover effect. The pointer is the default link one. */
+.header-link {
+  color: inherit;
+  text-decoration: none;
+}

@@ -17,12 +17,6 @@ export function PostSearch({ queryType, query }: PostSearchProps) {
     case 'failed':
       return <StatusMessage>검색 결과를 불러오지 못했습니다.</StatusMessage>
     case 'loaded':
-      return (
-        <PostSummaryList
-          label="검색 결과"
-          caption={<><q>{query}</q> 검색 결과 {posts.value.length}건</>}
-          posts={posts.value}
-        />
-      )
+      return <PostSummaryList heading={<><q>{query}</q> 검색 결과</>} posts={posts.value} />
   }
 }

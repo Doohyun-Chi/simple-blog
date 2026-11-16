@@ -4,18 +4,16 @@ import { contentPath } from '../model/route.ts'
 import './PostSummaryList.css'
 
 interface PostSummaryListProps {
-  /** Names the list, for screen readers. */
-  label: string
-  /** The line above the list, such as the search query and the match count. */
-  caption: ReactNode
+  /** The search condition or the list's name. It stays at the top while the list scrolls. */
+  heading: ReactNode
   posts: PostSummary[]
 }
 
-/** A caption, then each post's title linking to its body, with its date. */
-export function PostSummaryList({ label, caption, posts }: PostSummaryListProps) {
+/** The list view: a heading, then each post's title linking to its body, with its date. */
+export function PostSummaryList({ heading, posts }: PostSummaryListProps) {
   return (
-    <section className="post-summary-list" aria-label={label}>
-      <p className="post-summary-list-caption">{caption}</p>
+    <section className="post-summary-list">
+      <h2 className="post-summary-list-heading">{heading}</h2>
       <ol className="post-summary-list-items">
         {posts.map((post) => (
           <li key={post.id} className="post-summary-list-item">
