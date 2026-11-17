@@ -1,5 +1,6 @@
 package com.simpleblog.config;
 
+import com.simpleblog.component.AllowedOidcUserService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -10,8 +11,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 
@@ -35,7 +38,7 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectProvider<ClientRegistrationRepository> clients,
-			@Value("${simpleblog.auth.frontend-url:}") String frontendUrl) throws Exception {
+			AllowedOidcUserService userService, @Value("${simpleblog.auth.frontend-url:}") String frontendUrl) throws Exception {
 		http.cors(Customizer.withDefaults())
 			.csrf((csrf) -> csrf.ignoringRequestMatchers("/public/api/**"))
 			.authorizeHttpRequests((requests) -> requests.requestMatchers("/public/api/v1/me")
@@ -45,21 +48,35 @@ public class SecurityConfig {
 			.exceptionHandling((errors) -> errors.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
 			.requestCache((cache) -> cache.requestCache(new NullRequestCache()));
 		if (clients.getIfAvailable() != null) {
-			http.oauth2Login((login) -> googleLogin(login, frontendUrl.replaceAll("/+$", "")));
+			http.oauth2Login((login) -> googleLogin(login, userService, frontendUrl.replaceAll("/+$", "")));
 		}
 		return http.build();
 	}
 
 	/** The sign-in URLs, and where the browser goes afterwards: the frontend's home page, flagged when it failed. */
-	private void googleLogin(OAuth2LoginConfigurer<HttpSecurity> login, String frontendUrl) {
+	private void googleLogin(OAuth2LoginConfigurer<HttpSecurity> login, AllowedOidcUserService userService, String frontendUrl) {
 		login.authorizationEndpoint((endpoint) -> endpoint.baseUri(LOGIN_BASE_URI))
 			.redirectionEndpoint((endpoint) -> endpoint.baseUri(CALLBACK_URI))
+			.userInfoEndpoint((endpoint) -> endpoint.oidcUserService(userService))
 			.defaultSuccessUrl(frontendUrl + "/", true)
-			.failureHandler(failureRedirect(frontendUrl + "/?login=failed"));
+			.failureHandler(failureRedirect(frontendUrl));
 	}
 
-	/** Redirects a failed sign-in without creating a session, so forged callbacks cannot make the server keep any. */
-	private SimpleUrlAuthenticationFailureHandler failureRedirect(String url) {
+	/**
+	 * Redirects a failed sign-in without creating a session, so forged callbacks cannot make the server keep any. A
+	 * user who is not allowed gets {@code login=unauthorized}, every other failure {@code login=failed}.
+	 */
+	private AuthenticationFailureHandler failureRedirect(String frontendUrl) {
+		SimpleUrlAuthenticationFailureHandler failed = redirectTo(frontendUrl + "/?login=failed");
+		SimpleUrlAuthenticationFailureHandler unauthorized = redirectTo(frontendUrl + "/?login=unauthorized");
+		return (request, response, exception) -> {
+			boolean notAllowed = exception instanceof OAuth2AuthenticationException oauth
+					&& AllowedOidcUserService.UNAUTHORIZED_USER.equals(oauth.getError().getErrorCode());
+			(notAllowed ? unauthorized : failed).onAuthenticationFailure(request, response, exception);
+		};
+	}
+
+	private SimpleUrlAuthenticationFailureHandler redirectTo(String url) {
 		SimpleUrlAuthenticationFailureHandler handler = new SimpleUrlAuthenticationFailureHandler(url);
 		handler.setAllowSessionCreation(false);
 		return handler;

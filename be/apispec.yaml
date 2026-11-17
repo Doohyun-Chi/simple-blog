@@ -93,9 +93,10 @@ paths:
       description: >
         The redirect URI registered for the Google OAuth client; only Google's redirect should reach it. The server
         checks state, exchanges the code for tokens with its client secret and validates the ID token. On success it
-        starts a session (cookie JSESSIONID) and redirects to the frontend's home page; on any failure, including the
-        user declining, it redirects to the frontend's home page with the query login=failed and starts no session.
-        The client secret never leaves the server.
+        starts a session (cookie JSESSIONID) and redirects to the frontend's home page. Only Google accounts whose
+        verified email is on the server's list of allowed users may sign in; any other account is turned away with the
+        query login=unauthorized. On any other failure, including the user declining, it redirects to the frontend's
+        home page with the query login=failed. Neither starts a session. The client secret never leaves the server.
       operationId: finishGoogleLogin
       tags:
         - Authentication
@@ -117,7 +118,7 @@ paths:
             type: string
       responses:
         '302':
-          description: Redirect to the frontend, signed in or with login=failed
+          description: Redirect to the frontend, signed in or with login=failed or login=unauthorized
           headers:
             Location:
               schema:

@@ -19,7 +19,8 @@ import org.springframework.web.util.UriComponentsBuilder;
  * authorization request it sends the browser to, how a failed or declined callback ends, and the identity endpoint.
  */
 @SpringBootTest(properties = { "simpleblog.auth.google.client-id=test-client-id",
-		"simpleblog.auth.google.client-secret=test-client-secret", "simpleblog.auth.frontend-url=http://frontend.test/" })
+		"simpleblog.auth.google.client-secret=test-client-secret", "simpleblog.auth.frontend-url=http://frontend.test/",
+		"simpleblog.auth.allowed-emails=owner@example.com" })
 @AutoConfigureMockMvc
 class GoogleLoginTests {
 

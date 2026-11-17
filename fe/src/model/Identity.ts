@@ -3,5 +3,11 @@ export interface Identity {
   email: string
 }
 
-/** Where the visitor stands: still being checked, not signed in, or signed in as an email. */
-export type SessionState = { status: 'loading' } | { status: 'anonymous' } | { status: 'signedIn'; email: string }
+/** Why a sign-in just ended without a session: the `login` query the backend redirects with (see be/apispec.yaml). */
+export type LoginFailure = 'failed' | 'unauthorized'
+
+/** Where the visitor stands: still being checked, not signed in (maybe after a failed sign-in), or signed in. */
+export type SessionState =
+  | { status: 'loading' }
+  | { status: 'anonymous'; failure: LoginFailure | null }
+  | { status: 'signedIn'; email: string }

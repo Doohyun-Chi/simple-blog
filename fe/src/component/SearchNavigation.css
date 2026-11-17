@@ -76,3 +76,14 @@
 span.search-nav-identity {
   color: var(--text-strong);
 }
+
+.search-nav-notice {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 0.75em;
+  color: var(--text-strong);
+}
+
+.search-nav-notice + .search-nav-identity {
+  margin-left: 0.75em;
+}

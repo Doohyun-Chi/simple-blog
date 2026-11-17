@@ -1,5 +1,5 @@
 import { googleLoginUrl } from '../model/identityApi.ts'
-import type { SessionState } from '../model/Identity.ts'
+import type { LoginFailure, SessionState } from '../model/Identity.ts'
 import type { PageSummary } from '../model/Page.ts'
 import { contentPath, searchPath } from '../model/route.ts'
 import type { FormEvent } from 'react'
@@ -15,13 +15,23 @@ interface SearchNavigationProps {
   session: SessionState
 }
 
+const LOGIN_FAILURE_MESSAGES: Record<LoginFailure, string> = {
+  failed: '로그인하지 못했습니다.',
+  unauthorized: '허용되지 않은 사용자입니다. (Unauthorized user)',
+}
+
 /** The right end of the area: the signed-in email, or the link that starts the Google sign-in. Nothing while checking. */
 function Identity({ session }: { session: SessionState }) {
   switch (session.status) {
     case 'loading':
       return null
     case 'anonymous':
-      return <a className="search-nav-link search-nav-identity" href={googleLoginUrl()}>로그인</a>
+      return (
+        <>
+          {session.failure && <span className="search-nav-notice" role="alert">{LOGIN_FAILURE_MESSAGES[session.failure]}</span>}
+          <a className="search-nav-link search-nav-identity" href={googleLoginUrl()}>로그인</a>
+        </>
+      )
     case 'signedIn':
       return <span className="search-nav-identity" title="로그인한 계정">{session.email}</span>
   }
