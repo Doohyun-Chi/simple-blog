@@ -1,13 +1,19 @@
 package com.simpleblog.controller;
 
 import com.simpleblog.dto.PostBody;
+import com.simpleblog.dto.PostInput;
 import com.simpleblog.dto.PostList;
 import com.simpleblog.dto.PostQueryType;
 import com.simpleblog.service.PostService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -29,6 +35,17 @@ public class PostController {
 	@GetMapping("/post/{slug}")
 	public PostBody postBody(@PathVariable String slug) {
 		return this.postService.postBody(slug);
+	}
+
+	@PostMapping("/post")
+	@ResponseStatus(HttpStatus.CREATED)
+	public PostBody createPost(@RequestBody PostInput input) {
+		return this.postService.createPost(input);
+	}
+
+	@PutMapping("/post/{slug}")
+	public PostBody updatePost(@PathVariable String slug, @RequestBody PostInput input) {
+		return this.postService.updatePost(slug, input);
 	}
 
 }

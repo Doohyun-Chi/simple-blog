@@ -1,0 +1,235 @@
+package com.simpleblog;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.Map;
+
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * POST /public/api/v1/post and PUT /public/api/v1/post/{slug} against H2, with the write guard on (see the test
+ * config) and a fixed clock: 2026-11-17 01:30:00.987654 UTC is 10:30:00 in Asia/Seoul, and times are cut to whole
+ * seconds. Fixture IDs start at 1001 so they never meet the IDs the database generates. Each test runs in a
+ * transaction that is rolled back.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+@Sql(statements = """
+		insert into wp_posts (ID, post_title, post_content, post_password, post_name, post_type, post_status,
+		  post_parent, menu_order, post_date, post_modified, post_date_gmt, post_modified_gmt) values
+		(1001, 'KPI', '<p>old</p>', '', 'kpi', 'post', 'publish', 0, 0,
+		  '2020-01-01 09:00:00', '2020-01-02 09:00:00', '2020-01-01 00:00:00', '2020-01-02 00:00:00'),
+		(1002, 'A draft', 'draft body', '', 'a-draft', 'post', 'draft', 0, 0,
+		  '2021-01-01 09:00:00', '2021-01-01 09:00:00', '2021-01-01 00:00:00', '2021-01-01 00:00:00'),
+		(1003, 'About', 'page body', '', 'about', 'page', 'publish', 0, 0,
+		  '2022-01-01 09:00:00', '2022-01-01 09:00:00', '2022-01-01 00:00:00', '2022-01-01 00:00:00'),
+		(1004, 'Image', '', '', 'hi-there', 'attachment', 'inherit', 0, 0,
+		  '2023-01-01 09:00:00', '2023-01-01 09:00:00', '2023-01-01 00:00:00', '2023-01-01 00:00:00');
+		""")
+class PostWriteControllerTests {
+
+	private static final String POST = "/public/api/v1/post";
+
+	private static final String BEARER = "Bearer test-token";
+
+	@TestConfiguration
+	static class FixedClock {
+
+		@Bean
+		@Primary
+		Clock fixedClock() {
+			return Clock.fixed(Instant.parse("2026-11-17T01:30:00.987654Z"), ZoneId.of("Asia/Seoul"));
+		}
+
+	}
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	private EntityManager entityManager;
+
+	private static String json(String title, String slug, String content) {
+		return """
+				{"title": %s, "slug": %s, "content": %s}""".formatted(quoted(title), quoted(slug), quoted(content));
+	}
+
+	private static String quoted(String value) {
+		return value == null ? "null" : "\"" + value.replace("\"", "\\\"") + "\"";
+	}
+
+	private MockHttpServletRequestBuilder created(String body) {
+		return post(POST).header("Authorization", BEARER).contentType(MediaType.APPLICATION_JSON).content(body);
+	}
+
+	private MockHttpServletRequestBuilder updated(String slug, String body) {
+		return put(POST + "/{slug}", slug).header("Authorization", BEARER)
+			.contentType(MediaType.APPLICATION_JSON)
+			.content(body);
+	}
+
+	private Map<String, Object> row(String storedSlug) {
+		this.entityManager.flush();
+		return this.jdbcTemplate.queryForMap("select * from wp_posts where post_name = ?", storedSlug);
+	}
+
+	@Test
+	void createsADraftPostAndReturnsItsStoredValues() throws Exception {
+		this.mockMvc.perform(created(json("New thought", "new-thought", "<p>hi</p>")))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.title").value("New thought"))
+			.andExpect(jsonPath("$.slug").value("new-thought"))
+			.andExpect(jsonPath("$.content").value("<p>hi</p>"))
+			.andExpect(jsonPath("$.status").value("draft"))
+			.andExpect(jsonPath("$.date").value("2026-11-17T10:30:00"))
+			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"));
+		Map<String, Object> row = row("new-thought");
+		org.assertj.core.api.Assertions.assertThat(row)
+			.containsEntry("POST_TYPE", "post")
+			.containsEntry("POST_STATUS", "draft")
+			.containsEntry("POST_AUTHOR", 1L)
+			.containsEntry("POST_PASSWORD", "")
+			.containsEntry("POST_EXCERPT", "")
+			.containsEntry("TO_PING", "")
+			.containsEntry("PINGED", "")
+			.containsEntry("POST_CONTENT_FILTERED", "");
+		org.assertj.core.api.Assertions.assertThat(row.get("POST_DATE_GMT").toString()).startsWith("2026-11-17 01:30:00");
+	}
+
+	@Test
+	void acceptsEmptyContent() throws Exception {
+		this.mockMvc.perform(created(json("Title", "empty-content", ""))).andExpect(status().isCreated());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "kpi", "about", "hi-there" })
+	void refusesASlugAnyRowAlreadyHasWithConflict(String slug) throws Exception {
+		this.mockMvc.perform(created(json("Title", slug, "body"))).andExpect(status().isConflict());
+	}
+
+	@Test
+	void refusesInputThatBreaksTheSpecWithBadRequest() throws Exception {
+		for (String body : new String[] { json(null, "s", "c"), json("  ", "s", "c"), json("t", null, "c"),
+				json("t", "   ", "c"), json("t", "s", null), json("t", "a".repeat(201), "c"), "{", "" }) {
+			this.mockMvc.perform(created(body)).andExpect(status().isBadRequest());
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "has space", " lead", "trail ", "큰기업", "with1digit", "under_score", "a/b", "a?b", "100%" })
+	void refusesASlugWithAnythingButEnglishLettersAndHyphen(String slug) throws Exception {
+		this.mockMvc.perform(created(json("Title", slug, "body"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(updated("kpi", json("Title", slug, "body"))).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void limitsTheTitleTo130CharactersAndTheSlugTo200() throws Exception {
+		this.mockMvc.perform(created(json("가".repeat(131), "too-long-title", "c"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(created(json("가".repeat(130), "max-title", "c"))).andExpect(status().isCreated());
+		this.mockMvc.perform(created(json("t", "a".repeat(201), "c"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(created(json("t", "a".repeat(200), "c"))).andExpect(status().isCreated());
+	}
+
+	@Test
+	void acceptsEnglishLettersAndHyphenInAnyCase() throws Exception {
+		this.mockMvc.perform(created(json("Title", "Mixed-Case-slug", "body"))).andExpect(status().isCreated());
+	}
+
+	@Test
+	void updatesTitleAndContentAndKeepsTheStatusAndDate() throws Exception {
+		this.mockMvc.perform(updated("kpi", json("KPI 2", "kpi", "<p>new</p>")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.title").value("KPI 2"))
+			.andExpect(jsonPath("$.content").value("<p>new</p>"))
+			.andExpect(jsonPath("$.status").value("publish"))
+			.andExpect(jsonPath("$.date").value("2020-01-01T09:00:00"))
+			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"));
+		org.assertj.core.api.Assertions.assertThat(row("kpi").get("POST_MODIFIED_GMT").toString())
+			.startsWith("2026-11-17 01:30:00");
+	}
+
+	@Test
+	void updatesADraftWithoutPublishingIt() throws Exception {
+		this.mockMvc.perform(updated("a-draft", json("Still a draft", "a-draft", "x")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("draft"));
+	}
+
+	@Test
+	void renamesAPostSoTheOldSlugNoLongerResolves() throws Exception {
+		this.mockMvc.perform(updated("kpi", json("KPI", "kpi-renamed", "x")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.slug").value("kpi-renamed"));
+		this.mockMvc.perform(get(POST + "/kpi")).andExpect(status().isNotFound());
+		this.mockMvc.perform(get(POST + "/kpi-renamed")).andExpect(status().isOk());
+	}
+
+	@Test
+	void refusesRenamingOntoAnotherRowsSlugWithConflict() throws Exception {
+		this.mockMvc.perform(updated("kpi", json("KPI", "a-draft", "x"))).andExpect(status().isConflict());
+		this.mockMvc.perform(updated("kpi", json("KPI", "about", "x"))).andExpect(status().isConflict());
+	}
+
+	@Test
+	void answersNotFoundForAnUnknownSlugAndForRowsThatAreNotPosts() throws Exception {
+		for (String slug : new String[] { "no-such-post", "about", "hi-there" }) {
+			this.mockMvc.perform(updated(slug, json("T", "t-" + slug, "x"))).andExpect(status().isNotFound());
+		}
+	}
+
+	@Test
+	void refusesAnUpdateThatBreaksTheSpecWithBadRequest() throws Exception {
+		this.mockMvc.perform(updated("kpi", json("", "kpi", "x"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(updated("kpi", json("T", "kpi", null))).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void requiresABearerToken() throws Exception {
+		for (String header : new String[] { null, "Bearer wrong", "Basic test-token", "test-token", "Bearer " }) {
+			MockHttpServletRequestBuilder create = post(POST).contentType(MediaType.APPLICATION_JSON)
+				.content(json("T", "unauth", "x"));
+			MockHttpServletRequestBuilder update = put(POST + "/kpi").contentType(MediaType.APPLICATION_JSON)
+				.content(json("T", "kpi", "x"));
+			if (header != null) {
+				create.header("Authorization", header);
+				update.header("Authorization", header);
+			}
+			this.mockMvc.perform(create).andExpect(status().isUnauthorized());
+			this.mockMvc.perform(update).andExpect(status().isUnauthorized());
+		}
+		org.assertj.core.api.Assertions.assertThat(this.jdbcTemplate.queryForObject(
+				"select count(*) from wp_posts where post_name = 'unauth'", Integer.class)).isZero();
+	}
+
+	@Test
+	void keepsReadsPublic() throws Exception {
+		this.mockMvc.perform(get(POST + "/kpi")).andExpect(status().isOk()).andExpect(jsonPath("$.slug").value("kpi"));
+	}
+
+}

@@ -194,7 +194,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostBody'
         '400':
-          description: A required field is missing or blank. The response body is not part of the contract.
+          description: A required field is missing or blank, the title is longer than 130 characters, or the slug is longer than 200 characters or has a character other than English letters and '-'. The response body is not part of the contract.
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
@@ -235,7 +235,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostBody'
         '400':
-          description: A required field is missing or blank. The response body is not part of the contract.
+          description: A required field is missing or blank, the title is longer than 130 characters, or the slug is longer than 200 characters or has a character other than English letters and '-'. The response body is not part of the contract.
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
@@ -296,13 +296,17 @@ components:
         title:
           type: string
           minLength: 1
+          maxLength: 130
           pattern: '\S'
-          description: wp_posts.post_title; must contain a non-whitespace character
+          description: wp_posts.post_title; must contain a non-whitespace character, at most 130 characters
         slug:
           type: string
           minLength: 1
-          pattern: '\S'
-          description: User friendly and unique URL as readers see it (not percent-encoded), stored at wp_posts.post_name
+          maxLength: 200
+          pattern: '^[A-Za-z-]+$'
+          description: |
+            User friendly and unique URL, stored at wp_posts.post_name. Only English letters (A-Z, a-z) and '-' are
+            allowed: no space, digit, non-ASCII or other character. Anything else is rejected with 400.
         content:
           type: string
           description: wp_posts.post_content

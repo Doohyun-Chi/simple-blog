@@ -10,7 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
 /**
- * Read-only on purpose: extends {@link Repository} rather than JpaRepository so no save or delete methods exist.
+ * Extends {@link Repository} rather than JpaRepository on purpose, so the only write is {@link #save} and nothing
+ * can delete a row of the WordPress table.
  */
 public interface PostRepository extends Repository<Post, Long> {
 
@@ -28,6 +29,20 @@ public interface PostRepository extends Repository<Post, Long> {
 			  and (lower(p.title) like :pattern escape '\\' or lower(p.content) like :pattern escape '\\')
 			order by p.publishedAtLocal desc, p.id desc""")
 	List<PostSummary> listOfPublishedPostsContaining(String pattern, Pageable pageable);
+
+	Post save(Post post);
+
+	/** Whether any row, of any type or status, already has this stored slug. */
+	@Query("select count(p) > 0 from Post p where p.slug = :slug")
+	boolean slugInUse(String slug);
+
+	/** Whether a row other than this one has this stored slug. */
+	@Query("select count(p) > 0 from Post p where p.slug = :slug and p.id <> :id")
+	boolean slugInUseExcept(String slug, Long id);
+
+	/** The post to update: only rows of type post can be written, never pages, attachments or revisions. */
+	@Query("select p from Post p where p.slug = :slug and p.type = 'post'")
+	Optional<Post> writablePost(String slug);
 
 	/** The row with this slug, of any type, status or password. post_name is not unique across types. */
 	@Query("select p from Post p where p.slug = :slug")

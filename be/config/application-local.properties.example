@@ -1,4 +1,6 @@
 # Copy to config/application-local.properties (gitignored) and fill in.
 # Loaded by: ./gradlew bootRun --args='--spring.profiles.active=local'
 spring.datasource.username=root
-spring.datasource.password=chidoo
+spring.datasource.password=change-me
+# Only with simpleblog.write.access.enabled=true: the token needed to create or update posts (Authorization: Bearer <token>).
+simpleblog.write.token=change-me
