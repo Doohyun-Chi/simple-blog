@@ -7,11 +7,15 @@ export type Route =
   | { kind: 'home' }
   | { kind: 'content'; type: ContentType; slug: string }
   | { kind: 'list' }
+  | { kind: 'write' }
   | { kind: 'search'; queryType: PostQueryType; query: string }
   | { kind: 'notFound'; path: string }
 
 /** The list of all posts, linked as `전체 목록` from the info area. */
 export const LIST_PATH = '/posts'
+
+/** The area for writing a new post, linked as `새로운 생각` from the info area. */
+export const WRITE_PATH = '/write'
 
 /** Post search results: /search?query={query}&queryType={queryType}. The parameter names follow be/apispec.yaml. */
 const SEARCH_PATH = /^\/search\/?$/
@@ -28,6 +32,9 @@ export function routeOf(pathname: string, search: string = ''): Route {
   }
   if (pathname.replace(/\/$/, '') === LIST_PATH) {
     return { kind: 'list' }
+  }
+  if (pathname.replace(/\/$/, '') === WRITE_PATH) {
+    return { kind: 'write' }
   }
   if (SEARCH_PATH.test(pathname)) {
     return searchRouteOf(new URLSearchParams(search))

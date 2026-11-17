@@ -10,6 +10,7 @@ import { useListOfRecentPosts } from '../model/useListOfPosts.ts'
 import { HomePost } from './HomePost.tsx'
 import { PostList } from './PostList.tsx'
 import { PostReader } from './PostReader.tsx'
+import { PostWriter } from './PostWriter.tsx'
 import { PostSearch } from './PostSearch.tsx'
 import { RecentPostsAside } from './RecentPostsAside.tsx'
 import type { Remote } from '../model/useRemote.ts'
@@ -24,7 +25,7 @@ export function MainPage() {
     <div className="main-page">
       <Header />
       <SearchNavigation pages={pages} currentPageSlug={currentPageSlug(route)} currentQuery={currentQuery(route)} />
-      <Contents aside={<RecentPostsAside recent={recent} />}>
+      <Contents aside={route.kind === 'write' ? undefined : <RecentPostsAside recent={recent} />}>
         <RouteContent route={route} recent={recent} />
       </Contents>
       <Footer />
@@ -39,6 +40,8 @@ function RouteContent({ route, recent }: { route: Route; recent: Remote<PostSumm
       return <HomePost recent={recent} />
     case 'list':
       return <PostList />
+    case 'write':
+      return <PostWriter />
     case 'notFound':
       return <StatusMessage>Not found: <code>{route.path}</code></StatusMessage>
     case 'search':

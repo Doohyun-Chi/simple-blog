@@ -1,12 +1,12 @@
 import { type PostSummary, readerSlug } from '../model/Post.ts'
-import { contentPath, LIST_PATH } from '../model/route.ts'
+import { contentPath, LIST_PATH, WRITE_PATH } from '../model/route.ts'
 import './RecentPostList.css'
 
 interface RecentPostListProps {
   posts: PostSummary[]
 }
 
-/** The info area's list: only the titles, each linking to its body, then a link to the list of all posts. */
+/** The info area's list: only the titles, each linking to its body, then links to the list of all posts and to the writing area. */
 export function RecentPostList({ posts }: RecentPostListProps) {
   return (
     <>
@@ -25,6 +25,11 @@ export function RecentPostList({ posts }: RecentPostListProps) {
         ))}
         <li>
           <a className="recent-post-list-link recent-post-list-all" href={LIST_PATH}>전체 목록</a>
+        </li>
+        <li>
+          <a className="recent-post-list-link recent-post-list-all" href={WRITE_PATH}>
+            <span aria-hidden="true">➕</span> 새로운 생각
+          </a>
         </li>
       </ul>
     </>
