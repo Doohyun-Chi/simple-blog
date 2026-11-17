@@ -7,6 +7,7 @@ import type { PostSummary } from '../model/Post.ts'
 import { currentPageSlug, currentQuery, type Route, routeOf } from '../model/route.ts'
 import { useListOfPages } from '../model/useListOfPages.ts'
 import { useListOfRecentPosts } from '../model/useListOfPosts.ts'
+import { useSession } from '../model/useSession.ts'
 import { HomePost } from './HomePost.tsx'
 import { PostList } from './PostList.tsx'
 import { PostReader } from './PostReader.tsx'
@@ -20,11 +21,17 @@ import './MainPage.css'
 export function MainPage() {
   const pages = useListOfPages()
   const recent = useListOfRecentPosts()
+  const session = useSession()
   const route = routeOf(window.location.pathname, window.location.search)
   return (
     <div className="main-page">
       <Header />
-      <SearchNavigation pages={pages} currentPageSlug={currentPageSlug(route)} currentQuery={currentQuery(route)} />
+      <SearchNavigation
+        pages={pages}
+        currentPageSlug={currentPageSlug(route)}
+        currentQuery={currentQuery(route)}
+        session={session}
+      />
       <Contents aside={route.kind === 'write' ? undefined : <RecentPostsAside recent={recent} />}>
         <RouteContent route={route} recent={recent} />
       </Contents>

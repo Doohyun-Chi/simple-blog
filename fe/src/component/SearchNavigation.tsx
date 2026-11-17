@@ -1,3 +1,5 @@
+import { googleLoginUrl } from '../model/identityApi.ts'
+import type { SessionState } from '../model/Identity.ts'
 import type { PageSummary } from '../model/Page.ts'
 import { contentPath, searchPath } from '../model/route.ts'
 import type { FormEvent } from 'react'
@@ -9,6 +11,20 @@ interface SearchNavigationProps {
   currentPageSlug: string | null
   /** The query of the search being shown, kept in the input; empty when not on a search. */
   currentQuery: string
+  /** Who is signed in; shown at the right end of the area. */
+  session: SessionState
+}
+
+/** The right end of the area: the signed-in email, or the link that starts the Google sign-in. Nothing while checking. */
+function Identity({ session }: { session: SessionState }) {
+  switch (session.status) {
+    case 'loading':
+      return null
+    case 'anonymous':
+      return <a className="search-nav-link search-nav-identity" href={googleLoginUrl()}>로그인</a>
+    case 'signedIn':
+      return <span className="search-nav-identity" title="로그인한 계정">{session.email}</span>
+  }
 }
 
 /** Pressing Enter searches posts by keyword. A blank input sends nothing, as the spec requires. */
@@ -20,7 +36,7 @@ function submitSearch(event: FormEvent<HTMLFormElement>) {
   }
 }
 
-export function SearchNavigation({ pages, currentPageSlug, currentQuery }: SearchNavigationProps) {
+export function SearchNavigation({ pages, currentPageSlug, currentQuery, session }: SearchNavigationProps) {
   return (
     <nav className="search-nav" aria-label="Site">
       <form className="search-nav-form" role="search" onSubmit={submitSearch}>
@@ -46,6 +62,7 @@ export function SearchNavigation({ pages, currentPageSlug, currentQuery }: Searc
           </li>
         ))}
       </ul>
+      <Identity session={session} />
     </nav>
   )
 }

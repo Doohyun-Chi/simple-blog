@@ -9,7 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * Lets a FE served from another origin (for example the Vite dev server) call the public API. Origins come from
  * {@code simpleblog.cors.allowed-origin-patterns}, which accepts Spring origin patterns such as
  * {@code http://localhost:[*]} (any port). When it is empty no CORS mapping is registered, so cross-origin calls stay
- * blocked by default.
+ * blocked by default. Credentials are allowed so the frontend can send the session cookie to {@code /me}.
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
@@ -29,7 +29,8 @@ public class CorsConfig implements WebMvcConfigurer {
 		}
 		registry.addMapping(PUBLIC_API)
 			.allowedOriginPatterns(this.allowedOriginPatterns)
-			.allowedMethods("GET", "POST", "PUT", "DELETE");
+			.allowedMethods("GET", "POST", "PUT", "DELETE")
+			.allowCredentials(true);
 	}
 
 }

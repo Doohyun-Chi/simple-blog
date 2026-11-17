@@ -30,6 +30,8 @@
 }
 
 .search-nav-pages {
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   margin: 0;
@@ -62,4 +64,15 @@
     text-decoration: underline;
     text-underline-offset: 4px;
   }
+}
+
+/* The right-most item of the area: the sign-in link, or the signed-in email. */
+.search-nav-identity {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 0.75em;
+}
+
+span.search-nav-identity {
+  color: var(--text-strong);
 }

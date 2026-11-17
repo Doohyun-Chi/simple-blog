@@ -68,6 +68,86 @@ paths:
             application/vnd.spring-boot.actuator.v3+json:
               schema:
                 $ref: '#/components/schemas/Health'
+  /public/auth/google:
+    get:
+      summary: Start the Google sign-in
+      description: >
+        For browsers, not for API clients: navigate here (a plain link) to sign in with a Google account. The server
+        redirects to Google with the OpenID Connect authorization request (scope openid, profile and email, plus state
+        and nonce). Not available (404) when the server has no Google client configured.
+      operationId: startGoogleLogin
+      tags:
+        - Authentication
+      responses:
+        '302':
+          description: Redirect to the Google authorization endpoint
+          headers:
+            Location:
+              schema:
+                type: string
+        '404':
+          description: Google sign-in is not configured on this server. The response body is not part of the contract.
+  /public/auth/google/callback:
+    get:
+      summary: Finish the Google sign-in
+      description: >
+        The redirect URI registered for the Google OAuth client; only Google's redirect should reach it. The server
+        checks state, exchanges the code for tokens with its client secret and validates the ID token. On success it
+        starts a session (cookie JSESSIONID) and redirects to the frontend's home page; on any failure, including the
+        user declining, it redirects to the frontend's home page with the query login=failed and starts no session.
+        The client secret never leaves the server.
+      operationId: finishGoogleLogin
+      tags:
+        - Authentication
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: error
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to the frontend, signed in or with login=failed
+          headers:
+            Location:
+              schema:
+                type: string
+            Set-Cookie:
+              description: The session cookie, only on success
+              schema:
+                type: string
+  /public/api/v1/me:
+    get:
+      summary: The signed-in user
+      description: >
+        Identifies who the session cookie belongs to, so the frontend can show the email. The email is the one of the
+        verified Google ID token, never a value the client sent. Send the request with credentials (cookies).
+      operationId: me
+      tags:
+        - Authentication
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identity'
+              example:
+                email: owner@example.com
+        '401':
+          description: Not signed in. No session is created. The response body is not part of the contract.
   /public/api/v1/pages:
     get:
       summary: List all published pages
@@ -285,7 +365,19 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
   schemas:
+    Identity:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          description: The email address of the signed-in Google account
     PostInput:
       type: object
       required:

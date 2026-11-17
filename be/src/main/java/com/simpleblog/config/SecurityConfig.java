@@ -1,0 +1,68 @@
+package com.simpleblog.config;
+
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.savedrequest.NullRequestCache;
+
+/**
+ * Web security. Everything is public except {@code /public/api/v1/me}, which needs a signed-in session. Signing in is
+ * the OAuth 2.0 / OpenID Connect authorization code flow with Google, run entirely by Spring Security on the
+ * server: {@code /public/auth/google} starts it and {@code /public/auth/google/callback} (the redirect URI
+ * registered with Google) finishes it. The frontend only links to the start and reads {@code /me}.
+ * <p>
+ * The post write endpoints are still open (see WriteAccessInterceptor), so they are exempt from CSRF protection like
+ * the rest of {@code /public/api/**}; they use no session. Protect them with the signed-in user, and turn CSRF protection
+ * on for them, in the same change.
+ */
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+	static final String LOGIN_BASE_URI = "/public/auth";
+
+	static final String CALLBACK_URI = "/public/auth/google/callback";
+
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectProvider<ClientRegistrationRepository> clients,
+			@Value("${simpleblog.auth.frontend-url:}") String frontendUrl) throws Exception {
+		http.cors(Customizer.withDefaults())
+			.csrf((csrf) -> csrf.ignoringRequestMatchers("/public/api/**"))
+			.authorizeHttpRequests((requests) -> requests.requestMatchers("/public/api/v1/me")
+				.authenticated()
+				.anyRequest()
+				.permitAll())
+			.exceptionHandling((errors) -> errors.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+			.requestCache((cache) -> cache.requestCache(new NullRequestCache()));
+		if (clients.getIfAvailable() != null) {
+			http.oauth2Login((login) -> googleLogin(login, frontendUrl.replaceAll("/+$", "")));
+		}
+		return http.build();
+	}
+
+	/** The sign-in URLs, and where the browser goes afterwards: the frontend's home page, flagged when it failed. */
+	private void googleLogin(OAuth2LoginConfigurer<HttpSecurity> login, String frontendUrl) {
+		login.authorizationEndpoint((endpoint) -> endpoint.baseUri(LOGIN_BASE_URI))
+			.redirectionEndpoint((endpoint) -> endpoint.baseUri(CALLBACK_URI))
+			.defaultSuccessUrl(frontendUrl + "/", true)
+			.failureHandler(failureRedirect(frontendUrl + "/?login=failed"));
+	}
+
+	/** Redirects a failed sign-in without creating a session, so forged callbacks cannot make the server keep any. */
+	private SimpleUrlAuthenticationFailureHandler failureRedirect(String url) {
+		SimpleUrlAuthenticationFailureHandler handler = new SimpleUrlAuthenticationFailureHandler(url);
+		handler.setAllowSessionCreation(false);
+		return handler;
+	}
+
+}
