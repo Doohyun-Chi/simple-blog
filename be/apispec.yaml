@@ -169,7 +169,83 @@ paths:
             not an integer from 1 to 100. The response body is not part of the contract.
         '501':
           description: queryType is tag, which is not implemented yet. The response body is not part of the contract.
+  /public/api/v1/post:
+    post:
+      summary: Create a post
+      description: >
+        Creates a post as a draft (wp_posts.post_status 'draft'); status cannot be set by the client. Publishing is
+        not part of this contract yet. The created post is returned with its stored values.
+      operationId: createPost
+      tags:
+        - Posts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostBody'
+        '400':
+          description: A required field is missing or blank. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Authenticated but not allowed to write posts. The response body is not part of the contract.
+        '409':
+          description: Another post already has this slug. The response body is not part of the contract.
+        '500':
+          description: Failed to create. The response body is not part of the contract.
   /public/api/v1/post/{slug}:
+    put:
+      summary: Update a post
+      description: >
+        Replaces title, slug and content of the post identified by the path slug and leaves its status unchanged.
+        If the body slug differs from the path slug, the post is renamed; the old slug no longer resolves.
+      operationId: updatePost
+      tags:
+        - Posts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: The current slug of the post, encoded as in the GET operation of this path.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostInput'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostBody'
+        '400':
+          description: A required field is missing or blank. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Authenticated but not allowed to write posts. The response body is not part of the contract.
+        '404':
+          description: No row in wp_posts has the path slug. The response body is not part of the contract.
+        '409':
+          description: Another post already has the body slug. The response body is not part of the contract.
+        '500':
+          description: Failed to update. The response body is not part of the contract.
     get:
       summary: Read a body of a post or a page.
       description: >
@@ -197,6 +273,7 @@ paths:
                 $ref: '#/components/schemas/PostBody'
               example:
                 title: 큰기업의 배움 - KPI, 조직을 움직이는 힘
+                slug: '%ed%81%b0%ea%b8%b0%ec%97%85%ec%9d%98-%eb%b0%b0%ec%9b%80-kpi'
                 content: '<!-- wp:paragraph --><p>...</p><!-- /wp:paragraph -->'
                 status: publish
                 date: '2026-11-05T09:45:11'
@@ -204,7 +281,31 @@ paths:
         '404':
           description: No row in wp_posts has this slug. The response body is not part of the contract.
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
   schemas:
+    PostInput:
+      type: object
+      required:
+        - title
+        - slug
+        - content
+      properties:
+        title:
+          type: string
+          minLength: 1
+          pattern: '\S'
+          description: wp_posts.post_title; must contain a non-whitespace character
+        slug:
+          type: string
+          minLength: 1
+          pattern: '\S'
+          description: User friendly and unique URL as readers see it (not percent-encoded), stored at wp_posts.post_name
+        content:
+          type: string
+          description: wp_posts.post_content
     PostList:
       type: object
       required:
@@ -242,6 +343,7 @@ components:
       type: object
       required:
         - title
+        - slug
         - content
         - status
         - date
@@ -250,6 +352,9 @@ components:
         title:
           type: string
           description: wp_posts.post_title
+        slug:
+          type: string
+          description: User friendly and unique URL, stored at wp_posts.post_name
         content:
           type: string
           description: >

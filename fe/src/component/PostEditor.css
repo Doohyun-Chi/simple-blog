@@ -1,0 +1,84 @@
+/* Fills the content area; the items are stacked with 1rem between them (fe/DESIGN.md). */
+.post-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+
+/* The title input takes the line; the buttons sit beside it at their own width. */
+.post-editor-title-line {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 1rem;
+}
+
+.post-editor-title-line .post-editor-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.post-editor-field {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5em 0.75em;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.post-editor-button {
+  flex: 0 0 auto;
+  padding: 0 1.25em;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+
+  &:hover:enabled,
+  &:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+/* Publishing is the main action, so it is filled with the accent colour. */
+.post-editor-publish {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+
+  &:hover:enabled,
+  &:focus-visible {
+    color: #fff;
+    filter: brightness(1.1);
+  }
+}
+
+/* The body takes all the remaining height and scrolls inside itself. */
+.post-editor-body {
+  flex: 1 1 auto;
+  min-height: 20em;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.post-editor-content {
+  font-family: var(--font-main);
+  line-height: 1.8;
+  color: var(--text-body);
+}
