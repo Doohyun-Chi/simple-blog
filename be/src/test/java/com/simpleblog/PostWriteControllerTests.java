@@ -1,5 +1,8 @@
 package com.simpleblog;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -53,8 +56,6 @@ class PostWriteControllerTests {
 
 	private static final String POST = "/public/api/v1/post";
 
-	private static final String BEARER = "Bearer test-token";
-
 	@TestConfiguration
 	static class FixedClock {
 
@@ -85,11 +86,11 @@ class PostWriteControllerTests {
 	}
 
 	private MockHttpServletRequestBuilder created(String body) {
-		return post(POST).header("Authorization", BEARER).contentType(MediaType.APPLICATION_JSON).content(body);
+		return post(POST).with(oidcLogin()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body);
 	}
 
 	private MockHttpServletRequestBuilder updated(String slug, String body) {
-		return put(POST + "/{slug}", slug).header("Authorization", BEARER)
+		return put(POST + "/{slug}", slug).with(oidcLogin()).with(csrf())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content(body);
 	}
@@ -210,21 +211,21 @@ class PostWriteControllerTests {
 	}
 
 	@Test
-	void requiresABearerToken() throws Exception {
-		for (String header : new String[] { null, "Bearer wrong", "Basic test-token", "test-token", "Bearer " }) {
-			MockHttpServletRequestBuilder create = post(POST).contentType(MediaType.APPLICATION_JSON)
-				.content(json("T", "unauth", "x"));
-			MockHttpServletRequestBuilder update = put(POST + "/kpi").contentType(MediaType.APPLICATION_JSON)
-				.content(json("T", "kpi", "x"));
-			if (header != null) {
-				create.header("Authorization", header);
-				update.header("Authorization", header);
-			}
-			this.mockMvc.perform(create).andExpect(status().isUnauthorized());
-			this.mockMvc.perform(update).andExpect(status().isUnauthorized());
-		}
-		org.assertj.core.api.Assertions.assertThat(this.jdbcTemplate.queryForObject(
-				"select count(*) from wp_posts where post_name = 'unauth'", Integer.class)).isZero();
+	void requiresASignedInSession() throws Exception {
+		this.mockMvc.perform(post(POST).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json("T", "unauth", "x")))
+			.andExpect(status().isUnauthorized());
+		this.mockMvc.perform(put(POST + "/kpi").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json("T", "kpi", "x")))
+			.andExpect(status().isUnauthorized());
+		assertThat(this.jdbcTemplate.queryForObject("select count(*) from wp_posts where post_name = 'unauth'", Integer.class))
+			.isZero();
+	}
+
+	@Test
+	void requiresACsrfToken() throws Exception {
+		this.mockMvc.perform(post(POST).with(oidcLogin()).contentType(MediaType.APPLICATION_JSON).content(json("T", "nocsrf", "x")))
+			.andExpect(status().isForbidden());
+		this.mockMvc.perform(put(POST + "/kpi").with(oidcLogin()).contentType(MediaType.APPLICATION_JSON).content(json("T", "kpi", "x")))
+			.andExpect(status().isForbidden());
 	}
 
 	@Test

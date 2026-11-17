@@ -4,10 +4,12 @@ import './RecentPostList.css'
 
 interface RecentPostListProps {
   posts: PostSummary[]
+  /** Whether the visitor is signed in; the link to the writing area is shown only then. */
+  canWrite: boolean
 }
 
 /** The info area's list: only the titles, each linking to its body, then links to the list of all posts and to the writing area. */
-export function RecentPostList({ posts }: RecentPostListProps) {
+export function RecentPostList({ posts, canWrite }: RecentPostListProps) {
   return (
     <>
       <h2 className="recent-post-list-heading">최근 글</h2>
@@ -26,11 +28,13 @@ export function RecentPostList({ posts }: RecentPostListProps) {
         <li>
           <a className="recent-post-list-link recent-post-list-all" href={LIST_PATH}>전체 목록</a>
         </li>
-        <li>
-          <a className="recent-post-list-link recent-post-list-all" href={WRITE_PATH}>
-            <span aria-hidden="true">➕</span> 새로운 생각
-          </a>
-        </li>
+        {canWrite && (
+          <li>
+            <a className="recent-post-list-link recent-post-list-all" href={WRITE_PATH}>
+              <span aria-hidden="true">➕</span> 새로운 생각
+            </a>
+          </li>
+        )}
       </ul>
     </>
   )

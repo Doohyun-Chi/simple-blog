@@ -3,6 +3,7 @@ import { Footer } from '../component/Footer.tsx'
 import { Header } from '../component/Header.tsx'
 import { SearchNavigation } from '../component/SearchNavigation.tsx'
 import { StatusMessage } from '../component/StatusMessage.tsx'
+import type { SessionState } from '../model/Identity.ts'
 import type { PostSummary } from '../model/Post.ts'
 import { currentPageSlug, currentQuery, type Route, routeOf } from '../model/route.ts'
 import { useListOfPages } from '../model/useListOfPages.ts'
@@ -32,8 +33,8 @@ export function MainPage() {
         currentQuery={currentQuery(route)}
         session={session}
       />
-      <Contents aside={route.kind === 'write' ? undefined : <RecentPostsAside recent={recent} />}>
-        <RouteContent route={route} recent={recent} />
+      <Contents aside={route.kind === 'write' ? undefined : <RecentPostsAside recent={recent} canWrite={session.status === 'signedIn'} />}>
+        <RouteContent route={route} recent={recent} session={session} />
       </Contents>
       <Footer />
     </div>
@@ -41,19 +42,31 @@ export function MainPage() {
 }
 
 /** What the content area shows for a route. A page and a post share the body endpoint. */
-function RouteContent({ route, recent }: { route: Route; recent: Remote<PostSummary[]> }) {
+function RouteContent({ route, recent, session }: { route: Route; recent: Remote<PostSummary[]>; session: SessionState }) {
   switch (route.kind) {
     case 'home':
       return <HomePost recent={recent} />
     case 'list':
       return <PostList />
     case 'write':
-      return <PostWriter />
+      return <WriteGate session={session} />
     case 'notFound':
       return <StatusMessage>Not found: <code>{route.path}</code></StatusMessage>
     case 'search':
       return <PostSearch key={`${route.queryType}:${route.query}`} queryType={route.queryType} query={route.query} />
     case 'content':
       return <PostReader key={route.slug} slug={route.slug} />
+  }
+}
+
+/** Writing needs a signed-in visitor: the editor opens only then, and anyone else is told to sign in. */
+function WriteGate({ session }: { session: SessionState }) {
+  switch (session.status) {
+    case 'loading':
+      return <StatusMessage>확인 중…</StatusMessage>
+    case 'anonymous':
+      return <StatusMessage>글을 쓰려면 로그인해야 합니다.</StatusMessage>
+    case 'signedIn':
+      return <PostWriter />
   }
 }

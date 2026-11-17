@@ -260,7 +260,7 @@ paths:
       tags:
         - Posts
       security:
-        - bearerAuth: []
+        - sessionCookie: []
       requestBody:
         required: true
         content:
@@ -279,7 +279,7 @@ paths:
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
-          description: Authenticated but not allowed to write posts. The response body is not part of the contract.
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
         '409':
           description: Another post already has this slug. The response body is not part of the contract.
         '500':
@@ -294,7 +294,7 @@ paths:
       tags:
         - Posts
       security:
-        - bearerAuth: []
+        - sessionCookie: []
       parameters:
         - name: slug
           in: path
@@ -320,7 +320,7 @@ paths:
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
-          description: Authenticated but not allowed to write posts. The response body is not part of the contract.
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
         '404':
           description: No row in wp_posts has the path slug. The response body is not part of the contract.
         '409':
@@ -363,9 +363,6 @@ paths:
           description: No row in wp_posts has this slug. The response body is not part of the contract.
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
     sessionCookie:
       type: apiKey
       in: cookie

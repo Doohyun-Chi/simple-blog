@@ -5,6 +5,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +17,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
@@ -24,9 +28,9 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * server: {@code /public/auth/google} starts it and {@code /public/auth/google/callback} (the redirect URI
  * registered with Google) finishes it. The frontend only links to the start and reads {@code /me}.
  * <p>
- * The post write endpoints are still open (see WriteAccessInterceptor), so they are exempt from CSRF protection like
- * the rest of {@code /public/api/**}; they use no session. Protect them with the signed-in user, and turn CSRF protection
- * on for them, in the same change.
+ * Creating and updating posts needs the signed-in session; reads stay public. Because the session cookie authorizes
+ * those writes, CSRF protection is on: the token is published in the {@code XSRF-TOKEN} cookie on every response and the
+ * frontend echoes it in the {@code X-XSRF-TOKEN} header. A write without it is answered with 403.
  */
 @Configuration
 @EnableWebSecurity
@@ -40,8 +44,14 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectProvider<ClientRegistrationRepository> clients,
 			AllowedOidcUserService userService, @Value("${simpleblog.auth.frontend-url:}") String frontendUrl) throws Exception {
 		http.cors(Customizer.withDefaults())
-			.csrf((csrf) -> csrf.ignoringRequestMatchers("/public/api/**"))
+			.csrf((csrf) -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+				.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+			.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
 			.authorizeHttpRequests((requests) -> requests.requestMatchers("/public/api/v1/me")
+				.authenticated()
+				.requestMatchers(HttpMethod.GET, "/public/api/**")
+				.permitAll()
+				.requestMatchers("/public/api/v1/post", "/public/api/v1/post/**")
 				.authenticated()
 				.anyRequest()
 				.permitAll())

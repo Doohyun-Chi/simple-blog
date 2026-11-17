@@ -2,8 +2,6 @@
 # Loaded by: ./gradlew bootRun --args='--spring.profiles.active=local'
 spring.datasource.username=root
 spring.datasource.password=change-me
-# Only with simpleblog.write.access.enabled=true: the token needed to create or update posts (Authorization: Bearer <token>).
-simpleblog.write.token=change-me
 
 # Google sign-in: create an OAuth client (type "Web application") in Google Cloud Console, add the redirect URI
 # http://localhost:8080/public/auth/google/callback and the JavaScript origin http://localhost:5173, then copy its values.

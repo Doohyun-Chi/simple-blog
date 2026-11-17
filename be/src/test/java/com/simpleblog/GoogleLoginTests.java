@@ -70,7 +70,7 @@ class GoogleLoginTests {
 	void meIsUnauthorizedWithoutASessionAndStartsNone() throws Exception {
 		MvcResult result = this.mockMvc.perform(get("/public/api/v1/me")).andExpect(status().isUnauthorized()).andReturn();
 		assertThat(result.getRequest().getSession(false)).isNull();
-		assertThat(result.getResponse().getHeader("Set-Cookie")).isNull();
+		assertThat(result.getResponse().getHeaders("Set-Cookie")).noneMatch((cookie) -> cookie.startsWith("JSESSIONID"));
 	}
 
 	@Test
