@@ -9,7 +9,18 @@ export function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`
 }
 
-/** Sends a request to the backend and parses the JSON body. Throws on a non-2xx response. */
+/** A non-2xx response. `status` lets callers tell a conflict from a missing resource from a server failure. */
+export class ApiError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
+/** Sends a request to the backend and parses the JSON body. Throws an ApiError on a non-2xx response. */
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const method = init?.method ?? 'GET'
   const headers = new Headers(init?.headers)
@@ -18,7 +29,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   }
   const response = await fetch(apiUrl(path), { ...init, headers })
   if (!response.ok) {
-    throw new Error(`${method} ${path} failed: ${response.status}`)
+    throw new ApiError(`${method} ${path} failed: ${response.status}`, response.status)
   }
   return (await response.json()) as T
 }

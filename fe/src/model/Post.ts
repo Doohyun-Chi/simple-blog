@@ -54,3 +54,39 @@ export function dayOf(localDateTime: string): string {
 export function isClassicContent(content: string): boolean {
   return !content.includes('<!-- wp:')
 }
+
+/** Mirrors `PostInput` in be/apispec.yaml. The slug is as readers see it, which for the allowed characters is the stored form. */
+export interface PostInput {
+  title: string
+  slug: string
+  content: string
+}
+
+/** The longest title, in characters (Unicode code points). Mirrors `maxLength` of `PostInput.title` in be/apispec.yaml. */
+export const POST_TITLE_MAX_LENGTH = 130
+
+/** The longest slug. Mirrors `maxLength` of `PostInput.slug` in be/apispec.yaml. */
+export const POST_SLUG_MAX_LENGTH = 200
+
+/** What a slug must not contain: the spec allows only English letters and `-`. */
+const SLUG_FORBIDDEN = /[^A-Za-z-]/g
+
+/** Counts characters the way the backend does, by code point, so an emoji counts once. */
+export function characterCount(text: string): number {
+  return Array.from(text).length
+}
+
+/** Cuts a title to the longest allowed length. */
+export function fitTitle(title: string): string {
+  return Array.from(title).slice(0, POST_TITLE_MAX_LENGTH).join('')
+}
+
+/** Turns typed text into an allowed slug: spaces become `-`, other forbidden characters are dropped, and it is cut. */
+export function fitSlug(slug: string): string {
+  return slug.replace(/\s/g, '-').replace(SLUG_FORBIDDEN, '').slice(0, POST_SLUG_MAX_LENGTH)
+}
+
+/** Whether a post can be sent: a title with a visible character and a slug the spec accepts. */
+export function isSavable(input: PostInput): boolean {
+  return input.title.trim() !== '' && input.slug !== '' && fitSlug(input.slug) === input.slug
+}
