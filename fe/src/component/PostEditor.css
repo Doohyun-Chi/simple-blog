@@ -28,13 +28,10 @@
 
 .post-editor-title-line .post-editor-button {
   box-sizing: border-box;
-  height: calc(2.5em + 2px);
+  height: calc(2em + 2px);
 }
 
 .post-editor-hint {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
   font-size: 0.8em;
   color: var(--text-muted);
 }
@@ -48,15 +45,11 @@
   }
 }
 
-.post-editor-count {
-  flex: 0 0 auto;
-}
-
 .post-editor-field {
   flex: 0 0 auto;
   box-sizing: border-box;
   width: 100%;
-  padding: 0.5em 0.75em;
+  padding: 0.25em 0.75em;
   font: inherit;
   color: var(--text-strong);
   background: var(--input-bg);

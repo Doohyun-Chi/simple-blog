@@ -20,8 +20,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* The page is exactly one viewport tall and its areas scroll inside themselves, so the page itself never scrolls.
+   This also keeps what MDXEditor appends to the body (its popup container) from adding an outer scrollbar. */
 body {
   margin: 0;
+  overflow: hidden;
 }
 
 code,

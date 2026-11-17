@@ -62,31 +62,24 @@ export interface PostInput {
   content: string
 }
 
-/** The longest title, in characters (Unicode code points). Mirrors `maxLength` of `PostInput.title` in be/apispec.yaml. */
+/**
+ * The longest title, in characters (Unicode code points). Mirrors `maxLength` of `PostInput.title` in be/apispec.yaml.
+ * It is shown to the writer but not enforced here: the backend answers 400 for a longer title.
+ */
 export const POST_TITLE_MAX_LENGTH = 130
 
-/** The longest slug. Mirrors `maxLength` of `PostInput.slug` in be/apispec.yaml. */
+/** The longest slug. Mirrors `maxLength` of `PostInput.slug` in be/apispec.yaml; shown, not enforced, like the title's. */
 export const POST_SLUG_MAX_LENGTH = 200
 
 /** What a slug must not contain: the spec allows only English letters and `-`. */
 const SLUG_FORBIDDEN = /[^A-Za-z-]/g
 
-/** Counts characters the way the backend does, by code point, so an emoji counts once. */
-export function characterCount(text: string): number {
-  return Array.from(text).length
+/** Turns typed text into slug characters: spaces become `-` and other forbidden characters are dropped. */
+export function cleanSlug(slug: string): string {
+  return slug.replace(/\s/g, '-').replace(SLUG_FORBIDDEN, '')
 }
 
-/** Cuts a title to the longest allowed length. */
-export function fitTitle(title: string): string {
-  return Array.from(title).slice(0, POST_TITLE_MAX_LENGTH).join('')
-}
-
-/** Turns typed text into an allowed slug: spaces become `-`, other forbidden characters are dropped, and it is cut. */
-export function fitSlug(slug: string): string {
-  return slug.replace(/\s/g, '-').replace(SLUG_FORBIDDEN, '').slice(0, POST_SLUG_MAX_LENGTH)
-}
-
-/** Whether a post can be sent: a title with a visible character and a slug the spec accepts. */
+/** Whether a post can be sent: a title with a visible character and a slug made of allowed characters. */
 export function isSavable(input: PostInput): boolean {
-  return input.title.trim() !== '' && input.slug !== '' && fitSlug(input.slug) === input.slug
+  return input.title.trim() !== '' && input.slug !== '' && cleanSlug(input.slug) === input.slug
 }

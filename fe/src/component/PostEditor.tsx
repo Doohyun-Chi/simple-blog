@@ -21,9 +21,7 @@ import {
 import '@mdxeditor/editor/style.css'
 import { type ReactNode, useState } from 'react'
 import {
-  characterCount,
-  fitSlug,
-  fitTitle,
+  cleanSlug,
   isSavable,
   POST_SLUG_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
@@ -88,12 +86,11 @@ interface PostEditorProps {
   onPublish?: () => void
 }
 
-/** The line under a field: a note on the left and a length count on the right. */
-function FieldHint({ note, count, max }: { note: ReactNode; count: number; max: number }) {
+/** The line under a field. */
+function FieldHint({ note }: { note: ReactNode }) {
   return (
     <div className="post-editor-hint">
       <span className="post-editor-note" role="status">{note}</span>
-      <span className="post-editor-count">{count}/{max}</span>
     </div>
   )
 }
@@ -113,8 +110,9 @@ function saveNote(state: SaveState): ReactNode {
 
 /**
  * The writing area from fe/DESIGN.md: the title with the save and publish buttons beside it, the slug, the MDX body
- * filling the rest, and the hashtags on the last line. Title and slug are held to the backend's limits as they are
- * typed. 공개 stays disabled: the spec has no publish operation, and hashtags have no field in it, so they are not sent.
+ * filling the rest, and the hashtags on the last line. The title and slug limits appear as placeholders only; the
+ * backend refuses longer ones. The slug is limited to the characters the spec allows as it is typed. 공개 stays
+ * disabled: the spec has no publish operation, and hashtags have no field in it, so they are not sent.
  */
 export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
   const [title, updateTitle] = useState('')
@@ -131,12 +129,12 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
             className="post-editor-field"
             name="title"
             type="text"
-            placeholder="제목"
+            placeholder={`제목 (최대 ${POST_TITLE_MAX_LENGTH}자)`}
             aria-label="제목"
             value={title}
-            onChange={(event) => updateTitle(fitTitle(event.target.value))}
+            onChange={(event) => updateTitle(event.target.value)}
           />
-          <FieldHint note={saveNote(saveState)} count={characterCount(title)} max={POST_TITLE_MAX_LENGTH} />
+          <FieldHint note={saveNote(saveState)} />
         </div>
         <button className="post-editor-button" type="button" disabled={!canSave} onClick={() => onSave(input)}>저장</button>
         <button className="post-editor-button post-editor-publish" type="button" disabled={!onPublish} onClick={onPublish}>
@@ -148,12 +146,12 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
           className="post-editor-field"
           name="slug"
           type="text"
-          placeholder="Slug"
+          placeholder={`Slug (최대 ${POST_SLUG_MAX_LENGTH}자)`}
           aria-label="Slug"
           value={slug}
-          onChange={(event) => updateSlug(fitSlug(event.target.value))}
+          onChange={(event) => updateSlug(cleanSlug(event.target.value))}
         />
-        <FieldHint note="영문 대소문자와 - 만 사용할 수 있습니다." count={slug.length} max={POST_SLUG_MAX_LENGTH} />
+        <FieldHint note="영문 대소문자와 - 만 사용할 수 있습니다." />
       </div>
       <MDXEditor
         className="post-editor-body"
