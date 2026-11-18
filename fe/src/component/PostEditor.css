@@ -109,3 +109,9 @@
   line-height: 1.8;
   color: var(--text-body);
 }
+
+/* A large image must not push the editor wider than its box. */
+.post-editor-content img {
+  max-width: 100%;
+  height: auto;
+}

@@ -166,7 +166,7 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
         <FieldHint note="영문 대소문자와 - 만 사용할 수 있습니다." />
       </div>
       <MDXEditor
-        className="post-editor-body"
+        className="post-editor-body mdxeditor-full-height"
         contentEditableClassName="post-editor-content"
         markdown={markdown}
         onChange={updateMarkdown}
