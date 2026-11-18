@@ -10,3 +10,6 @@ simpleblog.auth.google.client-id=<client id>.apps.googleusercontent.com
 simpleblog.auth.google.client-secret=<client secret>
 # Where the browser returns after signing in: the frontend's address ('' means the same origin as the backend).
 simpleblog.auth.frontend-url=http://localhost:5173
+
+# Where uploaded images are stored (created on the first upload). Defaults to ./media when left out.
+simpleblog.media.directory=/path/to/media
