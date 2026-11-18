@@ -361,6 +361,106 @@ paths:
                 modified: '2026-11-05T09:45:11'
         '404':
           description: No row in wp_posts has this slug. The response body is not part of the contract.
+  /public/api/v1/media:
+    post:
+      summary: Register a media item
+      description: >
+        Registers a media item in tb_media and returns it. With multipart/form-data the part `file` is an image stored
+        on the server (provider internal); with application/json the body names a YouTube video, which is only
+        registered by reference and never fetched or embedded (provider external). The image type is decided from the
+        file content, not from the client's Content-Type or file name; only PNG, JPEG, GIF and WebP are accepted, up to
+        10 MB. Registering the same YouTube video again returns the existing item with 200.
+      operationId: createMedia
+      tags:
+        - Media
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MediaUpload'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalMediaInput'
+      responses:
+        '200':
+          description: The YouTube video was already registered; the existing item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+              examples:
+                image:
+                  value:
+                    slug: photo-3fa9c1d2
+                    provider: internal
+                    mimeType: image/png
+                    url: /public/api/v1/media/photo-3fa9c1d2
+                    thumbnail: null
+                    date: '2026-11-18T01:30:00Z'
+                youtube:
+                  value:
+                    slug: youtube-dQw4w9WgXcQ
+                    provider: external
+                    mimeType: https://youtu.be/dQw4w9WgXcQ
+                    url: https://youtu.be/dQw4w9WgXcQ
+                    thumbnail: https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg
+                    date: '2026-11-18T01:30:00Z'
+        '400':
+          description: The file is missing or empty, or the url is not a YouTube video link. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+        '413':
+          description: The file is larger than 10 MB. The response body is not part of the contract.
+        '415':
+          description: The file is not a PNG, JPEG, GIF or WebP image. The response body is not part of the contract.
+  /public/api/v1/media/{slug}:
+    get:
+      summary: Get the file of an image
+      description: >
+        Returns the stored bytes of an internal media item with its mime type, for use as an image source. External
+        items have no file here.
+      operationId: getMediaFile
+      tags:
+        - Media
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: No internal media item has this slug. The response body is not part of the contract.
 components:
   securitySchemes:
     sessionCookie:
@@ -376,6 +476,63 @@ components:
         email:
           type: string
           description: The email address of the signed-in Google account
+    MediaUpload:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The image file
+    ExternalMediaInput:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          maxLength: 2048
+          description: >
+            A YouTube video link: https://www.youtube.com/watch?v=ID, https://youtu.be/ID,
+            https://www.youtube.com/shorts/ID or https://www.youtube.com/embed/ID (also m.youtube.com), where ID is 11
+            characters of English letters, digits, '-' and '_'. Anything else is rejected with 400.
+    Media:
+      type: object
+      required:
+        - slug
+        - provider
+        - mimeType
+        - url
+        - thumbnail
+        - date
+      properties:
+        slug:
+          type: string
+          description: >
+            tb_media.slug, unique. An image gets its file name reduced to English letters, digits and '-' plus a random
+            suffix; a YouTube video gets youtube- plus its video ID.
+        provider:
+          type: string
+          enum: [internal, external]
+          description: tb_media.provider. internal is a file on the server, external a reference such as a YouTube URL.
+        mimeType:
+          type: string
+          description: tb_media.mime_type. The image's mime type for internal, otherwise the URL.
+        url:
+          type: string
+          description: >
+            Where to load the item. For internal a server-relative path (/public/api/v1/media/{slug}) to be resolved
+            against the backend; for external the canonical https://youtu.be/ID link.
+        thumbnail:
+          type:
+            - string
+            - 'null'
+          description: tb_media.thumbnail. The YouTube thumbnail image URL for a YouTube video, null for an image.
+        date:
+          type: string
+          format: date-time
+          description: tb_media.date, when it was registered, in UTC (for example 2026-11-18T01:30:00Z)
     PostInput:
       type: object
       required:

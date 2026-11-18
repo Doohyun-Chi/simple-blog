@@ -28,7 +28,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * server: {@code /public/auth/google} starts it and {@code /public/auth/google/callback} (the redirect URI
  * registered with Google) finishes it. The frontend only links to the start and reads {@code /me}.
  * <p>
- * Creating and updating posts needs the signed-in session; reads stay public. Because the session cookie authorizes
+ * Creating and updating posts and registering media need the signed-in session; reads stay public. Because the session cookie authorizes
  * those writes, CSRF protection is on: the token is published in the {@code XSRF-TOKEN} cookie on every response and the
  * frontend echoes it in the {@code X-XSRF-TOKEN} header. A write without it is answered with 403.
  */
@@ -51,7 +51,7 @@ public class SecurityConfig {
 				.authenticated()
 				.requestMatchers(HttpMethod.GET, "/public/api/**")
 				.permitAll()
-				.requestMatchers("/public/api/v1/post", "/public/api/v1/post/**")
+				.requestMatchers("/public/api/v1/post", "/public/api/v1/post/**", "/public/api/v1/media", "/public/api/v1/media/**")
 				.authenticated()
 				.anyRequest()
 				.permitAll())

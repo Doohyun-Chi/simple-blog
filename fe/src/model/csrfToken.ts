@@ -8,3 +8,9 @@ export function csrfToken(): string | null {
   const found = document.cookie.split('; ').find((cookie) => cookie.startsWith(prefix))
   return found === undefined ? null : decodeURIComponent(found.slice(prefix.length))
 }
+
+/** The header to add to a write request: the token when the backend has published one, nothing otherwise. */
+export function csrfHeaders(): Record<string, string> {
+  const token = csrfToken()
+  return token === null ? {} : { [CSRF_HEADER]: token }
+}

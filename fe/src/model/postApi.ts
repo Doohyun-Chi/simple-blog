@@ -1,5 +1,5 @@
 import { requestJson } from './apiClient.ts'
-import { CSRF_HEADER, csrfToken } from './csrfToken.ts'
+import { csrfHeaders } from './csrfToken.ts'
 import type { PostBody, PostInput, PostList, PostQueryType, PostSummary } from './Post.ts'
 
 const POSTS_PATH = '/public/api/v1/posts'
@@ -40,10 +40,6 @@ export function updatePost(slug: string, input: PostInput, signal?: AbortSignal)
 
 /** A write rides on the session cookie, and the backend wants the CSRF token it published echoed in a header. */
 function jsonRequest(method: string, body: PostInput, signal?: AbortSignal): RequestInit {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  const token = csrfToken()
-  if (token !== null) {
-    headers[CSRF_HEADER] = token
-  }
+  const headers = { 'Content-Type': 'application/json', ...csrfHeaders() }
   return { method, headers, body: JSON.stringify(body), credentials: 'include', signal }
 }

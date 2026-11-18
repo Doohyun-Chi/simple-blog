@@ -4,12 +4,14 @@ import {
   CodeToggle,
   CreateLink,
   InsertCodeBlock,
+  InsertImage,
   ListsToggle,
   MDXEditor,
   UndoRedo,
   codeBlockPlugin,
   codeMirrorPlugin,
   headingsPlugin,
+  imagePlugin,
   linkDialogPlugin,
   linkPlugin,
   listsPlugin,
@@ -27,8 +29,10 @@ import {
   POST_TITLE_MAX_LENGTH,
   type PostInput,
 } from '../model/Post.ts'
+import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
 import { contentPath } from '../model/route.ts'
 import type { SaveFailure, SaveState } from '../model/useSavePost.ts'
+import { YouTubeInsert } from './YouTubeInsert.tsx'
 import './PostEditor.css'
 
 const CODE_LANGUAGES = {
@@ -43,7 +47,12 @@ const CODE_LANGUAGES = {
   yaml: 'YAML',
 }
 
-/** Plugins for the body editor: Markdown formatting, links and code blocks, and a toolbar for them. */
+/** Sends a picked, dropped or pasted image to the backend and answers the URL the editor should show it from. */
+async function uploadedImageUrl(file: File): Promise<string> {
+  return mediaFileUrl(await uploadImage(file))
+}
+
+/** Plugins for the body editor: Markdown formatting, links, images and code blocks, and a toolbar for them. */
 const EDITOR_PLUGINS = [
   headingsPlugin(),
   listsPlugin(),
@@ -51,6 +60,7 @@ const EDITOR_PLUGINS = [
   thematicBreakPlugin(),
   linkPlugin(),
   linkDialogPlugin(),
+  imagePlugin({ imageUploadHandler: uploadedImageUrl }),
   codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
   codeMirrorPlugin({ codeBlockLanguages: CODE_LANGUAGES }),
   markdownShortcutPlugin(),
@@ -63,6 +73,8 @@ const EDITOR_PLUGINS = [
         <CodeToggle />
         <ListsToggle />
         <CreateLink />
+        <InsertImage />
+        <YouTubeInsert />
         <InsertCodeBlock />
       </>
     ),

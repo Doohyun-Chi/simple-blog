@@ -38,3 +38,6 @@ out/
 
 ### Local config ###
 config/application-local.properties
+
+### Uploaded media ###
+/media/
