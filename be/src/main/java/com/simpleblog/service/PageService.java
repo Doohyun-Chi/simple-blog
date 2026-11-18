@@ -16,8 +16,9 @@ public class PageService {
 	}
 
 	@Transactional(readOnly = true)
-	public PageList listOfPages() {
-		return new PageList(this.postRepository.listOfPublishedPages().stream().map(PageSummary::from).toList());
+	/** The published pages, plus every page of the viewer (see UserService#viewerId) whatever its status. */
+	public PageList listOfPages(long viewerId) {
+		return new PageList(this.postRepository.listOfPagesVisibleTo(viewerId).stream().map(PageSummary::from).toList());
 	}
 
 }

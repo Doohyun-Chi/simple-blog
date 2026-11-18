@@ -1,10 +1,12 @@
 package com.simpleblog;
 
+import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,36 @@ class PostListControllerTests {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
+	private void insertPostsOfTwoUsers() {
+		this.jdbcTemplate.update("""
+				insert into tb_user (ID, EMAIL, PROVIDER, REGISTERED_DATE) values
+				(201, 'owner@example.com', 'google', now()), (202, 'other@example.com', 'google', now())""");
+		this.jdbcTemplate.update("""
+				insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
+				(21, 'KPI my draft', 'kpi', 'kpi-my-draft', 'post', 'draft', 201, '2026-11-06 00:00:00', '2026-11-06 00:00:00'),
+				(22, 'KPI my private', 'kpi', 'kpi-my-private', 'post', 'private', 201, '2026-11-07 00:00:00', '2026-11-07 00:00:00'),
+				(23, 'KPI their draft', 'kpi', 'kpi-their-draft', 'post', 'draft', 202, '2026-11-08 00:00:00', '2026-11-08 00:00:00'),
+				(24, 'KPI my page', 'kpi', 'kpi-my-page', 'page', 'draft', 201, '2026-11-09 00:00:00', '2026-11-09 00:00:00')""");
+	}
+
+	@Test
+	void anAnonymousVisitorDoesNotSeeUnpublishedPosts() throws Exception {
+		insertPostsOfTwoUsers();
+		this.mockMvc.perform(get(POSTS).param("query", "kpi"))
+			.andExpect(jsonPath("$.posts[*].id", contains(2, 1)));
+	}
+
+	@Test
+	void aSignedInUserAlsoSeesTheirOwnUnpublishedPostsButNotOthersOrPages() throws Exception {
+		insertPostsOfTwoUsers();
+		this.mockMvc.perform(get(POSTS).param("query", "kpi").with(TestUsers.signedIn()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.posts[*].id", contains(22, 21, 2, 1)));
+	}
 
 	@Test
 	void listsPublicPostsMatchingTitleOrContentIgnoringCaseNewestFirst() throws Exception {

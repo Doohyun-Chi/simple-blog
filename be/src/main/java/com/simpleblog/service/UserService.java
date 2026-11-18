@@ -8,6 +8,7 @@ import java.util.Locale;
 import com.simpleblog.entity.BlogUser;
 import com.simpleblog.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,6 +17,9 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class UserService {
+
+	/** The viewer id of a visitor who is not signed in. Ids start at 1, so it never matches an author. */
+	public static final long ANONYMOUS = 0;
 
 	static final String GOOGLE = "google";
 
@@ -37,6 +41,11 @@ public class UserService {
 	/** The id to record as the author or owner of what a signed-in Google user creates. */
 	public long idOf(String email) {
 		return registration(email, GOOGLE).id();
+	}
+
+	/** The id of whoever is reading: the signed-in user's, or {@link #ANONYMOUS} (no user has it) for an anonymous visitor. */
+	public long viewerId(OidcUser user) {
+		return user == null ? ANONYMOUS : idOf(user.getEmail());
 	}
 
 	private BlogUser register(String email, String provider) {

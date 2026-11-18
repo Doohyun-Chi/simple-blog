@@ -33,9 +33,9 @@ public class PostController {
 	}
 
 	@GetMapping("/posts")
-	public PostList listOfPosts(@RequestParam(defaultValue = "keyword") String queryType,
+	public PostList listOfPosts(@AuthenticationPrincipal OidcUser user, @RequestParam(defaultValue = "keyword") String queryType,
 			@RequestParam(required = false) String query, @RequestParam(required = false) Integer limit) {
-		return this.postService.listOfPosts(PostQueryType.of(queryType), query, limit);
+		return this.postService.listOfPosts(this.userService.viewerId(user), PostQueryType.of(queryType), query, limit);
 	}
 
 	@GetMapping("/post/{slug}")

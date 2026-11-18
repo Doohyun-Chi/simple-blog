@@ -15,20 +15,21 @@ import org.springframework.data.repository.Repository;
  */
 public interface PostRepository extends Repository<Post, Long> {
 
-	@Query("select p from Post p where p.type = 'page' and p.status = 'publish' order by p.id")
-	List<Post> listOfPublishedPages();
+	/** The published pages and, whatever their status, the pages of this viewer. */
+	@Query("select p from Post p where p.type = 'page' and (p.status = 'publish' or p.authorId = :viewerId) order by p.id")
+	List<Post> listOfPagesVisibleTo(long viewerId);
 
 	/**
-	 * Published posts whose title or content matches the LIKE pattern, newest first. The pattern must be lowercase and
+	 * Published posts, and whatever their status the posts of this viewer, whose title or content matches the LIKE pattern, newest first. The pattern must be lowercase and
 	 * escaped with {@code \}; see LikePattern. The pageable only limits the count; the order is fixed. Selects summaries
 	 * only, so post content is never loaded; the date is UTC, see PostSummary#inZone.
 	 */
 	@Query("""
 			select new com.simpleblog.dto.PostSummary(p.id, p.title, p.slug, p.createdAt) from Post p
-			where p.type = 'post' and p.status = 'publish'
+			where p.type = 'post' and (p.status = 'publish' or p.authorId = :viewerId)
 			  and (lower(p.title) like :pattern escape '\\' or lower(p.content) like :pattern escape '\\')
 			order by p.createdAt desc, p.id desc""")
-	List<PostSummary> listOfPublishedPostsContaining(String pattern, Pageable pageable);
+	List<PostSummary> listOfPostsContaining(String pattern, long viewerId, Pageable pageable);
 
 	Post save(Post post);
 

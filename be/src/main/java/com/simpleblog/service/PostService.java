@@ -58,9 +58,9 @@ public class PostService {
 		this.slugMaxLength = slugMaxLength;
 	}
 
-	/** Without a query every published post matches. Without a limit every match is returned. */
+	/** The published posts plus every post of the viewer whatever its status. Without a query every one of them matches. Without a limit every match is returned. */
 	@Transactional(readOnly = true)
-	public PostList listOfPosts(PostQueryType queryType, String query, Integer limit) {
+	public PostList listOfPosts(long viewerId, PostQueryType queryType, String query, Integer limit) {
 		if (query != null && query.isBlank()) {
 			throw new InvalidPostQueryException("query must contain at least one non-whitespace character");
 		}
@@ -68,7 +68,7 @@ public class PostService {
 			throw new UnsupportedPostQueryTypeException(queryType);
 		}
 		String pattern = this.likePattern.containing(query == null ? "" : query);
-		return new PostList(this.postRepository.listOfPublishedPostsContaining(pattern, pageOf(limit))
+		return new PostList(this.postRepository.listOfPostsContaining(pattern, viewerId, pageOf(limit))
 			.stream()
 			.map((summary) -> summary.inZone(this.clock.getZone()))
 			.toList());

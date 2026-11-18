@@ -13,13 +13,16 @@ export interface PostListRequest {
   limit?: number
 }
 
-/** Calls `GET /public/api/v1/posts` (operationId: listOfPosts). Only the given parameters are sent. */
+/**
+ * Calls `GET /public/api/v1/posts` (operationId: listOfPosts). Only the given parameters are sent. The session cookie goes
+ * along, as the backend adds the signed-in user's own unpublished posts to the list.
+ */
 export async function listOfPosts(request: PostListRequest, signal?: AbortSignal): Promise<PostSummary[]> {
   const params = new URLSearchParams()
   for (const [name, value] of Object.entries(request)) {
     params.set(name, String(value))
   }
-  const body = await requestJson<PostList>(`${POSTS_PATH}?${params}`, { signal })
+  const body = await requestJson<PostList>(`${POSTS_PATH}?${params}`, { signal, credentials: 'include' })
   return body.posts
 }
 

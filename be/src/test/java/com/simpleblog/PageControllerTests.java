@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -34,6 +35,35 @@ class PageControllerTests {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
+	private void insertPagesOfTwoUsers() {
+		this.jdbcTemplate.update("""
+				insert into tb_user (ID, EMAIL, PROVIDER, REGISTERED_DATE) values
+				(201, 'owner@example.com', 'google', now()), (202, 'other@example.com', 'google', now())""");
+		this.jdbcTemplate.update("""
+				insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
+				(21, 'My draft page', '', 'my-draft', 'page', 'draft', 201, '2020-01-01 00:00:00', '2020-01-01 00:00:00'),
+				(22, 'Their draft page', '', 'their-draft', 'page', 'private', 202, '2020-01-01 00:00:00', '2020-01-01 00:00:00'),
+				(31, 'My draft post', '', 'my-draft-post', 'post', 'draft', 201, '2020-01-01 00:00:00', '2020-01-01 00:00:00')""");
+	}
+
+	@Test
+	void anAnonymousVisitorDoesNotSeeUnpublishedPages() throws Exception {
+		insertPagesOfTwoUsers();
+		this.mockMvc.perform(get("/public/api/v1/pages"))
+			.andExpect(jsonPath("$.pages[*].id", contains(2, 10, 11)));
+	}
+
+	@Test
+	void aSignedInUserAlsoSeesTheirOwnUnpublishedPagesButNotOthers() throws Exception {
+		insertPagesOfTwoUsers();
+		this.mockMvc.perform(get("/public/api/v1/pages").with(TestUsers.signedIn()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.pages[*].id", contains(2, 10, 11, 21)));
+	}
 
 	@Test
 	void listsOnlyPublishedPagesOrderedById() throws Exception {

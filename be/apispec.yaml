@@ -153,7 +153,7 @@ paths:
     get:
       summary: List all published pages
       description: >
-        Returns every published page (tb_post.type 'page', tb_post.status 'publish'), ordered by id. The table keeps no
+        Returns every published page (tb_post.type 'page', tb_post.status 'publish') for anonymous users or all pages belongs to sign-in user, ordered by id. The table keeps no
         parent or order, so parentId is always null and menuOrder always 0; the fields stay for compatibility.
         Page content is not included.
       operationId: listOfPages
@@ -186,7 +186,7 @@ paths:
     get:
       summary: List published posts matching a search query
       description: >
-        Returns published posts (tb_post.type 'post', tb_post.status 'publish') that match the query,
+        Returns published posts (tb_post.type 'post', tb_post.status 'publish') or all pages belongs to sign-in user that match the query,
         ordered by creation date newest first (tb_post.created_datetime descending, then id descending). Post content
         is not included. Without query, every published post matches, so the call also serves as the recent posts
         list (use limit). The client sends a search when the user presses Enter in the search input, and does not
