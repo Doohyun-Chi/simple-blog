@@ -11,23 +11,23 @@ import org.springframework.data.repository.Repository;
 
 /**
  * Extends {@link Repository} rather than JpaRepository on purpose, so the only write is {@link #save} and nothing
- * can delete a row of the WordPress table.
+ * can delete a row of TB_POST.
  */
 public interface PostRepository extends Repository<Post, Long> {
 
-	@Query("select p from Post p where p.type = 'page' and p.status = 'publish' order by p.menuOrder, p.id")
+	@Query("select p from Post p where p.type = 'page' and p.status = 'publish' order by p.id")
 	List<Post> listOfPublishedPages();
 
 	/**
-	 * Published, unprotected posts whose title or content matches the LIKE pattern, newest first. The pattern must be
-	 * lowercase and escaped with {@code \}; see LikePattern. The pageable only limits the count; the order is fixed.
-	 * Selects summaries only, so post content is never loaded.
+	 * Published posts whose title or content matches the LIKE pattern, newest first. The pattern must be lowercase and
+	 * escaped with {@code \}; see LikePattern. The pageable only limits the count; the order is fixed. Selects summaries
+	 * only, so post content is never loaded; the date is UTC, see PostSummary#inZone.
 	 */
 	@Query("""
-			select new com.simpleblog.dto.PostSummary(p.id, p.title, p.slug, p.publishedAtLocal) from Post p
-			where p.type = 'post' and p.status = 'publish' and p.password = ''
+			select new com.simpleblog.dto.PostSummary(p.id, p.title, p.slug, p.createdAt) from Post p
+			where p.type = 'post' and p.status = 'publish'
 			  and (lower(p.title) like :pattern escape '\\' or lower(p.content) like :pattern escape '\\')
-			order by p.publishedAtLocal desc, p.id desc""")
+			order by p.createdAt desc, p.id desc""")
 	List<PostSummary> listOfPublishedPostsContaining(String pattern, Pageable pageable);
 
 	Post save(Post post);
@@ -44,7 +44,7 @@ public interface PostRepository extends Repository<Post, Long> {
 	@Query("select p from Post p where p.slug = :slug and p.type = 'post'")
 	Optional<Post> writablePost(String slug);
 
-	/** The row with this slug, of any type, status or password. post_name is not unique across types. */
+	/** The row with this slug, of any type or status. SLUG is unique across all of them, so there is at most one. */
 	@Query("select p from Post p where p.slug = :slug")
 	Optional<Post> post(String slug);
 

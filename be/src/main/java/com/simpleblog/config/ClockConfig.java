@@ -6,7 +6,7 @@ import java.time.ZoneId;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** The site's clock. WordPress dates in wp_posts are in the site's local time zone, Asia/Seoul. */
+/** The site's clock. The site's local time zone for the dates API readers see (TB_POST keeps UTC), Asia/Seoul. */
 @Configuration
 public class ClockConfig {
 

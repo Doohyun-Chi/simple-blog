@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Component;
 
 /**
- * Converts a decoded slug to the form WordPress stores in {@code wp_posts.post_name}. WordPress percent-encodes every
+ * Converts a decoded slug to the form stored in {@code TB_POST.SLUG}, as WordPress had it. WordPress percent-encodes every
  * non-ASCII UTF-8 byte with lowercase hex ({@code utf8_uri_encode} then {@code strtolower}) and keeps ASCII as is, so
  * {@code 큰} is stored as {@code %ed%81%b0}.
  */

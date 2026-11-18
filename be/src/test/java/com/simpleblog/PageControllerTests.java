@@ -23,13 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @Sql(statements = """
-		insert into wp_posts (ID, post_title, post_name, post_type, post_status, post_parent, menu_order,
-		  post_date_gmt, post_modified_gmt) values
-		(10, 'Reading', 'reading', 'page', 'publish', 0, 1, '2017-06-04 14:29:56', '2019-09-22 11:08:17'),
-		(11, 'Reading 2019', 'reading-2019', 'page', 'publish', 10, 1, '2019-02-07 00:41:58', '2020-04-16 15:27:54'),
-		(2, 'About', 'about', 'page', 'publish', 0, 0, '2016-03-14 02:36:24', '2024-03-01 23:57:29'),
-		(20, 'Draft page', 'draft', 'page', 'draft', 0, 0, '2020-01-01 00:00:00', '2020-01-01 00:00:00'),
-		(30, 'A blog post', 'a-post', 'post', 'publish', 0, 0, '2020-01-01 00:00:00', '2020-01-01 00:00:00');
+		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
+		(10, 'Reading', '', 'reading', 'page', 'publish', 1, '2017-06-04 14:29:56', '2019-09-22 11:08:17'),
+		(11, 'Reading 2019', '', 'reading-2019', 'page', 'publish', 1, '2019-02-07 00:41:58', '2020-04-16 15:27:54'),
+		(2, 'About', '', 'about', 'page', 'publish', 1, '2016-03-14 02:36:24', '2024-03-01 23:57:29'),
+		(20, 'Draft page', '', 'draft', 'page', 'draft', 1, '2020-01-01 00:00:00', '2020-01-01 00:00:00'),
+		(30, 'A blog post', '', 'a-post', 'post', 'publish', 1, '2020-01-01 00:00:00', '2020-01-01 00:00:00');
 		""")
 class PageControllerTests {
 
@@ -37,7 +36,7 @@ class PageControllerTests {
 	private MockMvc mockMvc;
 
 	@Test
-	void listsOnlyPublishedPagesOrderedByMenuOrderThenId() throws Exception {
+	void listsOnlyPublishedPagesOrderedById() throws Exception {
 		this.mockMvc.perform(get("/public/api/v1/pages"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.pages", hasSize(3)))
@@ -53,7 +52,7 @@ class PageControllerTests {
 			.andExpect(jsonPath("$.pages[0].menuOrder").value(0))
 			.andExpect(jsonPath("$.pages[0].publishedAt").value("2016-03-14T02:36:24Z"))
 			.andExpect(jsonPath("$.pages[0].modifiedAt").value("2024-03-01T23:57:29Z"))
-			.andExpect(jsonPath("$.pages[2].parentId").value(10));
+			.andExpect(jsonPath("$.pages[2].parentId").value(nullValue()));
 	}
 
 }

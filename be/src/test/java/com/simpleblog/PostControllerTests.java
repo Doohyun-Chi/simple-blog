@@ -22,20 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @Sql(statements = """
-		insert into wp_posts (ID, post_title, post_content, post_password, post_name, post_type, post_status,
-		  post_parent, menu_order, post_date, post_modified, post_date_gmt, post_modified_gmt) values
-		(1, 'KPI', '<p>body</p>', '', 'kpi', 'post', 'publish', 0, 0,
-		  '2026-11-05 09:45:11', '2026-11-06 10:00:00', '2026-11-05 00:45:11', '2026-11-06 01:00:00'),
-		(2, 'Draft', 'draft body', '', 'a-draft', 'post', 'draft', 0, 0,
-		  '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(3, 'Private', 'private body', '', 'a-private', 'post', 'private', 0, 0,
-		  '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(4, 'Protected', 'secret body', 'pw', 'a-protected', 'post', 'publish', 0, 0,
-		  '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(5, 'About', 'page body', '', 'about', 'page', 'publish', 0, 0,
-		  '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(6, '큰기업', 'korean body', '', '%ed%81%b0%ea%b8%b0%ec%97%85-kpi', 'post', 'publish', 0, 0,
-		  '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
+		(1, 'KPI', '<p>body</p>', 'kpi', 'post', 'publish', 1, '2026-11-05 00:45:11', '2026-11-06 01:00:00'),
+		(2, 'Draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
+		(3, 'Private', 'private body', 'a-private', 'post', 'private', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
+		(5, 'About', 'page body', 'about', 'page', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
+		(6, '큰기업', 'korean body', '%ed%81%b0%ea%b8%b0%ec%97%85-kpi', 'post', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 		""")
 class PostControllerTests {
 

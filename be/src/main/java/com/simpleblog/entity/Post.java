@@ -8,18 +8,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
- * The WordPress {@code wp_posts} table. Pages are rows with {@code post_type = 'page'} and posts are rows with
- * {@code post_type = 'post'}. {@code post_date} and {@code post_modified} are in the site's local time; the
- * {@code *_gmt} columns hold the same moments in UTC.
+ * The {@code TB_POST} table, see be/DBSCHEMA.md. Pages are rows with {@code TYPE = 'page'} and posts are rows with
+ * {@code TYPE = 'post'}. Both datetimes are UTC; readers get them converted to the site's local time where the API
+ * says so.
  * <p>
  * Rows are only ever created as drafts of type post ({@link #draftOf}) and revised in title, slug and content
- * ({@link #revise}). The columns WordPress declares NOT NULL without a default (excerpt, to_ping, pinged and
- * content_filtered) are mapped so an insert can set them to an empty string.
+ * ({@link #revise}).
  */
 @Entity
-@Table(name = "wp_posts")
+@Table(name = "TB_POST", uniqueConstraints = @UniqueConstraint(name = "IDX_TB_POST_SLUG", columnNames = "SLUG"))
 public class Post {
 
 	@Id
@@ -27,87 +27,50 @@ public class Post {
 	@Column(name = "ID")
 	private Long id;
 
-	@Column(name = "post_author")
+	@Column(name = "AUTHOR_ID")
 	private Long authorId;
 
-	@Column(name = "post_title")
+	@Column(name = "TITLE")
 	private String title;
 
-	@Column(name = "post_content")
+	@Column(name = "CONTENT")
 	private String content;
 
-	@Column(name = "post_excerpt")
-	private String excerpt;
-
-	@Column(name = "to_ping")
-	private String toPing;
-
-	@Column(name = "pinged")
-	private String pinged;
-
-	@Column(name = "post_content_filtered")
-	private String contentFiltered;
-
-	@Column(name = "post_password")
-	private String password;
-
-	@Column(name = "post_name")
+	@Column(name = "SLUG")
 	private String slug;
 
-	@Column(name = "post_type")
+	@Column(name = "TYPE")
 	private String type;
 
-	@Column(name = "post_status")
+	@Column(name = "STATUS")
 	private String status;
 
-	@Column(name = "post_parent")
-	private Long parentId;
+	@Column(name = "CREATED_DATETIME")
+	private LocalDateTime createdAt;
 
-	@Column(name = "menu_order")
-	private int menuOrder;
-
-	@Column(name = "post_date")
-	private LocalDateTime publishedAtLocal;
-
-	@Column(name = "post_modified")
-	private LocalDateTime modifiedAtLocal;
-
-	@Column(name = "post_date_gmt")
-	private LocalDateTime publishedAtGmt;
-
-	@Column(name = "post_modified_gmt")
-	private LocalDateTime modifiedAtGmt;
+	@Column(name = "MODIFIED_DATETIME")
+	private LocalDateTime modifiedAt;
 
 	protected Post() {
 	}
 
-	/** A new draft post. The slug is the stored form; see SlugEncoder. Both times are the creation moment. */
-	public static Post draftOf(long authorId, String title, String slug, String content, LocalDateTime local,
-			LocalDateTime gmt) {
+	/** A new draft post. The slug is the stored form; see SlugEncoder. {@code utcNow} is both of its times. */
+	public static Post draftOf(long authorId, String title, String slug, String content, LocalDateTime utcNow) {
 		Post post = new Post();
 		post.authorId = authorId;
 		post.type = "post";
 		post.status = "draft";
-		post.password = "";
-		post.parentId = 0L;
-		post.menuOrder = 0;
-		post.excerpt = "";
-		post.toPing = "";
-		post.pinged = "";
-		post.contentFiltered = "";
-		post.publishedAtLocal = local;
-		post.publishedAtGmt = gmt;
-		post.revise(title, slug, content, local, gmt);
+		post.createdAt = utcNow;
+		post.revise(title, slug, content, utcNow);
 		return post;
 	}
 
 	/** Replaces title, slug and content and records the modification time. The status stays as it is. */
-	public void revise(String title, String slug, String content, LocalDateTime local, LocalDateTime gmt) {
+	public void revise(String title, String slug, String content, LocalDateTime utcNow) {
 		this.title = title;
 		this.slug = slug;
 		this.content = content;
-		this.modifiedAtLocal = local;
-		this.modifiedAtGmt = gmt;
+		this.modifiedAt = utcNow;
 	}
 
 	public Long id() {
@@ -130,28 +93,14 @@ public class Post {
 		return this.status;
 	}
 
-	public Long parentId() {
-		return this.parentId;
+	/** UTC. */
+	public LocalDateTime createdAt() {
+		return this.createdAt;
 	}
 
-	public int menuOrder() {
-		return this.menuOrder;
-	}
-
-	public LocalDateTime publishedAtLocal() {
-		return this.publishedAtLocal;
-	}
-
-	public LocalDateTime modifiedAtLocal() {
-		return this.modifiedAtLocal;
-	}
-
-	public LocalDateTime publishedAtGmt() {
-		return this.publishedAtGmt;
-	}
-
-	public LocalDateTime modifiedAtGmt() {
-		return this.modifiedAtGmt;
+	/** UTC. */
+	public LocalDateTime modifiedAt() {
+		return this.modifiedAt;
 	}
 
 }

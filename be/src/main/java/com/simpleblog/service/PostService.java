@@ -68,7 +68,10 @@ public class PostService {
 			throw new UnsupportedPostQueryTypeException(queryType);
 		}
 		String pattern = this.likePattern.containing(query == null ? "" : query);
-		return new PostList(this.postRepository.listOfPublishedPostsContaining(pattern, pageOf(limit)));
+		return new PostList(this.postRepository.listOfPublishedPostsContaining(pattern, pageOf(limit))
+			.stream()
+			.map((summary) -> summary.inZone(this.clock.getZone()))
+			.toList());
 	}
 
 	private Pageable pageOf(Integer limit) {
@@ -84,19 +87,19 @@ public class PostService {
 	@Transactional(readOnly = true)
 	public PostBody postBody(String slug) {
 		return this.postRepository.post(this.slugEncoder.encode(slug))
-			.map(PostBody::from)
+			.map((post) -> PostBody.from(post, this.clock.getZone()))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 	}
 
-	/** Creates a draft post authored by the user with this id. The slug must not be used by any row of wp_posts. */
+	/** Creates a draft post authored by the user with this id. The slug must not be used by any row of TB_POST. */
 	@Transactional
 	public PostBody createPost(long authorId, PostInput input) {
 		String slug = storedSlugOf(input);
 		if (this.postRepository.slugInUse(slug)) {
 			throw new DuplicatePostSlugException(input.slug());
 		}
-		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), localNow(), gmtNow());
-		return PostBody.from(this.postRepository.save(post));
+		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), utcNow());
+		return PostBody.from(this.postRepository.save(post), this.clock.getZone());
 	}
 
 	/** Replaces title, slug and content of the post with the path slug; a different body slug renames it. */
@@ -108,20 +111,16 @@ public class PostService {
 		if (this.postRepository.slugInUseExcept(newSlug, post.id())) {
 			throw new DuplicatePostSlugException(input.slug());
 		}
-		post.revise(input.title(), newSlug, input.content(), localNow(), gmtNow());
-		return PostBody.from(post);
+		post.revise(input.title(), newSlug, input.content(), utcNow());
+		return PostBody.from(post, this.clock.getZone());
 	}
 
-	/** Now in the site's local time, in whole seconds like the DATETIME columns and the spec's date format. */
-	private LocalDateTime localNow() {
-		return LocalDateTime.now(this.clock).truncatedTo(ChronoUnit.SECONDS);
-	}
-
-	private LocalDateTime gmtNow() {
+	/** Now in UTC, in whole seconds like the spec's date format. */
+	private LocalDateTime utcNow() {
 		return LocalDateTime.now(this.clock.withZone(ZoneOffset.UTC)).truncatedTo(ChronoUnit.SECONDS);
 	}
 
-	/** Checks the input against be/apispec.yaml and returns the slug in the form WordPress stores. */
+	/** Checks the input against be/apispec.yaml and returns the slug in the stored form. */
 	private String storedSlugOf(PostInput input) {
 		requireValidTitle(input.title());
 		if (input.content() == null) {

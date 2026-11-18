@@ -153,7 +153,8 @@ paths:
     get:
       summary: List all published pages
       description: >
-        Returns every published page, ordered by menuOrder and then id.
+        Returns every published page (tb_post.type 'page', tb_post.status 'publish'), ordered by id. The table keeps no
+        parent or order, so parentId is always null and menuOrder always 0; the fields stay for compatibility.
         Page content is not included.
       operationId: listOfPages
       tags:
@@ -177,7 +178,7 @@ paths:
                   - id: 646
                     title: 글읽기( ~ 2019)
                     slug: reading-in-2019
-                    parentId: 383
+                    parentId: null
                     menuOrder: 0
                     publishedAt: '2019-02-07T00:41:58Z'
                     modifiedAt: '2020-04-16T15:27:54Z'
@@ -185,8 +186,8 @@ paths:
     get:
       summary: List published posts matching a search query
       description: >
-        Returns published posts (post_type 'post', post_status 'publish', no password) that match the query,
-        ordered by creation date newest first (wp_posts.post_date descending, then ID descending). Post content
+        Returns published posts (tb_post.type 'post', tb_post.status 'publish') that match the query,
+        ordered by creation date newest first (tb_post.created_datetime descending, then id descending). Post content
         is not included. Without query, every published post matches, so the call also serves as the recent posts
         list (use limit). The client sends a search when the user presses Enter in the search input, and does not
         send it when the input is blank.
@@ -198,8 +199,8 @@ paths:
           in: query
           required: false
           description: >
-            How query is matched. keyword: case-insensitive substring match against wp_posts.post_title or
-            wp_posts.post_content; a post matches if either contains the query. The content match runs on the
+            How query is matched. keyword: case-insensitive substring match against tb_post.title or
+            tb_post.content; a post matches if either contains the query. The content match runs on the
             stored content, so it can also hit block comments and markup.
             tag: reserved; the matching rule is not defined yet and the server responds with 501.
           schema:
@@ -254,7 +255,7 @@ paths:
     post:
       summary: Create a post
       description: >
-        Creates a post as a draft (wp_posts.post_status 'draft'); status cannot be set by the client. The author (wp_posts.post_author) is the signed-in user's id in tb_user. Publishing is
+        Creates a post as a draft (tb_post.status 'draft'); status cannot be set by the client. The author (tb_post.author_id) is the signed-in user's id in tb_user. Publishing is
         not part of this contract yet. The created post is returned with its stored values.
       operationId: createPost
       tags:
@@ -322,7 +323,7 @@ paths:
         '403':
           description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
         '404':
-          description: No row in wp_posts has the path slug. The response body is not part of the contract.
+          description: No row in tb_post has the path slug. The response body is not part of the contract.
         '409':
           description: Another post already has the body slug. The response body is not part of the contract.
         '500':
@@ -330,7 +331,7 @@ paths:
     get:
       summary: Read a body of a post or a page.
       description: >
-        Returns the wp_posts row whose slug matches, whatever its type, status or password. For unknown slugs, it responds with 404.
+        Returns the tb_post row whose slug matches, whatever its type or status. The slug is unique across all types. For unknown slugs, it responds with 404.
       operationId: postBody
       tags:
         - Posts
@@ -340,8 +341,7 @@ paths:
           required: true
           description: >
             The post's slug as readers see it, URL-encoded once like any path segment (e.g. 큰기업 is sent as
-            %ED%81%B0...). WordPress stores non-ASCII slugs in wp_posts.post_name already percent-encoded in
-            lowercase; the server converts to that form before matching, so clients never send the stored form.
+            %ED%81%B0...). tb_post.slug keeps non-ASCII slugs percent-encoded in lowercase, as WordPress stored them; the server converts to that form before matching, so clients never send the stored form.
           schema:
             type: string
           example: kpi-power-in-big-company
@@ -360,7 +360,7 @@ paths:
                 date: '2026-11-05T09:45:11'
                 modified: '2026-11-05T09:45:11'
         '404':
-          description: No row in wp_posts has this slug. The response body is not part of the contract.
+          description: No row in tb_post has this slug. The response body is not part of the contract.
   /public/api/v1/medias:
     get:
       summary: List all media items
@@ -589,18 +589,18 @@ components:
           minLength: 1
           maxLength: 130
           pattern: '\S'
-          description: wp_posts.post_title; must contain a non-whitespace character, at most 130 characters
+          description: tb_post.title; must contain a non-whitespace character, at most 130 characters
         slug:
           type: string
           minLength: 1
           maxLength: 200
           pattern: '^[A-Za-z-]+$'
           description: |
-            User friendly and unique URL, stored at wp_posts.post_name. Only English letters (A-Z, a-z) and '-' are
+            User friendly and unique URL, stored at tb_post.slug. Only English letters (A-Z, a-z) and '-' are
             allowed: no space, digit, non-ASCII or other character. Anything else is rejected with 400.
         content:
           type: string
-          description: wp_posts.post_content
+          description: tb_post.content
     PostList:
       type: object
       required:
@@ -623,15 +623,15 @@ components:
           format: int64
         title:
           type: string
-          description: wp_posts.post_title
+          description: tb_post.title
         slug:
           type: string
           description: >
-            wp_posts.post_name as stored. Non-ASCII slugs are lowercase percent-encoded, so decode once
+            tb_post.slug as stored. Non-ASCII slugs are lowercase percent-encoded, so decode once
             to get the slug readers see before building /post/{slug} or calling /public/api/v1/post/{slug}.
         date:
           type: string
-          description: wp_posts.post_date in the same local format as PostBody.date
+          description: tb_post.created_datetime in the same local format as PostBody.date
           examples:
             - '2026-11-05T09:45:11'
     PostBody:
@@ -646,30 +646,30 @@ components:
       properties:
         title:
           type: string
-          description: wp_posts.post_title
+          description: tb_post.title
         slug:
           type: string
-          description: User friendly and unique URL, stored at wp_posts.post_name
+          description: User friendly and unique URL, stored at tb_post.slug
         content:
           type: string
           description: >
-            wp_posts.post_content as stored, including WordPress block comments and shortcodes.
+            tb_post.content as stored. Rows migrated from WordPress still hold its HTML, block comments and shortcodes.
             It is not rendered HTML.
         status:
           type: string
-          description: wp_posts.post_status as stored (e.g. publish, draft, private); rows of any status are returned
+          description: tb_post.status as stored (e.g. publish, draft, private); rows of any status are returned
           examples:
             - publish
         date:
           type: string
           description: >
-            wp_posts.post_date, the publish time in the site's local time zone (Asia/Seoul),
+            tb_post.created_datetime (UTC), shown in the site's local time zone (Asia/Seoul),
             formatted as yyyy-MM-ddTHH:mm:ss with no offset
           examples:
             - '2026-11-05T09:45:11'
         modified:
           type: string
-          description: wp_posts.post_modified, the last modified time in the same local format as date
+          description: tb_post.modified_datetime (UTC), shown in the same local format as date
           examples:
             - '2026-11-05T09:45:11'
     PageList:
@@ -705,9 +705,10 @@ components:
             - integer
             - 'null'
           format: int64
-          description: Parent page id, or null for a top-level page
+          description: Always null: tb_post has no parent
         menuOrder:
           type: integer
+          description: Always 0: tb_post has no menu order
         publishedAt:
           type: string
           format: date-time

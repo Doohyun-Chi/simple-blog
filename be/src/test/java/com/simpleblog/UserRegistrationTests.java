@@ -44,7 +44,7 @@ class UserRegistrationTests {
 	void aPostIsAuthoredByTheRegisteredUser() throws Exception {
 		createPost("Owner@Example.com ", "first");
 		long id = userId("owner@example.com");
-		assertThat(this.jdbc.queryForObject("select post_author from wp_posts where post_name = 'first'", Long.class)).isEqualTo(id);
+		assertThat(this.jdbc.queryForObject("select author_id from tb_post where slug = 'first'", Long.class)).isEqualTo(id);
 	}
 
 	@Test
@@ -54,7 +54,7 @@ class UserRegistrationTests {
 		createPost("second@example.com", "three");
 		assertThat(this.jdbc.queryForObject("select count(*) from tb_user", Integer.class)).isEqualTo(2);
 		assertThat(userId("second@example.com")).isNotEqualTo(userId(TestUsers.OWNER));
-		assertThat(this.jdbc.queryForObject("select count(distinct post_author) from wp_posts where post_name in ('one', 'two')", Integer.class))
+		assertThat(this.jdbc.queryForObject("select count(distinct author_id) from tb_post where slug in ('one', 'two')", Integer.class))
 			.isEqualTo(1);
 	}
 
@@ -64,7 +64,7 @@ class UserRegistrationTests {
 		long id = userId(TestUsers.OWNER);
 		createPost(TestUsers.OWNER, "kept");
 		assertThat(this.jdbc.queryForObject("select count(*) from tb_user", Integer.class)).isEqualTo(1);
-		assertThat(this.jdbc.queryForObject("select post_author from wp_posts where post_name = 'kept'", Long.class)).isEqualTo(id);
+		assertThat(this.jdbc.queryForObject("select author_id from tb_post where slug = 'kept'", Long.class)).isEqualTo(id);
 	}
 
 	@Test

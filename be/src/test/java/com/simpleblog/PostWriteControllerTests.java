@@ -40,16 +40,11 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @Sql(statements = """
-		insert into wp_posts (ID, post_title, post_content, post_password, post_name, post_type, post_status,
-		  post_parent, menu_order, post_date, post_modified, post_date_gmt, post_modified_gmt) values
-		(1001, 'KPI', '<p>old</p>', '', 'kpi', 'post', 'publish', 0, 0,
-		  '2020-01-01 09:00:00', '2020-01-02 09:00:00', '2020-01-01 00:00:00', '2020-01-02 00:00:00'),
-		(1002, 'A draft', 'draft body', '', 'a-draft', 'post', 'draft', 0, 0,
-		  '2021-01-01 09:00:00', '2021-01-01 09:00:00', '2021-01-01 00:00:00', '2021-01-01 00:00:00'),
-		(1003, 'About', 'page body', '', 'about', 'page', 'publish', 0, 0,
-		  '2022-01-01 09:00:00', '2022-01-01 09:00:00', '2022-01-01 00:00:00', '2022-01-01 00:00:00'),
-		(1004, 'Image', '', '', 'hi-there', 'attachment', 'inherit', 0, 0,
-		  '2023-01-01 09:00:00', '2023-01-01 09:00:00', '2023-01-01 00:00:00', '2023-01-01 00:00:00');
+		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
+		(1001, 'KPI', '<p>old</p>', 'kpi', 'post', 'publish', 1, '2020-01-01 00:00:00', '2020-01-02 00:00:00'),
+		(1002, 'A draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2021-01-01 00:00:00', '2021-01-01 00:00:00'),
+		(1003, 'About', 'page body', 'about', 'page', 'publish', 1, '2022-01-01 00:00:00', '2022-01-01 00:00:00'),
+		(1004, 'Image', '', 'hi-there', 'attachment', 'inherit', 1, '2023-01-01 00:00:00', '2023-01-01 00:00:00');
 		""")
 class PostWriteControllerTests {
 
@@ -96,7 +91,7 @@ class PostWriteControllerTests {
 
 	private Map<String, Object> row(String storedSlug) {
 		this.entityManager.flush();
-		return this.jdbcTemplate.queryForMap("select * from wp_posts where post_name = ?", storedSlug);
+		return this.jdbcTemplate.queryForMap("select * from tb_post where slug = ?", storedSlug);
 	}
 
 	@Test
@@ -111,15 +106,10 @@ class PostWriteControllerTests {
 			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"));
 		Map<String, Object> row = row("new-thought");
 		org.assertj.core.api.Assertions.assertThat(row)
-			.containsEntry("POST_TYPE", "post")
-			.containsEntry("POST_STATUS", "draft")
-			.containsEntry("POST_AUTHOR", this.jdbcTemplate.queryForObject("select id from tb_user where email = ?", Long.class, TestUsers.OWNER))
-			.containsEntry("POST_PASSWORD", "")
-			.containsEntry("POST_EXCERPT", "")
-			.containsEntry("TO_PING", "")
-			.containsEntry("PINGED", "")
-			.containsEntry("POST_CONTENT_FILTERED", "");
-		org.assertj.core.api.Assertions.assertThat(row.get("POST_DATE_GMT").toString()).startsWith("2026-11-17 01:30:00");
+			.containsEntry("TYPE", "post")
+			.containsEntry("STATUS", "draft")
+			.containsEntry("AUTHOR_ID", this.jdbcTemplate.queryForObject("select id from tb_user where email = ?", Long.class, TestUsers.OWNER));
+		org.assertj.core.api.Assertions.assertThat(row.get("CREATED_DATETIME").toString()).startsWith("2026-11-17 01:30:00");
 	}
 
 	@Test
@@ -170,7 +160,7 @@ class PostWriteControllerTests {
 			.andExpect(jsonPath("$.status").value("publish"))
 			.andExpect(jsonPath("$.date").value("2020-01-01T09:00:00"))
 			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"));
-		org.assertj.core.api.Assertions.assertThat(row("kpi").get("POST_MODIFIED_GMT").toString())
+		org.assertj.core.api.Assertions.assertThat(row("kpi").get("MODIFIED_DATETIME").toString())
 			.startsWith("2026-11-17 01:30:00");
 	}
 
@@ -215,7 +205,7 @@ class PostWriteControllerTests {
 			.andExpect(status().isUnauthorized());
 		this.mockMvc.perform(put(POST + "/kpi").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(json("T", "kpi", "x")))
 			.andExpect(status().isUnauthorized());
-		assertThat(this.jdbcTemplate.queryForObject("select count(*) from wp_posts where post_name = 'unauth'", Integer.class))
+		assertThat(this.jdbcTemplate.queryForObject("select count(*) from tb_post where slug = 'unauth'", Integer.class))
 			.isZero();
 	}
 
