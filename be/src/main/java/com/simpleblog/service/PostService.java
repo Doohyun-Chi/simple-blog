@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.simpleblog.component.LikePattern;
@@ -27,6 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PostService {
+
+	/** The statuses a client may set. */
+	private static final Set<String> STATUSES = Set.of("draft", "publish");
 
 	private static final int MIN_LIMIT = 1;
 
@@ -99,6 +103,7 @@ public class PostService {
 			throw new DuplicatePostSlugException(input.slug());
 		}
 		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), utcNow());
+		applyStatus(post, input);
 		return PostBody.from(this.postRepository.save(post), this.clock.getZone());
 	}
 
@@ -112,7 +117,15 @@ public class PostService {
 			throw new DuplicatePostSlugException(input.slug());
 		}
 		post.revise(input.title(), newSlug, input.content(), utcNow());
+		applyStatus(post, input);
 		return PostBody.from(post, this.clock.getZone());
+	}
+
+	/** Applies the status of the input when it has one. */
+	private void applyStatus(Post post, PostInput input) {
+		if (input.status() != null) {
+			post.moveTo(input.status());
+		}
 	}
 
 	/** Now in UTC, in whole seconds like the spec's date format. */
@@ -123,6 +136,7 @@ public class PostService {
 	/** Checks the input against be/apispec.yaml and returns the slug in the stored form. */
 	private String storedSlugOf(PostInput input) {
 		requireValidTitle(input.title());
+		requireValidStatus(input.status());
 		if (input.content() == null) {
 			throw new InvalidPostException("content is required");
 		}
@@ -133,6 +147,12 @@ public class PostService {
 			throw new InvalidPostException("slug is too long: it is limited to " + this.slugMaxLength);
 		}
 		return input.slug();
+	}
+
+	private void requireValidStatus(String status) {
+		if (status != null && !STATUSES.contains(status)) {
+			throw new InvalidPostException("status must be draft or publish");
+		}
 	}
 
 	private void requireValidTitle(String title) {

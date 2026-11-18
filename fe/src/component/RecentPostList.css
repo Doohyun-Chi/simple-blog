@@ -33,6 +33,10 @@
   }
 }
 
+.recent-post-list-draft {
+  color: var(--text-draft);
+}
+
 .recent-post-list-all {
   color: var(--accent);
   font-weight: 600;

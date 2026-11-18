@@ -65,6 +65,11 @@ public class Post {
 		return post;
 	}
 
+	/** Sets the status, which the service has checked to be draft or publish. */
+	public void moveTo(String status) {
+		this.status = status;
+	}
+
 	/** Replaces title, slug and content and records the modification time. The status stays as it is. */
 	public void revise(String title, String slug, String content, LocalDateTime utcNow) {
 		this.title = title;

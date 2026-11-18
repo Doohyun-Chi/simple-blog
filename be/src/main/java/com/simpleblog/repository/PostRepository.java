@@ -25,7 +25,7 @@ public interface PostRepository extends Repository<Post, Long> {
 	 * only, so post content is never loaded; the date is UTC, see PostSummary#inZone.
 	 */
 	@Query("""
-			select new com.simpleblog.dto.PostSummary(p.id, p.title, p.slug, p.createdAt) from Post p
+			select new com.simpleblog.dto.PostSummary(p.id, p.title, p.slug, p.status, p.createdAt) from Post p
 			where p.type = 'post' and (p.status = 'publish' or p.authorId = :viewerId)
 			  and (lower(p.title) like :pattern escape '\\' or lower(p.content) like :pattern escape '\\')
 			order by p.createdAt desc, p.id desc""")

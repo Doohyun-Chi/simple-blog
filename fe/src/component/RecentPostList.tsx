@@ -21,6 +21,7 @@ export function RecentPostList({ posts, canWrite }: RecentPostListProps) {
               href={contentPath('post', readerSlug(post.slug))}
               title={post.title}
             >
+              {post.status === 'draft' && <span className="recent-post-list-draft" aria-label="초안">* </span>}
               {post.title}
             </a>
           </li>

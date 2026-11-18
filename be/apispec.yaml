@@ -255,8 +255,8 @@ paths:
     post:
       summary: Create a post
       description: >
-        Creates a post as a draft (tb_post.status 'draft'); status cannot be set by the client. The author (tb_post.author_id) is the signed-in user's id in tb_user. Publishing is
-        not part of this contract yet. The created post is returned with its stored values.
+        Creates a post as a draft (tb_post.status 'draft') unless the body's status is 'publish', which creates it published.
+        The author (tb_post.author_id) is the signed-in user's id in tb_user. The created post is returned with its stored values.
       operationId: createPost
       tags:
         - Posts
@@ -276,7 +276,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostBody'
         '400':
-          description: A required field is missing or blank, the title is longer than 130 characters, or the slug is longer than 200 characters or has a character other than English letters and '-'. The response body is not part of the contract.
+          description: A required field is missing or blank, the title is longer than 130 characters, the slug is longer than 200 characters or has a character other than English letters and '-', or the status is neither draft nor publish. The response body is not part of the contract.
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
@@ -289,7 +289,8 @@ paths:
     put:
       summary: Update a post
       description: >
-        Replaces title, slug and content of the post identified by the path slug and leaves its status unchanged.
+        Replaces title, slug and content of the post identified by the path slug. The status is changed only when the body
+        has a status ('publish' publishes the post, 'draft' makes it a draft again); otherwise it stays as it is.
         If the body slug differs from the path slug, the post is renamed; the old slug no longer resolves.
       operationId: updatePost
       tags:
@@ -317,7 +318,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostBody'
         '400':
-          description: A required field is missing or blank, the title is longer than 130 characters, or the slug is longer than 200 characters or has a character other than English letters and '-'. The response body is not part of the contract.
+          description: A required field is missing or blank, the title is longer than 130 characters, the slug is longer than 200 characters or has a character other than English letters and '-', or the status is neither draft nor publish. The response body is not part of the contract.
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
@@ -601,6 +602,14 @@ components:
         content:
           type: string
           description: tb_post.content
+        status:
+          type: string
+          enum:
+            - draft
+            - publish
+          description: >
+            Optional. publish makes the post public, draft keeps it to its author. Left out, a created post is a
+            draft and an updated post keeps its status. Any other value is rejected with 400.
     PostList:
       type: object
       required:
@@ -616,6 +625,7 @@ components:
         - id
         - title
         - slug
+        - status
         - date
       properties:
         id:
@@ -629,6 +639,13 @@ components:
           description: >
             tb_post.slug as stored. Non-ASCII slugs are lowercase percent-encoded, so decode once
             to get the slug readers see before building /post/{slug} or calling /public/api/v1/post/{slug}.
+        status:
+          type: string
+          description: >
+            tb_post.status as stored. Anyone gets publish; draft and private rows come back only to their author
+            (see the description of the operation).
+          examples:
+            - publish
         date:
           type: string
           description: tb_post.created_datetime in the same local format as PostBody.date

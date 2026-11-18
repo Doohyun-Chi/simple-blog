@@ -75,6 +75,12 @@ class PostWriteControllerTests {
 				{"title": %s, "slug": %s, "content": %s}""".formatted(quoted(title), quoted(slug), quoted(content));
 	}
 
+	private static String jsonWithStatus(String title, String slug, String content, String status) {
+		return """
+				{"title": %s, "slug": %s, "content": %s, "status": %s}""".formatted(quoted(title), quoted(slug), quoted(content),
+				quoted(status));
+	}
+
 	private static String quoted(String value) {
 		return value == null ? "null" : "\"" + value.replace("\"", "\\\"") + "\"";
 	}
@@ -92,6 +98,32 @@ class PostWriteControllerTests {
 	private Map<String, Object> row(String storedSlug) {
 		this.entityManager.flush();
 		return this.jdbcTemplate.queryForMap("select * from tb_post where slug = ?", storedSlug);
+	}
+
+	@Test
+	void createsAPublishedPostWhenTheStatusIsPublish() throws Exception {
+		this.mockMvc.perform(created(jsonWithStatus("Out now", "out-now", "body", "publish")))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.status").value("publish"));
+	}
+
+	@Test
+	void publishesADraftByUpdatingItWithTheStatusPublish() throws Exception {
+		this.mockMvc.perform(updated("a-draft", jsonWithStatus("A draft", "a-draft", "body", "publish")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("publish"));
+	}
+
+	@Test
+	void anUpdateWithoutAStatusKeepsTheStatus() throws Exception {
+		this.mockMvc.perform(updated("a-draft", json("A draft", "a-draft", "body")))
+			.andExpect(jsonPath("$.status").value("draft"));
+	}
+
+	@Test
+	void refusesAStatusOtherThanDraftOrPublish() throws Exception {
+		this.mockMvc.perform(created(jsonWithStatus("Odd", "odd", "body", "private"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(updated("kpi", jsonWithStatus("KPI", "kpi", "body", "trash"))).andExpect(status().isBadRequest());
 	}
 
 	@Test

@@ -119,8 +119,6 @@ interface PostEditorProps {
   onSave: (input: PostInput) => Promise<boolean>
   /** The post to revise. Without it the editor starts empty. */
   initial?: PostInput
-  /** Publishes the post. While it is missing, the 공개 button stays disabled. */
-  onPublish?: () => void
 }
 
 /** The line under a field. */
@@ -133,9 +131,9 @@ function FieldHint({ note }: { note: ReactNode }) {
 }
 
 /** The line under the title: the save in progress or failed, else a warning while changes are unsaved, else the last save. */
-function noteOf(state: SaveState, unsaved: boolean): ReactNode {
+function noteOf(state: SaveState, unsaved: boolean, published: boolean): ReactNode {
   const busyOrFailed = state.status === 'saving' || state.status === 'failed'
-  return unsaved && !busyOrFailed ? '저장하지 않은 변경이 있습니다.' : saveNote(state)
+  return unsaved && !busyOrFailed ? '저장하지 않은 변경이 있습니다.' : saveNote(state, published)
 }
 
 /** Tells the writer the session ended and how to sign in again without leaving the editor, so nothing written is lost. */
@@ -154,14 +152,14 @@ function SessionExpiredNote() {
   )
 }
 
-function saveNote(state: SaveState): ReactNode {
+function saveNote(state: SaveState, published: boolean): ReactNode {
   switch (state.status) {
     case 'idle':
       return null
     case 'saving':
       return '저장 중…'
     case 'saved':
-      return <>초안으로 저장했습니다. <a href={contentPath('post', state.slug)}>보기</a></>
+      return <>{published ? '저장했습니다.' : '초안으로 저장했습니다.'} <a href={contentPath('post', state.slug)}>보기</a></>
     case 'failed':
       return SAVE_FAILURE_TEXT[state.failure]
   }
@@ -170,15 +168,16 @@ function saveNote(state: SaveState): ReactNode {
 /**
  * The writing area from fe/DESIGN.md: the title with the save and publish buttons beside it, the slug, the MDX body
  * filling the rest, and the hashtags on the last line. The title and slug limits appear as placeholders only; the
- * backend refuses longer ones. The slug is limited to the characters the spec allows as it is typed. 공개 stays
- * disabled: the spec has no publish operation, and hashtags have no field in it, so they are not sent.
+ * backend refuses longer ones. The slug is limited to the characters the spec allows as it is typed. 공개 saves
+ * the post as published. Hashtags have no field in the spec, so they are not sent.
  */
-export function PostEditor({ saveState, onSave, initial = EMPTY_POST, onPublish }: PostEditorProps) {
+export function PostEditor({ saveState, onSave, initial = EMPTY_POST }: PostEditorProps) {
   const [title, updateTitle] = useState(initial.title)
   const [slug, updateSlug] = useState(initial.slug)
   const [markdown, updateMarkdown] = useState(initial.content)
   const [fullScreen, updateFullScreen] = useState(false)
   const [saved, updateSaved] = useState<PostInput>(initial)
+  const [published, updatePublished] = useState(initial.status === 'publish')
   const keepAlive = useSessionKeepAlive()
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
@@ -191,6 +190,14 @@ export function PostEditor({ saveState, onSave, initial = EMPTY_POST, onPublish 
   async function saveNow() {
     if (await onSave(input)) {
       updateSaved(input)
+    }
+  }
+
+  /** Saves the post as published, creating it first when it was never saved. */
+  async function publishNow() {
+    if (await onSave({ ...input, status: 'publish' })) {
+      updateSaved(input)
+      updatePublished(true)
     }
   }
 
@@ -211,11 +218,16 @@ export function PostEditor({ saveState, onSave, initial = EMPTY_POST, onPublish 
               keepAlive.touch()
             }}
             />
-            <FieldHint note={noteOf(saveState, unsaved)} />
+            <FieldHint note={noteOf(saveState, unsaved, published)} />
           </div>
           <button className="post-editor-button" type="button" disabled={!canSave} onClick={() => void saveNow()}>저장</button>
-          <button className="post-editor-button post-editor-publish" type="button" disabled={!onPublish} onClick={onPublish}>
-            공개
+          <button
+            className="post-editor-button post-editor-publish"
+            type="button"
+            disabled={!canSave || published}
+            onClick={() => void publishNow()}
+          >
+            {published ? '공개됨' : '공개'}
           </button>
         </div>
         <div className="post-editor-field-group">

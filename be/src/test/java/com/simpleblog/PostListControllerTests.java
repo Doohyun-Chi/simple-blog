@@ -67,7 +67,8 @@ class PostListControllerTests {
 		insertPostsOfTwoUsers();
 		this.mockMvc.perform(get(POSTS).param("query", "kpi").with(TestUsers.signedIn()))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.posts[*].id", contains(22, 21, 2, 1)));
+			.andExpect(jsonPath("$.posts[*].id", contains(22, 21, 2, 1)))
+			.andExpect(jsonPath("$.posts[*].status", contains("private", "draft", "publish", "publish")));
 	}
 
 	@Test

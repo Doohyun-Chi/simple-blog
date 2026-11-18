@@ -8,6 +8,8 @@ export interface PostSummary {
   id: number
   title: string
   slug: string
+  /** As stored: publish, or draft or private for the signed-in user's own posts. */
+  status: string
   date: string
 }
 
@@ -42,6 +44,18 @@ export function readerSlug(storedSlug: string): string {
   }
 }
 
+/** The tag for a status that is not public: 초안 for a draft, 비공개 for a private post. Nothing for a published one. */
+export function statusLabelOf(status: string): string | null {
+  switch (status) {
+    case 'draft':
+      return '초안'
+    case 'private':
+      return '비공개'
+    default:
+      return null
+  }
+}
+
 /** The calendar day of a local `yyyy-MM-ddTHH:mm:ss` time from the spec, as `yyyy-MM-dd`. */
 export function dayOf(localDateTime: string): string {
   return localDateTime.slice(0, 'yyyy-MM-dd'.length)
@@ -60,6 +74,8 @@ export interface PostInput {
   title: string
   slug: string
   content: string
+  /** Optional: publish makes the post public. Left out, a new post is a draft and an updated one keeps its status. */
+  status?: 'draft' | 'publish'
 }
 
 /**
