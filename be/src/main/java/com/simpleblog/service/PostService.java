@@ -43,21 +43,17 @@ public class PostService {
 
 	private final Clock clock;
 
-	private final long authorId;
-
 	private final int titleMaxLength;
 
 	private final int slugMaxLength;
 
 	public PostService(PostRepository postRepository, SlugEncoder slugEncoder, LikePattern likePattern, Clock clock,
-			@Value("${simpleblog.write.author-id:1}") long authorId,
 			@Value("${simpleblog.post.title.max-length}") int titleMaxLength,
 			@Value("${simpleblog.post.slug.max-length}") int slugMaxLength) {
 		this.postRepository = postRepository;
 		this.slugEncoder = slugEncoder;
 		this.likePattern = likePattern;
 		this.clock = clock;
-		this.authorId = authorId;
 		this.titleMaxLength = titleMaxLength;
 		this.slugMaxLength = slugMaxLength;
 	}
@@ -92,14 +88,14 @@ public class PostService {
 			.orElseThrow(() -> new PostNotFoundException(slug));
 	}
 
-	/** Creates a draft post. The slug must not be used by any row of wp_posts. */
+	/** Creates a draft post authored by the user with this id. The slug must not be used by any row of wp_posts. */
 	@Transactional
-	public PostBody createPost(PostInput input) {
+	public PostBody createPost(long authorId, PostInput input) {
 		String slug = storedSlugOf(input);
 		if (this.postRepository.slugInUse(slug)) {
 			throw new DuplicatePostSlugException(input.slug());
 		}
-		Post post = Post.draftOf(this.authorId, input.title(), slug, input.content(), localNow(), gmtNow());
+		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), localNow(), gmtNow());
 		return PostBody.from(this.postRepository.save(post));
 	}
 

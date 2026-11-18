@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * The emails allowed to sign in, from {@code simpleblog.auth.allowed-emails} (comma separated, case-insensitive). With
- * none listed nobody is allowed.
+ * The emails allowed to sign in, from {@code simpleblog.auth.allowed-emails} (comma separated, case-insensitive). When
+ * emails are listed only they are allowed; with none listed every signed-in Google user is.
  */
 @Component
 public class AllowedUsers {
@@ -20,9 +20,12 @@ public class AllowedUsers {
 		this.emails = Arrays.stream(emails).map(AllowedUsers::normalized).filter((email) -> !email.isEmpty()).collect(Collectors.toSet());
 	}
 
-	/** Whether this email is listed. A missing email is never allowed. */
+	/** Whether this email may sign in: listed, or anyone when nothing is listed. A missing or blank email never is. */
 	public boolean permits(String email) {
-		return email != null && this.emails.contains(normalized(email));
+		if (email == null || email.isBlank()) {
+			return false;
+		}
+		return this.emails.isEmpty() || this.emails.contains(normalized(email));
 	}
 
 	private static String normalized(String email) {

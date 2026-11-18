@@ -5,7 +5,10 @@ import com.simpleblog.dto.PostInput;
 import com.simpleblog.dto.PostList;
 import com.simpleblog.dto.PostQueryType;
 import com.simpleblog.service.PostService;
+import com.simpleblog.service.UserService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,8 +25,11 @@ public class PostController {
 
 	private final PostService postService;
 
-	public PostController(PostService postService) {
+	private final UserService userService;
+
+	public PostController(PostService postService, UserService userService) {
 		this.postService = postService;
+		this.userService = userService;
 	}
 
 	@GetMapping("/posts")
@@ -39,8 +45,8 @@ public class PostController {
 
 	@PostMapping("/post")
 	@ResponseStatus(HttpStatus.CREATED)
-	public PostBody createPost(@RequestBody PostInput input) {
-		return this.postService.createPost(input);
+	public PostBody createPost(@AuthenticationPrincipal OidcUser user, @RequestBody PostInput input) {
+		return this.postService.createPost(this.userService.idOf(user.getEmail()), input);
 	}
 
 	@PutMapping("/post/{slug}")

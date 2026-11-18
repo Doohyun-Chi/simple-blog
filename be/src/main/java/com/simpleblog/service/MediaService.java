@@ -16,7 +16,6 @@ import com.simpleblog.exception.InvalidMediaException;
 import com.simpleblog.exception.MediaNotFoundException;
 import com.simpleblog.exception.UnsupportedMediaFileException;
 import com.simpleblog.repository.MediaRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -35,20 +34,16 @@ public class MediaService {
 
 	private final Clock clock;
 
-	private final long ownerId;
-
-	public MediaService(MediaRepository mediaRepository, MediaStorage storage, MediaSlug mediaSlug, YouTubeLink youTube, Clock clock,
-			@Value("${simpleblog.write.author-id:1}") long ownerId) {
+	public MediaService(MediaRepository mediaRepository, MediaStorage storage, MediaSlug mediaSlug, YouTubeLink youTube, Clock clock) {
 		this.mediaRepository = mediaRepository;
 		this.storage = storage;
 		this.mediaSlug = mediaSlug;
 		this.youTube = youTube;
 		this.clock = clock;
-		this.ownerId = ownerId;
 	}
 
 	/** Stores an image on the server. The type comes from the content; the file name only seeds the slug. */
-	public MediaInfo uploadImage(String fileName, byte[] content) {
+	public MediaInfo uploadImage(long ownerId, String fileName, byte[] content) {
 		if (content.length == 0) {
 			throw new InvalidMediaException("The file is empty");
 		}
@@ -56,7 +51,7 @@ public class MediaService {
 		String stored = this.storage.save(content, type.extension());
 		try {
 			return MediaInfo.from(this.mediaRepository.save(
-					Media.internalImage(this.mediaSlug.of(fileName), type.mimeType(), stored, now(), this.ownerId)));
+					Media.internalImage(this.mediaSlug.of(fileName), type.mimeType(), stored, now(), ownerId)));
 		}
 		catch (RuntimeException ex) {
 			this.storage.remove(stored);
@@ -65,7 +60,7 @@ public class MediaService {
 	}
 
 	/** Registers a YouTube video by reference. The second element tells whether it was newly registered. */
-	public Registration registerVideo(String url) {
+	public Registration registerVideo(long ownerId, String url) {
 		String videoId = this.youTube.videoIdOf(url == null ? "" : url)
 			.orElseThrow(() -> new InvalidMediaException("Not a YouTube video link"));
 		String slug = YOUTUBE_SLUG_PREFIX + videoId;
@@ -73,7 +68,7 @@ public class MediaService {
 		if (existing.isPresent()) {
 			return new Registration(MediaInfo.from(existing.get()), false);
 		}
-		return saveVideo(slug, videoId);
+		return saveVideo(ownerId, slug, videoId);
 	}
 
 	public MediaFile file(String slug) {
@@ -82,8 +77,8 @@ public class MediaService {
 		return new MediaFile(this.storage.load(media.location()), media.mimeType());
 	}
 
-	private Registration saveVideo(String slug, String videoId) {
-		Media video = Media.externalVideo(slug, this.youTube.canonicalOf(videoId), this.youTube.thumbnailOf(videoId), now(), this.ownerId);
+	private Registration saveVideo(long ownerId, String slug, String videoId) {
+		Media video = Media.externalVideo(slug, this.youTube.canonicalOf(videoId), this.youTube.thumbnailOf(videoId), now(), ownerId);
 		try {
 			return new Registration(MediaInfo.from(this.mediaRepository.save(video)), true);
 		}

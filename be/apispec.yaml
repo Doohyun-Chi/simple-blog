@@ -254,7 +254,7 @@ paths:
     post:
       summary: Create a post
       description: >
-        Creates a post as a draft (wp_posts.post_status 'draft'); status cannot be set by the client. Publishing is
+        Creates a post as a draft (wp_posts.post_status 'draft'); status cannot be set by the client. The author (wp_posts.post_author) is the signed-in user's id in tb_user. Publishing is
         not part of this contract yet. The created post is returned with its stored values.
       operationId: createPost
       tags:
@@ -365,7 +365,7 @@ paths:
     post:
       summary: Register a media item
       description: >
-        Registers a media item in tb_media and returns it. With multipart/form-data the part `file` is an image stored
+        Registers a media item in tb_media, owned (owner_id) by the signed-in user's id in tb_user, and returns it. With multipart/form-data the part `file` is an image stored
         on the server (provider internal); with application/json the body names a YouTube video, which is only
         registered by reference and never fetched or embedded (provider external). The image type is decided from the
         file content, not from the client's Content-Type or file name; only PNG, JPEG, GIF and WebP are accepted, up to

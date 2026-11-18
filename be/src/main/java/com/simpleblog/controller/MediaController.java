@@ -7,11 +7,14 @@ import com.simpleblog.dto.ExternalMediaInput;
 import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
 import com.simpleblog.service.MediaService;
+import com.simpleblog.service.UserService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,18 +30,23 @@ public class MediaController {
 
 	private final MediaService mediaService;
 
-	public MediaController(MediaService mediaService) {
+	private final UserService userService;
+
+	public MediaController(MediaService mediaService, UserService userService) {
 		this.mediaService = mediaService;
+		this.userService = userService;
 	}
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<MediaInfo> createImage(@RequestPart("file") MultipartFile file) throws IOException {
-		return ResponseEntity.status(HttpStatus.CREATED).body(this.mediaService.uploadImage(file.getOriginalFilename(), file.getBytes()));
+	public ResponseEntity<MediaInfo> createImage(@AuthenticationPrincipal OidcUser user, @RequestPart("file") MultipartFile file)
+			throws IOException {
+		long ownerId = this.userService.idOf(user.getEmail());
+		return ResponseEntity.status(HttpStatus.CREATED).body(this.mediaService.uploadImage(ownerId, file.getOriginalFilename(), file.getBytes()));
 	}
 
 	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<MediaInfo> createVideo(@RequestBody ExternalMediaInput input) {
-		MediaService.Registration registration = this.mediaService.registerVideo(input.url());
+	public ResponseEntity<MediaInfo> createVideo(@AuthenticationPrincipal OidcUser user, @RequestBody ExternalMediaInput input) {
+		MediaService.Registration registration = this.mediaService.registerVideo(this.userService.idOf(user.getEmail()), input.url());
 		return ResponseEntity.status(registration.created() ? HttpStatus.CREATED : HttpStatus.OK).body(registration.media());
 	}
 

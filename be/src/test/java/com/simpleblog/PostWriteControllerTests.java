@@ -2,7 +2,6 @@ package com.simpleblog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -86,11 +85,11 @@ class PostWriteControllerTests {
 	}
 
 	private MockHttpServletRequestBuilder created(String body) {
-		return post(POST).with(oidcLogin()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body);
+		return post(POST).with(TestUsers.signedIn()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body);
 	}
 
 	private MockHttpServletRequestBuilder updated(String slug, String body) {
-		return put(POST + "/{slug}", slug).with(oidcLogin()).with(csrf())
+		return put(POST + "/{slug}", slug).with(TestUsers.signedIn()).with(csrf())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content(body);
 	}
@@ -114,7 +113,7 @@ class PostWriteControllerTests {
 		org.assertj.core.api.Assertions.assertThat(row)
 			.containsEntry("POST_TYPE", "post")
 			.containsEntry("POST_STATUS", "draft")
-			.containsEntry("POST_AUTHOR", 1L)
+			.containsEntry("POST_AUTHOR", this.jdbcTemplate.queryForObject("select id from tb_user where email = ?", Long.class, TestUsers.OWNER))
 			.containsEntry("POST_PASSWORD", "")
 			.containsEntry("POST_EXCERPT", "")
 			.containsEntry("TO_PING", "")
@@ -222,9 +221,9 @@ class PostWriteControllerTests {
 
 	@Test
 	void requiresACsrfToken() throws Exception {
-		this.mockMvc.perform(post(POST).with(oidcLogin()).contentType(MediaType.APPLICATION_JSON).content(json("T", "nocsrf", "x")))
+		this.mockMvc.perform(post(POST).with(TestUsers.signedIn()).contentType(MediaType.APPLICATION_JSON).content(json("T", "nocsrf", "x")))
 			.andExpect(status().isForbidden());
-		this.mockMvc.perform(put(POST + "/kpi").with(oidcLogin()).contentType(MediaType.APPLICATION_JSON).content(json("T", "kpi", "x")))
+		this.mockMvc.perform(put(POST + "/kpi").with(TestUsers.signedIn()).contentType(MediaType.APPLICATION_JSON).content(json("T", "kpi", "x")))
 			.andExpect(status().isForbidden());
 	}
 

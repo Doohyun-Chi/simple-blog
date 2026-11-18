@@ -2,7 +2,6 @@ package com.simpleblog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,11 +49,11 @@ class MediaControllerTests {
 	private MockMvc mockMvc;
 
 	private RequestBuilder upload(String name, String declaredType, byte[] bytes) {
-		return multipart(MEDIA).file(new MockMultipartFile("file", name, declaredType, bytes)).with(oidcLogin()).with(csrf());
+		return multipart(MEDIA).file(new MockMultipartFile("file", name, declaredType, bytes)).with(TestUsers.signedIn()).with(csrf());
 	}
 
 	private RequestBuilder link(String url) {
-		return post(MEDIA).with(oidcLogin()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"url\": \"%s\"}".formatted(url));
+		return post(MEDIA).with(TestUsers.signedIn()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"url\": \"%s\"}".formatted(url));
 	}
 
 	@Test
@@ -91,7 +90,7 @@ class MediaControllerTests {
 	@Test
 	void refusesAnEmptyFileAndAMissingFile() throws Exception {
 		this.mockMvc.perform(upload("a.png", "image/png", new byte[0])).andExpect(status().isBadRequest());
-		this.mockMvc.perform(multipart(MEDIA).with(oidcLogin()).with(csrf())).andExpect(status().is4xxClientError());
+		this.mockMvc.perform(multipart(MEDIA).with(TestUsers.signedIn()).with(csrf())).andExpect(status().is4xxClientError());
 	}
 
 	@Test
@@ -129,7 +128,7 @@ class MediaControllerTests {
 	void needsASignedInSessionAndACsrfToken() throws Exception {
 		this.mockMvc.perform(multipart(MEDIA).file(new MockMultipartFile("file", "a.png", "image/png", PNG)).with(csrf()))
 			.andExpect(status().isUnauthorized());
-		this.mockMvc.perform(multipart(MEDIA).file(new MockMultipartFile("file", "a.png", "image/png", PNG)).with(oidcLogin()))
+		this.mockMvc.perform(multipart(MEDIA).file(new MockMultipartFile("file", "a.png", "image/png", PNG)).with(TestUsers.signedIn()))
 			.andExpect(status().isForbidden());
 		this.mockMvc.perform(post(MEDIA).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"url\": \"https://youtu.be/dQw4w9WgXcQ\"}"))
 			.andExpect(status().isUnauthorized());

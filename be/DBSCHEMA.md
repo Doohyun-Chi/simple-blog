@@ -24,3 +24,18 @@ indexes
 - unique index for id as the primary key
 - unique index for slug for reference
 - index for date for retrieval
+
+## User management schema
+table name: tb_user
+columns
+- id: unique identifier, 1~100 are reserved and increment begins from 101
+- email: unique user's email
+- provider: google or naver or etc.
+- registered_date: registered date
+
+indexes
+- unique index for id as the primary key
+- unique index for email
+
+default reserved data entry
+- id 1, email: doohyunchi@gmail.com
