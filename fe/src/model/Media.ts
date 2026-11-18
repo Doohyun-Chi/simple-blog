@@ -10,6 +10,11 @@ export interface Media {
   date: string
 }
 
+/** Mirrors `MediaList` in be/apispec.yaml. */
+export interface MediaList {
+  medias: Media[]
+}
+
 /** The largest image the backend accepts, in bytes. Mirrors the 10 MB in be/apispec.yaml; shown, not enforced, here. */
 export const MEDIA_MAX_BYTES = 10 * 1024 * 1024
 
@@ -40,4 +45,14 @@ export function uploadFailureText(error: unknown): string {
     default:
       return '이미지를 올리지 못했습니다. 잠시 후 다시 시도해 주세요.'
   }
+}
+
+/** The Markdown of an image: `![alt](url)`. The alt text is escaped so it cannot end the image early. */
+export function imageMarkdown(alt: string, url: string): string {
+  return `![${escapedText(alt)}](${url})`
+}
+
+/** Whether the item is a YouTube video (kept by reference) rather than an image file on the server. */
+export function isVideo(media: Media): boolean {
+  return media.provider === 'external'
 }

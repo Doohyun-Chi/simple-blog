@@ -4,7 +4,6 @@ import {
   CodeToggle,
   CreateLink,
   InsertCodeBlock,
-  InsertImage,
   ListsToggle,
   MDXEditor,
   UndoRedo,
@@ -37,7 +36,7 @@ import { contentPath } from '../model/route.ts'
 import type { SaveFailure, SaveState } from '../model/useSavePost.ts'
 import { FullScreenToggle } from './FullScreenToggle.tsx'
 import { ViewModeToggle } from './ViewModeToggle.tsx'
-import { YouTubeInsert } from './YouTubeInsert.tsx'
+import { MediaPanel } from './MediaPanel.tsx'
 import './PostEditor.css'
 
 const CODE_LANGUAGES = {
@@ -89,8 +88,7 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
             <CodeToggle />
             <ListsToggle />
             <CreateLink />
-            <InsertImage />
-            <YouTubeInsert />
+            <MediaPanel />
             <InsertCodeBlock />
           </ViewModeToggle>
           <FullScreenToggle />

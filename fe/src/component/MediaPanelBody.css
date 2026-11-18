@@ -1,0 +1,78 @@
+.media-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.media-panel-field {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 0.25em 0.75em;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.media-panel-upload {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+}
+
+.media-panel-file {
+  padding: 0.25em 0.75em;
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  & input {
+    display: none;
+  }
+}
+
+.media-panel-hint {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+.media-panel-link {
+  display: flex;
+  gap: 0.5rem;
+
+  & button {
+    flex: 0 0 auto;
+    padding: 0 1em;
+    font: inherit;
+    color: var(--text-strong);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+}
+
+.media-panel-failure {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--accent);
+}

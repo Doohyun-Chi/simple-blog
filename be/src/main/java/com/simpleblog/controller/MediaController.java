@@ -6,6 +6,7 @@ import java.time.Duration;
 import com.simpleblog.dto.ExternalMediaInput;
 import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
+import com.simpleblog.dto.MediaList;
 import com.simpleblog.service.MediaService;
 import com.simpleblog.service.UserService;
 import org.springframework.core.io.Resource;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/public/api/v1/media")
+@RequestMapping("/public/api/v1")
 public class MediaController {
 
 	private final MediaService mediaService;
@@ -37,20 +38,25 @@ public class MediaController {
 		this.userService = userService;
 	}
 
-	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@GetMapping("/medias")
+	public MediaList listOfMedias() {
+		return this.mediaService.listOfMedias();
+	}
+
+	@PostMapping(path = "/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<MediaInfo> createImage(@AuthenticationPrincipal OidcUser user, @RequestPart("file") MultipartFile file)
 			throws IOException {
 		long ownerId = this.userService.idOf(user.getEmail());
 		return ResponseEntity.status(HttpStatus.CREATED).body(this.mediaService.uploadImage(ownerId, file.getOriginalFilename(), file.getBytes()));
 	}
 
-	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+	@PostMapping(path = "/media", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<MediaInfo> createVideo(@AuthenticationPrincipal OidcUser user, @RequestBody ExternalMediaInput input) {
 		MediaService.Registration registration = this.mediaService.registerVideo(this.userService.idOf(user.getEmail()), input.url());
 		return ResponseEntity.status(registration.created() ? HttpStatus.CREATED : HttpStatus.OK).body(registration.media());
 	}
 
-	@GetMapping("/{slug}")
+	@GetMapping("/media/{slug}")
 	public ResponseEntity<Resource> file(@PathVariable String slug) {
 		MediaFile file = this.mediaService.file(slug);
 		return ResponseEntity.ok()

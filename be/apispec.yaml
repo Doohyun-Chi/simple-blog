@@ -361,6 +361,41 @@ paths:
                 modified: '2026-11-05T09:45:11'
         '404':
           description: No row in wp_posts has this slug. The response body is not part of the contract.
+  /public/api/v1/medias:
+    get:
+      summary: List all media items
+      description: >
+        Returns every item of tb_media, images and YouTube videos alike, newest first (by date, then id). There is no
+        paging: the list is for the editor's gallery, which is opened rarely. Only a signed-in user may list, because
+        the list also names media of posts that are not published; the files themselves stay public.
+      operationId: listOfMedias
+      tags:
+        - Media
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: All media items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaList'
+              example:
+                medias:
+                  - slug: youtube-dQw4w9WgXcQ
+                    provider: external
+                    mimeType: https://youtu.be/dQw4w9WgXcQ
+                    url: https://youtu.be/dQw4w9WgXcQ
+                    thumbnail: https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg
+                    date: '2026-11-18T02:10:00Z'
+                  - slug: photo-3fa9c1d2
+                    provider: internal
+                    mimeType: image/png
+                    url: /public/api/v1/media/photo-3fa9c1d2
+                    thumbnail: null
+                    date: '2026-11-18T01:30:00Z'
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
   /public/api/v1/media:
     post:
       summary: Register a media item
@@ -476,6 +511,15 @@ components:
         email:
           type: string
           description: The email address of the signed-in Google account
+    MediaList:
+      type: object
+      required:
+        - medias
+      properties:
+        medias:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
     MediaUpload:
       type: object
       required:

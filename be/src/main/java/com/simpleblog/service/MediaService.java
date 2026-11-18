@@ -11,6 +11,7 @@ import com.simpleblog.component.MediaStorage;
 import com.simpleblog.component.YouTubeLink;
 import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
+import com.simpleblog.dto.MediaList;
 import com.simpleblog.entity.Media;
 import com.simpleblog.exception.InvalidMediaException;
 import com.simpleblog.exception.MediaNotFoundException;
@@ -18,6 +19,7 @@ import com.simpleblog.exception.UnsupportedMediaFileException;
 import com.simpleblog.repository.MediaRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MediaService {
@@ -69,6 +71,12 @@ public class MediaService {
 			return new Registration(MediaInfo.from(existing.get()), false);
 		}
 		return saveVideo(ownerId, slug, videoId);
+	}
+
+	/** Every media item, newest first, without paging: only the editor's gallery asks, and rarely. */
+	@Transactional(readOnly = true)
+	public MediaList listOfMedias() {
+		return new MediaList(this.mediaRepository.listOfMedias().stream().map(MediaInfo::from).toList());
 	}
 
 	public MediaFile file(String slug) {

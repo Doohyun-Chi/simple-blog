@@ -84,7 +84,9 @@ class MediaControllerTests {
 
 	@Test
 	void namesAFileWithoutLatinLettersMedia() throws Exception {
-		this.mockMvc.perform(upload("사진.png", "image/png", PNG)).andExpect(status().isCreated()).andExpect(jsonPath("$.slug").value(org.hamcrest.Matchers.matchesPattern("media-[0-9a-f]{8}")));
+		this.mockMvc.perform(upload("사진.png", "image/png", PNG))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.slug").value(org.hamcrest.Matchers.matchesPattern("media-[0-9a-f]{8}")));
 	}
 
 	@Test
@@ -132,6 +134,29 @@ class MediaControllerTests {
 			.andExpect(status().isForbidden());
 		this.mockMvc.perform(post(MEDIA).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"url\": \"https://youtu.be/dQw4w9WgXcQ\"}"))
 			.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void listsEveryItemNewestFirstForASignedInUser() throws Exception {
+		this.mockMvc.perform(get("/public/api/v1/medias").with(TestUsers.signedIn()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.medias").isEmpty());
+		this.mockMvc.perform(upload("first.png", "image/png", PNG)).andExpect(status().isCreated());
+		this.mockMvc.perform(link("https://youtu.be/dQw4w9WgXcQ")).andExpect(status().isCreated());
+		this.mockMvc.perform(upload("third.png", "image/png", PNG)).andExpect(status().isCreated());
+		this.mockMvc.perform(get("/public/api/v1/medias").with(TestUsers.signedIn()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.medias.length()").value(3))
+			.andExpect(jsonPath("$.medias[0].slug").value(org.hamcrest.Matchers.startsWith("third-")))
+			.andExpect(jsonPath("$.medias[1].slug").value("youtube-dQw4w9WgXcQ"))
+			.andExpect(jsonPath("$.medias[1].thumbnail").value("https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"))
+			.andExpect(jsonPath("$.medias[2].slug").value(org.hamcrest.Matchers.startsWith("first-")))
+			.andExpect(jsonPath("$.medias[2].url").value(org.hamcrest.Matchers.startsWith("/public/api/v1/media/first-")));
+	}
+
+	@Test
+	void keepsTheListForSignedInUsersOnly() throws Exception {
+		this.mockMvc.perform(get("/public/api/v1/medias")).andExpect(status().isUnauthorized());
 	}
 
 	@Test

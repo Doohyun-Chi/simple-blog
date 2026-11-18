@@ -49,6 +49,8 @@ public class SecurityConfig {
 			.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
 			.authorizeHttpRequests((requests) -> requests.requestMatchers("/public/api/v1/me")
 				.authenticated()
+				.requestMatchers("/public/api/v1/medias")
+				.authenticated()
 				.requestMatchers(HttpMethod.GET, "/public/api/**")
 				.permitAll()
 				.requestMatchers("/public/api/v1/post", "/public/api/v1/post/**", "/public/api/v1/media", "/public/api/v1/media/**")
