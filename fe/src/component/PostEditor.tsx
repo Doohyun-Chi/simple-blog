@@ -24,7 +24,9 @@ import '@mdxeditor/editor/style.css'
 import { type ReactNode, useMemo, useState } from 'react'
 import {
   cleanSlug,
+  EMPTY_POST,
   isSavable,
+  isUnsaved,
   POST_SLUG_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
   type PostInput,
@@ -32,8 +34,11 @@ import {
 import { FullScreenContext } from '../model/FullScreen.ts'
 import { uploadFailureText } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
+import { googleLoginUrl } from '../model/identityApi.ts'
 import { contentPath } from '../model/route.ts'
+import { useLeaveGuard } from '../model/useLeaveGuard.ts'
 import type { SaveFailure, SaveState } from '../model/useSavePost.ts'
+import { useSessionKeepAlive } from '../model/useSessionKeepAlive.ts'
 import { FullScreenToggle } from './FullScreenToggle.tsx'
 import { ViewModeToggle } from './ViewModeToggle.tsx'
 import { MediaPanel } from './MediaPanel.tsx'
@@ -101,6 +106,7 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
 const SAVE_FAILURE_TEXT: Record<SaveFailure, string> = {
   invalid: '제목과 Slug를 확인해 주세요.',
   duplicate: '이미 사용 중인 Slug입니다.',
+  expired: '로그인이 만료되어 저장하지 못했습니다.',
   forbidden: '저장할 권한이 없습니다.',
   missing: '저장된 글을 찾을 수 없습니다. 다시 저장하면 새 글로 저장합니다.',
   failed: '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.',
@@ -109,8 +115,8 @@ const SAVE_FAILURE_TEXT: Record<SaveFailure, string> = {
 interface PostEditorProps {
   /** Where the last save stands. */
   saveState: SaveState
-  /** Saves the post: the first call creates a draft, later calls update it. */
-  onSave: (input: PostInput) => void
+  /** Saves the post: the first call creates a draft, later calls update it. Answers whether it was saved. */
+  onSave: (input: PostInput) => Promise<boolean>
   /** Publishes the post. While it is missing, the 공개 button stays disabled. */
   onPublish?: () => void
 }
@@ -121,6 +127,28 @@ function FieldHint({ note }: { note: ReactNode }) {
     <div className="post-editor-hint">
       <span className="post-editor-note" role="status">{note}</span>
     </div>
+  )
+}
+
+/** The line under the title: the save in progress or failed, else a warning while changes are unsaved, else the last save. */
+function noteOf(state: SaveState, unsaved: boolean): ReactNode {
+  const busyOrFailed = state.status === 'saving' || state.status === 'failed'
+  return unsaved && !busyOrFailed ? '저장하지 않은 변경이 있습니다.' : saveNote(state)
+}
+
+/** Tells the writer the session ended and how to sign in again without leaving the editor, so nothing written is lost. */
+function SessionExpiredNote() {
+  return (
+    <FieldHint
+      note={
+        <>
+          로그인이 만료되었습니다.
+          {' '}
+          <a href={googleLoginUrl()} target="_blank" rel="noreferrer">새 탭에서 다시 로그인</a>
+          한 뒤 저장해 주세요. 작성 중인 내용은 이 탭에 그대로 남아 있습니다.
+        </>
+      }
+    />
   )
 }
 
@@ -148,10 +176,21 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
   const [slug, updateSlug] = useState('')
   const [markdown, updateMarkdown] = useState('')
   const [fullScreen, updateFullScreen] = useState(false)
+  const [saved, updateSaved] = useState<PostInput>(EMPTY_POST)
+  const keepAlive = useSessionKeepAlive()
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
   const input = { title, slug, content: markdown }
   const canSave = isSavable(input) && saveState.status !== 'saving'
+  const unsaved = isUnsaved(input, saved)
+  const sessionExpired = keepAlive.expired || (saveState.status === 'failed' && saveState.failure === 'expired')
+  useLeaveGuard(unsaved)
+
+  async function saveNow() {
+    if (await onSave(input)) {
+      updateSaved(input)
+    }
+  }
 
   return (
     <FullScreenContext value={{ on: fullScreen, toggle: () => updateFullScreen((on) => !on) }}>
@@ -165,11 +204,14 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
               placeholder={`제목 (최대 ${POST_TITLE_MAX_LENGTH}자)`}
               aria-label="제목"
               value={title}
-              onChange={(event) => updateTitle(event.target.value)}
+              onChange={(event) => {
+              updateTitle(event.target.value)
+              keepAlive.touch()
+            }}
             />
-            <FieldHint note={saveNote(saveState)} />
+            <FieldHint note={noteOf(saveState, unsaved)} />
           </div>
-          <button className="post-editor-button" type="button" disabled={!canSave} onClick={() => onSave(input)}>저장</button>
+          <button className="post-editor-button" type="button" disabled={!canSave} onClick={() => void saveNow()}>저장</button>
           <button className="post-editor-button post-editor-publish" type="button" disabled={!onPublish} onClick={onPublish}>
             공개
           </button>
@@ -182,7 +224,10 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
             placeholder={`Slug (최대 ${POST_SLUG_MAX_LENGTH}자)`}
             aria-label="Slug"
             value={slug}
-            onChange={(event) => updateSlug(cleanSlug(event.target.value))}
+            onChange={(event) => {
+            updateSlug(cleanSlug(event.target.value))
+            keepAlive.touch()
+          }}
           />
           <FieldHint note="영문 대소문자와 - 만 사용할 수 있습니다." />
         </div>
@@ -192,12 +237,14 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
           markdown={markdown}
           onChange={(value) => {
             updateMarkdown(value)
+          keepAlive.touch()
             updateImageNote(null)
           }}
           placeholder="본문"
           plugins={plugins}
         />
         {imageNote !== null && <FieldHint note={imageNote} />}
+      {sessionExpired && <SessionExpiredNote />}
         <input className="post-editor-field" name="hashtags" type="text" placeholder="#해시태그" aria-label="해시태그" />
       </form>
     </FullScreenContext>

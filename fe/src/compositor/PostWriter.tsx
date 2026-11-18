@@ -10,7 +10,7 @@ export function PostWriter() {
   const { state, save } = useSavePost()
   return (
     <Suspense fallback={<StatusMessage>편집기를 불러오는 중…</StatusMessage>}>
-      <PostEditor saveState={state} onSave={(input) => void save(input)} />
+      <PostEditor saveState={state} onSave={save} />
     </Suspense>
   )
 }

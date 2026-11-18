@@ -83,3 +83,11 @@ export function cleanSlug(slug: string): string {
 export function isSavable(input: PostInput): boolean {
   return input.title.trim() !== '' && input.slug !== '' && cleanSlug(input.slug) === input.slug
 }
+
+/** Whether the post being written differs from what was last saved (nothing saved yet counts as an empty post). */
+export function isUnsaved(input: PostInput, saved: PostInput): boolean {
+  return input.title !== saved.title || input.slug !== saved.slug || input.content.trim() !== saved.content.trim()
+}
+
+/** The post before anything is written or saved. */
+export const EMPTY_POST: PostInput = { title: '', slug: '', content: '' }
