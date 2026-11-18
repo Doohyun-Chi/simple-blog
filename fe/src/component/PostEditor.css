@@ -26,6 +26,11 @@
   align-items: flex-start;
 }
 
+/* In the form's column the slug's group keeps its own height; only the body takes the spare height, not this group. */
+.post-editor > .post-editor-field-group {
+  flex: 0 0 auto;
+}
+
 .post-editor-title-line .post-editor-button {
   box-sizing: border-box;
   height: calc(2em + 2px);
@@ -114,4 +119,18 @@
 .post-editor-content img {
   max-width: 100%;
   height: auto;
+}
+
+/*
+ * Full screen: the form covers the whole browser area. MDXEditor puts its dropdowns (the block type list, the code
+ * language list) and tooltips in a popup container appended to the body at z-index 2, and its dialogs at 51 and up, so
+ * the form must stay at 1: any higher and those open underneath it.
+ */
+.post-editor-full-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  padding: 1rem;
+  background: var(--paper);
 }

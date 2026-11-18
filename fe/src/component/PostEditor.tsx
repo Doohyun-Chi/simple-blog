@@ -10,6 +10,7 @@ import {
   UndoRedo,
   codeBlockPlugin,
   codeMirrorPlugin,
+  diffSourcePlugin,
   headingsPlugin,
   imagePlugin,
   linkDialogPlugin,
@@ -29,10 +30,13 @@ import {
   POST_TITLE_MAX_LENGTH,
   type PostInput,
 } from '../model/Post.ts'
+import { FullScreenContext } from '../model/FullScreen.ts'
 import { uploadFailureText } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
 import { contentPath } from '../model/route.ts'
 import type { SaveFailure, SaveState } from '../model/useSavePost.ts'
+import { FullScreenToggle } from './FullScreenToggle.tsx'
+import { ViewModeToggle } from './ViewModeToggle.tsx'
 import { YouTubeInsert } from './YouTubeInsert.tsx'
 import './PostEditor.css'
 
@@ -73,19 +77,23 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
     imagePlugin({ imageUploadHandler: uploadedImageUrl }),
     codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
     codeMirrorPlugin({ codeBlockLanguages: CODE_LANGUAGES }),
+    diffSourcePlugin({ viewMode: 'rich-text' }),
     markdownShortcutPlugin(),
     toolbarPlugin({
       toolbarContents: () => (
         <>
-          <UndoRedo />
-          <BlockTypeSelect />
-          <BoldItalicUnderlineToggles />
-          <CodeToggle />
-          <ListsToggle />
-          <CreateLink />
-          <InsertImage />
-          <YouTubeInsert />
-          <InsertCodeBlock />
+          <ViewModeToggle>
+            <UndoRedo />
+            <BlockTypeSelect />
+            <BoldItalicUnderlineToggles />
+            <CodeToggle />
+            <ListsToggle />
+            <CreateLink />
+            <InsertImage />
+            <YouTubeInsert />
+            <InsertCodeBlock />
+          </ViewModeToggle>
+          <FullScreenToggle />
         </>
       ),
     }),
@@ -141,56 +149,59 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
   const [title, updateTitle] = useState('')
   const [slug, updateSlug] = useState('')
   const [markdown, updateMarkdown] = useState('')
+  const [fullScreen, updateFullScreen] = useState(false)
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
   const input = { title, slug, content: markdown }
   const canSave = isSavable(input) && saveState.status !== 'saving'
 
   return (
-    <form className="post-editor" aria-label="글 작성" onSubmit={(event) => event.preventDefault()}>
-      <div className="post-editor-title-line">
+    <FullScreenContext value={{ on: fullScreen, toggle: () => updateFullScreen((on) => !on) }}>
+      <form className={fullScreen ? 'post-editor post-editor-full-screen' : 'post-editor'} aria-label="글 작성" onSubmit={(event) => event.preventDefault()}>
+        <div className="post-editor-title-line">
+          <div className="post-editor-field-group">
+            <input
+              className="post-editor-field"
+              name="title"
+              type="text"
+              placeholder={`제목 (최대 ${POST_TITLE_MAX_LENGTH}자)`}
+              aria-label="제목"
+              value={title}
+              onChange={(event) => updateTitle(event.target.value)}
+            />
+            <FieldHint note={saveNote(saveState)} />
+          </div>
+          <button className="post-editor-button" type="button" disabled={!canSave} onClick={() => onSave(input)}>저장</button>
+          <button className="post-editor-button post-editor-publish" type="button" disabled={!onPublish} onClick={onPublish}>
+            공개
+          </button>
+        </div>
         <div className="post-editor-field-group">
           <input
             className="post-editor-field"
-            name="title"
+            name="slug"
             type="text"
-            placeholder={`제목 (최대 ${POST_TITLE_MAX_LENGTH}자)`}
-            aria-label="제목"
-            value={title}
-            onChange={(event) => updateTitle(event.target.value)}
+            placeholder={`Slug (최대 ${POST_SLUG_MAX_LENGTH}자)`}
+            aria-label="Slug"
+            value={slug}
+            onChange={(event) => updateSlug(cleanSlug(event.target.value))}
           />
-          <FieldHint note={saveNote(saveState)} />
+          <FieldHint note="영문 대소문자와 - 만 사용할 수 있습니다." />
         </div>
-        <button className="post-editor-button" type="button" disabled={!canSave} onClick={() => onSave(input)}>저장</button>
-        <button className="post-editor-button post-editor-publish" type="button" disabled={!onPublish} onClick={onPublish}>
-          공개
-        </button>
-      </div>
-      <div className="post-editor-field-group">
-        <input
-          className="post-editor-field"
-          name="slug"
-          type="text"
-          placeholder={`Slug (최대 ${POST_SLUG_MAX_LENGTH}자)`}
-          aria-label="Slug"
-          value={slug}
-          onChange={(event) => updateSlug(cleanSlug(event.target.value))}
+        <MDXEditor
+          className="post-editor-body mdxeditor-full-height"
+          contentEditableClassName="post-editor-content"
+          markdown={markdown}
+          onChange={(value) => {
+            updateMarkdown(value)
+            updateImageNote(null)
+          }}
+          placeholder="본문"
+          plugins={plugins}
         />
-        <FieldHint note="영문 대소문자와 - 만 사용할 수 있습니다." />
-      </div>
-      <MDXEditor
-        className="post-editor-body mdxeditor-full-height"
-        contentEditableClassName="post-editor-content"
-        markdown={markdown}
-        onChange={(value) => {
-          updateMarkdown(value)
-          updateImageNote(null)
-        }}
-        placeholder="본문"
-        plugins={plugins}
-      />
-      {imageNote !== null && <FieldHint note={imageNote} />}
-      <input className="post-editor-field" name="hashtags" type="text" placeholder="#해시태그" aria-label="해시태그" />
-    </form>
+        {imageNote !== null && <FieldHint note={imageNote} />}
+        <input className="post-editor-field" name="hashtags" type="text" placeholder="#해시태그" aria-label="해시태그" />
+      </form>
+    </FullScreenContext>
   )
 }

@@ -1,0 +1,20 @@
+.full-screen-toggle {
+  flex: 0 0 auto;
+  margin-left: 0.5rem;
+  padding: 0.2em 0.6em;
+  font: inherit;
+  font-size: 0.85em;
+  white-space: nowrap;
+  color: var(--text-body);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible,
+  &[aria-pressed='true'] {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
