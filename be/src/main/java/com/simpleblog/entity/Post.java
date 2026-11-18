@@ -82,6 +82,10 @@ public class Post {
 		return this.id;
 	}
 
+	public Long authorId() {
+		return this.authorId;
+	}
+
 	public String title() {
 		return this.title;
 	}

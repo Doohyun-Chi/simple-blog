@@ -9,6 +9,7 @@ import com.simpleblog.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,6 +48,12 @@ public class PostController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public PostBody createPost(@AuthenticationPrincipal OidcUser user, @RequestBody PostInput input) {
 		return this.postService.createPost(this.userService.idOf(user.getEmail()), input);
+	}
+
+	@DeleteMapping("/post/{slug}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deletePost(@AuthenticationPrincipal OidcUser user, @PathVariable String slug) {
+		this.postService.deletePost(this.userService.idOf(user.getEmail()), slug);
 	}
 
 	@PutMapping("/post/{slug}")

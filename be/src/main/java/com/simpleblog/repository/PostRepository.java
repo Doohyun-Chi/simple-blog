@@ -10,8 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
 /**
- * Extends {@link Repository} rather than JpaRepository on purpose, so the only write is {@link #save} and nothing
- * can delete a row of TB_POST.
+ * Extends {@link Repository} rather than JpaRepository on purpose, so the only writes are {@link #save} and
+ * {@link #delete}, and nothing can delete rows in bulk.
  */
 public interface PostRepository extends Repository<Post, Long> {
 
@@ -32,6 +32,9 @@ public interface PostRepository extends Repository<Post, Long> {
 	List<PostSummary> listOfPostsContaining(String pattern, long viewerId, Pageable pageable);
 
 	Post save(Post post);
+
+	/** Removes the row. Only PostService#deletePost calls it, for a row of type post. */
+	void delete(Post post);
 
 	/** Whether any row, of any type or status, already has this stored slug. */
 	@Query("select count(p) > 0 from Post p where p.slug = :slug")

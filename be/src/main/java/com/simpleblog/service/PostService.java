@@ -16,6 +16,7 @@ import com.simpleblog.dto.PostQueryType;
 import com.simpleblog.entity.Post;
 import com.simpleblog.exception.DuplicatePostSlugException;
 import com.simpleblog.exception.InvalidPostException;
+import com.simpleblog.exception.NotPostAuthorException;
 import com.simpleblog.exception.InvalidPostQueryException;
 import com.simpleblog.exception.PostNotFoundException;
 import com.simpleblog.exception.UnsupportedPostQueryTypeException;
@@ -119,6 +120,20 @@ public class PostService {
 		post.revise(input.title(), newSlug, input.content(), utcNow());
 		applyStatus(post, input);
 		return PostBody.from(post, this.clock.getZone());
+	}
+
+	/**
+	 * Deletes the post with this slug on behalf of the user with this id, who must be its author. Only rows of type post
+	 * can be deleted, never pages, attachments or revisions.
+	 */
+	@Transactional
+	public void deletePost(long userId, String slug) {
+		Post post = this.postRepository.writablePost(this.slugEncoder.encode(slug))
+			.orElseThrow(() -> new PostNotFoundException(slug));
+		if (post.authorId() == null || post.authorId() != userId) {
+			throw new NotPostAuthorException(slug);
+		}
+		this.postRepository.delete(post);
 	}
 
 	/** Applies the status of the input when it has one. */

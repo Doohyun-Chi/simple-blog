@@ -2,6 +2,7 @@ package com.simpleblog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -40,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @Sql(statements = """
+		insert into tb_user (ID, EMAIL, PROVIDER, REGISTERED_DATE) values (1, 'owner@example.com', 'google', now());
 		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
 		(1001, 'KPI', '<p>old</p>', 'kpi', 'post', 'publish', 1, '2020-01-01 00:00:00', '2020-01-02 00:00:00'),
 		(1002, 'A draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2021-01-01 00:00:00', '2021-01-01 00:00:00'),
@@ -229,6 +231,51 @@ class PostWriteControllerTests {
 	void refusesAnUpdateThatBreaksTheSpecWithBadRequest() throws Exception {
 		this.mockMvc.perform(updated("kpi", json("", "kpi", "x"))).andExpect(status().isBadRequest());
 		this.mockMvc.perform(updated("kpi", json("T", "kpi", null))).andExpect(status().isBadRequest());
+	}
+
+	private MockHttpServletRequestBuilder deleted(String slug) {
+		return delete(POST + "/{slug}", slug).with(TestUsers.signedIn()).with(csrf());
+	}
+
+	private int rowsWithSlug(String slug) {
+		this.entityManager.flush();
+		return this.jdbcTemplate.queryForObject("select count(*) from tb_post where slug = ?", Integer.class, slug);
+	}
+
+	@Test
+	void deletesAPostWhateverItsStatus() throws Exception {
+		this.mockMvc.perform(deleted("kpi")).andExpect(status().isNoContent());
+		this.mockMvc.perform(deleted("a-draft")).andExpect(status().isNoContent());
+		assertThat(rowsWithSlug("kpi") + rowsWithSlug("a-draft")).isZero();
+		this.mockMvc.perform(get(POST + "/kpi")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	void deletesOnlyThePostWithThatSlug() throws Exception {
+		this.mockMvc.perform(deleted("kpi")).andExpect(status().isNoContent());
+		assertThat(rowsWithSlug("a-draft") + rowsWithSlug("about") + rowsWithSlug("hi-there")).isEqualTo(3);
+	}
+
+	@Test
+	void refusesDeletingAPostWrittenByAnotherUser() throws Exception {
+		this.mockMvc.perform(delete(POST + "/kpi").with(TestUsers.signedIn("other@example.com")).with(csrf()))
+			.andExpect(status().isForbidden());
+		assertThat(rowsWithSlug("kpi")).isEqualTo(1);
+	}
+
+	@Test
+	void answersNotFoundWhenDeletingAnUnknownSlugOrARowThatIsNotAPost() throws Exception {
+		for (String slug : new String[] { "no-such-post", "about", "hi-there" }) {
+			this.mockMvc.perform(deleted(slug)).andExpect(status().isNotFound());
+		}
+		assertThat(rowsWithSlug("about") + rowsWithSlug("hi-there")).isEqualTo(2);
+	}
+
+	@Test
+	void refusesADeleteWithoutASessionOrACsrfToken() throws Exception {
+		this.mockMvc.perform(delete(POST + "/kpi").with(csrf())).andExpect(status().isUnauthorized());
+		this.mockMvc.perform(delete(POST + "/kpi").with(TestUsers.signedIn())).andExpect(status().isForbidden());
+		assertThat(rowsWithSlug("kpi")).isEqualTo(1);
 	}
 
 	@Test

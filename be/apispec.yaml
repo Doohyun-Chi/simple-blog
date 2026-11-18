@@ -329,6 +329,34 @@ paths:
           description: Another post already has the body slug. The response body is not part of the contract.
         '500':
           description: Failed to update. The response body is not part of the contract.
+    delete:
+      summary: Delete a post
+      description: >
+        Deletes the post identified by the path slug: its tb_post row is removed for good, whatever its status, and
+        the slug resolves no more. Only the author of the post (tb_post.author_id) can delete it, and only posts can be deleted, never pages. Media items the post used are not touched.
+      operationId: deletePost
+      tags:
+        - Posts
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: The current slug of the post, encoded as in the GET operation of this path.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted. There is no response body.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie), or the post was written by another user. The response body is not part of the contract.
+        '404':
+          description: No post has the path slug; a row of another type, such as a page, counts as none. The response body is not part of the contract.
+        '500':
+          description: Failed to delete. The response body is not part of the contract.
     get:
       summary: Read a body of a post or a page.
       description: >

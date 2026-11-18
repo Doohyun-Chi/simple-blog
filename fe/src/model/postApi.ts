@@ -1,4 +1,4 @@
-import { requestJson } from './apiClient.ts'
+import { ApiError, apiUrl, requestJson } from './apiClient.ts'
 import { csrfHeaders } from './csrfToken.ts'
 import type { PostBody, PostInput, PostList, PostQueryType, PostSummary } from './Post.ts'
 
@@ -39,6 +39,20 @@ export function createPost(input: PostInput, signal?: AbortSignal): Promise<Post
 /** Calls `PUT /public/api/v1/post/{slug}` (operationId: updatePost). A different slug in the input renames the post. */
 export function updatePost(slug: string, input: PostInput, signal?: AbortSignal): Promise<PostBody> {
   return requestJson<PostBody>(`${POST_PATH}/${encodeURIComponent(slug)}`, jsonRequest('PUT', input, signal))
+}
+
+/** Calls `DELETE /public/api/v1/post/{slug}` (operationId: deletePost). The response has no body. */
+export async function deletePost(slug: string, signal?: AbortSignal): Promise<void> {
+  const headers = csrfHeaders()
+  const response = await fetch(apiUrl(`${POST_PATH}/${encodeURIComponent(slug)}`), {
+    method: 'DELETE',
+    headers,
+    credentials: 'include',
+    signal,
+  })
+  if (!response.ok) {
+    throw new ApiError(`DELETE ${POST_PATH} failed with ${response.status}`, response.status)
+  }
 }
 
 /** A write rides on the session cookie, and the backend wants the CSRF token it published echoed in a header. */

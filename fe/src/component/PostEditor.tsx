@@ -21,7 +21,7 @@ import {
   toolbarPlugin,
 } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import {
   cleanSlug,
   EMPTY_POST,
@@ -35,9 +35,9 @@ import { FullScreenContext } from '../model/FullScreen.ts'
 import { uploadFailureText } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
 import { googleLoginUrl } from '../model/identityApi.ts'
-import { contentPath } from '../model/route.ts'
+import { contentPath, LIST_PATH } from '../model/route.ts'
 import { useLeaveGuard } from '../model/useLeaveGuard.ts'
-import type { SaveFailure, SaveState } from '../model/useSavePost.ts'
+import type { RemoveResult, SaveFailure, SaveState } from '../model/useSavePost.ts'
 import { useSessionKeepAlive } from '../model/useSessionKeepAlive.ts'
 import { FullScreenToggle } from './FullScreenToggle.tsx'
 import { ViewModeToggle } from './ViewModeToggle.tsx'
@@ -103,6 +103,13 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
   ]
 }
 
+const REMOVE_QUESTION = '이 글을 삭제할까요? 삭제한 글은 되돌릴 수 없습니다.'
+
+const REMOVE_FAILURE_TEXT: Record<'forbidden' | 'failed', string> = {
+  forbidden: '작성자만 글을 삭제할 수 있습니다.',
+  failed: '삭제하지 못했습니다. 로그인 상태를 확인하고 잠시 후 다시 시도해 주세요.',
+}
+
 const SAVE_FAILURE_TEXT: Record<SaveFailure, string> = {
   invalid: '제목과 Slug를 확인해 주세요.',
   duplicate: '이미 사용 중인 Slug입니다.',
@@ -117,6 +124,8 @@ interface PostEditorProps {
   saveState: SaveState
   /** Saves the post: the first call creates a draft, later calls update it. Answers whether it was saved. */
   onSave: (input: PostInput) => Promise<boolean>
+  /** Deletes the post saved so far. Answers how that ended. */
+  onRemove: () => Promise<RemoveResult>
   /** The post to revise. Without it the editor starts empty. */
   initial?: PostInput
 }
@@ -169,15 +178,18 @@ function saveNote(state: SaveState, published: boolean): ReactNode {
  * The writing area from fe/DESIGN.md: the title with the save and publish buttons beside it, the slug, the MDX body
  * filling the rest, and the hashtags on the last line. The title and slug limits appear as placeholders only; the
  * backend refuses longer ones. The slug is limited to the characters the spec allows as it is typed. 공개 saves
- * the post as published. Hashtags have no field in the spec, so they are not sent.
+ * the post as published and 삭제 deletes it, after asking. Hashtags have no field in the spec, so they are not sent.
  */
-export function PostEditor({ saveState, onSave, initial = EMPTY_POST }: PostEditorProps) {
+export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST }: PostEditorProps) {
   const [title, updateTitle] = useState(initial.title)
   const [slug, updateSlug] = useState(initial.slug)
   const [markdown, updateMarkdown] = useState(initial.content)
   const [fullScreen, updateFullScreen] = useState(false)
   const [saved, updateSaved] = useState<PostInput>(initial)
   const [published, updatePublished] = useState(initial.status === 'publish')
+  const [exists, updateExists] = useState(initial !== EMPTY_POST)
+  const [removed, updateRemoved] = useState(false)
+  const [removeNote, updateRemoveNote] = useState<string | null>(null)
   const keepAlive = useSessionKeepAlive()
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
@@ -185,11 +197,31 @@ export function PostEditor({ saveState, onSave, initial = EMPTY_POST }: PostEdit
   const canSave = isSavable(input) && saveState.status !== 'saving'
   const unsaved = isUnsaved(input, saved)
   const sessionExpired = keepAlive.expired || (saveState.status === 'failed' && saveState.failure === 'expired')
-  useLeaveGuard(unsaved)
+  useLeaveGuard(unsaved && !removed)
+  useEffect(() => {
+    if (removed) {
+      window.location.assign(LIST_PATH)
+    }
+  }, [removed])
 
   async function saveNow() {
     if (await onSave(input)) {
       updateSaved(input)
+      updateExists(true)
+    }
+  }
+
+  /** Asks first, as a deletion cannot be undone; once the post is gone the editor leaves for the list of all posts. */
+  async function removeNow() {
+    if (!window.confirm(REMOVE_QUESTION)) {
+      return
+    }
+    updateRemoveNote(null)
+    const result = await onRemove()
+    if (result === 'removed') {
+      updateRemoved(true)
+    } else {
+      updateRemoveNote(REMOVE_FAILURE_TEXT[result])
     }
   }
 
@@ -197,6 +229,7 @@ export function PostEditor({ saveState, onSave, initial = EMPTY_POST }: PostEdit
   async function publishNow() {
     if (await onSave({ ...input, status: 'publish' })) {
       updateSaved(input)
+      updateExists(true)
       updatePublished(true)
     }
   }
@@ -218,7 +251,7 @@ export function PostEditor({ saveState, onSave, initial = EMPTY_POST }: PostEdit
               keepAlive.touch()
             }}
             />
-            <FieldHint note={noteOf(saveState, unsaved, published)} />
+            <FieldHint note={removeNote ?? noteOf(saveState, unsaved, published)} />
           </div>
           <button className="post-editor-button" type="button" disabled={!canSave} onClick={() => void saveNow()}>저장</button>
           <button
@@ -228,6 +261,14 @@ export function PostEditor({ saveState, onSave, initial = EMPTY_POST }: PostEdit
             onClick={() => void publishNow()}
           >
             {published ? '공개됨' : '공개'}
+          </button>
+          <button
+            className="post-editor-button post-editor-remove"
+            type="button"
+            disabled={!exists || removed || saveState.status === 'saving'}
+            onClick={() => void removeNow()}
+          >
+            삭제
           </button>
         </div>
         <div className="post-editor-field-group">

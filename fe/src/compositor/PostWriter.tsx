@@ -13,10 +13,10 @@ interface PostWriterProps {
 
 /** The content area for /write and /edit/{slug}: the editor, saving through the backend. */
 export function PostWriter({ initial }: PostWriterProps) {
-  const { state, save } = useSavePost(initial?.slug ?? null)
+  const { state, save, remove } = useSavePost(initial?.slug ?? null)
   return (
     <Suspense fallback={<StatusMessage>편집기를 불러오는 중…</StatusMessage>}>
-      <PostEditor saveState={state} onSave={save} initial={initial} />
+      <PostEditor saveState={state} onSave={save} onRemove={remove} initial={initial} />
     </Suspense>
   )
 }

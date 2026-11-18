@@ -84,6 +84,18 @@
   }
 }
 
+/* Deleting cannot be undone, so it is told apart by a red outline. */
+.post-editor-remove {
+  color: #a3261b;
+  border-color: #a3261b;
+
+  &:hover:enabled,
+  &:focus-visible {
+    color: #fff;
+    background: #a3261b;
+  }
+}
+
 /* Publishing is the main action, so it is filled with the accent colour. */
 .post-editor-publish {
   color: #fff;

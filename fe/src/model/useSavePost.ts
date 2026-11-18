@@ -1,10 +1,13 @@
 import { useRef, useState } from 'react'
 import { ApiError } from './apiClient.ts'
 import type { PostInput } from './Post.ts'
-import { createPost, updatePost } from './postApi.ts'
+import { createPost, deletePost, updatePost } from './postApi.ts'
 
 /** Why a save failed, in the terms the writer can act on. */
 export type SaveFailure = 'invalid' | 'duplicate' | 'expired' | 'forbidden' | 'missing' | 'failed'
+
+/** How a removal ended: the post is gone, only its author may delete it, or it failed for another reason. */
+export type RemoveResult = 'removed' | 'forbidden' | 'failed'
 
 export type SaveState =
   | { status: 'idle' }
@@ -32,12 +35,23 @@ function failureOf(error: unknown): SaveFailure {
   }
 }
 
+function removeFailureOf(error: unknown): RemoveResult {
+  if (error instanceof ApiError && error.status === 404) {
+    return 'removed'
+  }
+  return error instanceof ApiError && error.status === 403 ? 'forbidden' : 'failed'
+}
+
 /**
  * Saves the post being written. The first save creates a draft; every later save updates that same post, even
  * when the slug was changed in between. Given the slug of an existing post, even the first save updates it. If the post has disappeared (404) the next save creates it again. A save
- * answers whether it succeeded.
+ * answers whether it succeeded. A removal deletes the post saved so far, and answers how that ended.
  */
-export function useSavePost(existingSlug: string | null = null): { state: SaveState; save: (input: PostInput) => Promise<boolean> } {
+export function useSavePost(existingSlug: string | null = null): {
+  state: SaveState
+  save: (input: PostInput) => Promise<boolean>
+  remove: () => Promise<RemoveResult>
+} {
   const [state, updateState] = useState<SaveState>({ status: 'idle' })
   const savedSlug = useRef<string | null>(existingSlug)
 
@@ -59,5 +73,19 @@ export function useSavePost(existingSlug: string | null = null): { state: SaveSt
     }
   }
 
-  return { state, save }
+  /** Deletes the post saved so far. A post that is already gone (404) counts as deleted; nothing saved counts as well. */
+  async function remove(): Promise<RemoveResult> {
+    if (savedSlug.current === null) {
+      return 'removed'
+    }
+    try {
+      await deletePost(savedSlug.current)
+      return 'removed'
+    } catch (error: unknown) {
+      console.error(error)
+      return removeFailureOf(error)
+    }
+  }
+
+  return { state, save, remove }
 }
