@@ -21,7 +21,7 @@ import {
   toolbarPlugin,
 } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import {
   cleanSlug,
   isSavable,
@@ -29,6 +29,7 @@ import {
   POST_TITLE_MAX_LENGTH,
   type PostInput,
 } from '../model/Post.ts'
+import { uploadFailureText } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
 import { contentPath } from '../model/route.ts'
 import type { SaveFailure, SaveState } from '../model/useSavePost.ts'
@@ -47,39 +48,49 @@ const CODE_LANGUAGES = {
   yaml: 'YAML',
 }
 
-/** Sends a picked, dropped or pasted image to the backend and answers the URL the editor should show it from. */
-async function uploadedImageUrl(file: File): Promise<string> {
-  return mediaFileUrl(await uploadImage(file))
-}
+/**
+ * Plugins for the body editor: Markdown formatting, links, images and code blocks, and a toolbar for them. An image
+ * picked in the toolbar, dropped on the editor or pasted is sent to the backend; `onImageFailed` hears why one was not.
+ */
+function editorPlugins(onImageFailed: (error: unknown) => void) {
+  async function uploadedImageUrl(file: File): Promise<string> {
+    try {
+      return mediaFileUrl(await uploadImage(file))
+    } catch (error: unknown) {
+      console.error(error)
+      onImageFailed(error)
+      throw error
+    }
+  }
 
-/** Plugins for the body editor: Markdown formatting, links, images and code blocks, and a toolbar for them. */
-const EDITOR_PLUGINS = [
-  headingsPlugin(),
-  listsPlugin(),
-  quotePlugin(),
-  thematicBreakPlugin(),
-  linkPlugin(),
-  linkDialogPlugin(),
-  imagePlugin({ imageUploadHandler: uploadedImageUrl }),
-  codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
-  codeMirrorPlugin({ codeBlockLanguages: CODE_LANGUAGES }),
-  markdownShortcutPlugin(),
-  toolbarPlugin({
-    toolbarContents: () => (
-      <>
-        <UndoRedo />
-        <BlockTypeSelect />
-        <BoldItalicUnderlineToggles />
-        <CodeToggle />
-        <ListsToggle />
-        <CreateLink />
-        <InsertImage />
-        <YouTubeInsert />
-        <InsertCodeBlock />
-      </>
-    ),
-  }),
-]
+  return [
+    headingsPlugin(),
+    listsPlugin(),
+    quotePlugin(),
+    thematicBreakPlugin(),
+    linkPlugin(),
+    linkDialogPlugin(),
+    imagePlugin({ imageUploadHandler: uploadedImageUrl }),
+    codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
+    codeMirrorPlugin({ codeBlockLanguages: CODE_LANGUAGES }),
+    markdownShortcutPlugin(),
+    toolbarPlugin({
+      toolbarContents: () => (
+        <>
+          <UndoRedo />
+          <BlockTypeSelect />
+          <BoldItalicUnderlineToggles />
+          <CodeToggle />
+          <ListsToggle />
+          <CreateLink />
+          <InsertImage />
+          <YouTubeInsert />
+          <InsertCodeBlock />
+        </>
+      ),
+    }),
+  ]
+}
 
 const SAVE_FAILURE_TEXT: Record<SaveFailure, string> = {
   invalid: '제목과 Slug를 확인해 주세요.',
@@ -130,6 +141,8 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
   const [title, updateTitle] = useState('')
   const [slug, updateSlug] = useState('')
   const [markdown, updateMarkdown] = useState('')
+  const [imageNote, updateImageNote] = useState<string | null>(null)
+  const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
   const input = { title, slug, content: markdown }
   const canSave = isSavable(input) && saveState.status !== 'saving'
 
@@ -169,10 +182,14 @@ export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
         className="post-editor-body mdxeditor-full-height"
         contentEditableClassName="post-editor-content"
         markdown={markdown}
-        onChange={updateMarkdown}
+        onChange={(value) => {
+          updateMarkdown(value)
+          updateImageNote(null)
+        }}
         placeholder="본문"
-        plugins={EDITOR_PLUGINS}
+        plugins={plugins}
       />
+      {imageNote !== null && <FieldHint note={imageNote} />}
       <input className="post-editor-field" name="hashtags" type="text" placeholder="#해시태그" aria-label="해시태그" />
     </form>
   )

@@ -1,3 +1,5 @@
+import { ApiError } from './apiClient.ts'
+
 /** Mirrors `Media` in be/apispec.yaml. `url` of an image is a server-relative path; see mediaFileUrl. */
 export interface Media {
   slug: string
@@ -23,4 +25,19 @@ function escapedText(text: string): string {
 export function youTubeMarkdown(title: string, video: Media): string {
   const text = title.trim() === '' ? video.slug : title.trim()
   return `[![${escapedText(text)}](${video.thumbnail ?? ''})](${video.url})`
+}
+
+/** What to tell the writer when an image could not be uploaded, by what the backend answered. */
+export function uploadFailureText(error: unknown): string {
+  switch (error instanceof ApiError ? error.status : 0) {
+    case 401:
+    case 403:
+      return '이미지를 올릴 권한이 없습니다. 다시 로그인해 주세요.'
+    case 413:
+      return '이미지는 10MB 이하여야 합니다.'
+    case 415:
+      return 'PNG, JPEG, GIF, WebP 이미지만 올릴 수 있습니다.'
+    default:
+      return '이미지를 올리지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  }
 }
