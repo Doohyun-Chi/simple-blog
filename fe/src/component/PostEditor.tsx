@@ -117,6 +117,8 @@ interface PostEditorProps {
   saveState: SaveState
   /** Saves the post: the first call creates a draft, later calls update it. Answers whether it was saved. */
   onSave: (input: PostInput) => Promise<boolean>
+  /** The post to revise. Without it the editor starts empty. */
+  initial?: PostInput
   /** Publishes the post. While it is missing, the 공개 button stays disabled. */
   onPublish?: () => void
 }
@@ -171,12 +173,12 @@ function saveNote(state: SaveState): ReactNode {
  * backend refuses longer ones. The slug is limited to the characters the spec allows as it is typed. 공개 stays
  * disabled: the spec has no publish operation, and hashtags have no field in it, so they are not sent.
  */
-export function PostEditor({ saveState, onSave, onPublish }: PostEditorProps) {
-  const [title, updateTitle] = useState('')
-  const [slug, updateSlug] = useState('')
-  const [markdown, updateMarkdown] = useState('')
+export function PostEditor({ saveState, onSave, initial = EMPTY_POST, onPublish }: PostEditorProps) {
+  const [title, updateTitle] = useState(initial.title)
+  const [slug, updateSlug] = useState(initial.slug)
+  const [markdown, updateMarkdown] = useState(initial.content)
   const [fullScreen, updateFullScreen] = useState(false)
-  const [saved, updateSaved] = useState<PostInput>(EMPTY_POST)
+  const [saved, updateSaved] = useState<PostInput>(initial)
   const keepAlive = useSessionKeepAlive()
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])

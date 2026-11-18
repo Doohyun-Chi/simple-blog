@@ -8,6 +8,7 @@ export type Route =
   | { kind: 'content'; type: ContentType; slug: string }
   | { kind: 'list' }
   | { kind: 'write' }
+  | { kind: 'edit'; slug: string }
   | { kind: 'search'; queryType: PostQueryType; query: string }
   | { kind: 'notFound'; path: string }
 
@@ -16,6 +17,9 @@ export const LIST_PATH = '/posts'
 
 /** The area for writing a new post, linked as `새로운 생각` from the info area. */
 export const WRITE_PATH = '/write'
+
+/** Matches /edit/{slug}: the area for revising an existing post, linked as `편집하기` from the post. */
+const EDIT_PATH = /^\/edit\/([^/]+)\/?$/
 
 /** Post search results: /search?query={query}&queryType={queryType}. The parameter names follow be/apispec.yaml. */
 const SEARCH_PATH = /^\/search\/?$/
@@ -39,6 +43,11 @@ export function routeOf(pathname: string, search: string = ''): Route {
   if (SEARCH_PATH.test(pathname)) {
     return searchRouteOf(new URLSearchParams(search))
   }
+  const edit = EDIT_PATH.exec(pathname)
+  if (edit) {
+    const editSlug = decodedSlug(edit[1])
+    return editSlug === null ? { kind: 'notFound', path: pathname } : { kind: 'edit', slug: editSlug }
+  }
   const match = CONTENT_PATH.exec(pathname)
   const slug = match ? decodedSlug(match[SLUG_INDEX]) : null
   if (!match || slug === null) {
@@ -55,6 +64,11 @@ export function currentPageSlug(route: Route): string | null {
 /** Builds the URL path for a piece of content, encoding the slug so non-ASCII slugs stay valid. */
 export function contentPath(type: ContentType, slug: string): string {
   return `/${type}/${encodeURIComponent(slug)}`
+}
+
+/** Builds the URL path for revising a post, encoding the slug like contentPath. */
+export function editPath(slug: string): string {
+  return `/edit/${encodeURIComponent(slug)}`
 }
 
 /** Builds the URL path for a post search. The default query type is left out to keep the URL short. */

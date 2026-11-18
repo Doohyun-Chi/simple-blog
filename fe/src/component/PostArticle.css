@@ -7,12 +7,22 @@
   overflow-wrap: anywhere;
 }
 
-/* Subdued and smaller than the body text, per fe/DESIGN.md. */
-.post-article-date {
-  display: block;
+/* The date and, for a signed-in visitor, the edit link beside it. */
+.post-article-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75em;
   margin-bottom: 2em;
   font-size: 0.8em;
+}
+
+/* Subdued and smaller than the body text, per fe/DESIGN.md. */
+.post-article-date {
   color: var(--text-muted);
+}
+
+.post-article-edit {
+  color: var(--accent);
 }
 
 .post-article-content {
@@ -47,7 +57,15 @@
   }
 }
 
-/* Classic-editor content separates paragraphs with blank lines, not <p>; keep those breaks. <pre> keeps its own. */
-.post-article-content-classic {
+/* The gap between paragraphs. */
+.post-article-content p {
+  margin: 1em 0;
+}
+
+/*
+ * Classic-editor content keeps its single line breaks inside a paragraph. Only the paragraphs do: the container itself
+ * must not, or the line feeds the Markdown renderer puts between blocks would add blank lines on top of the margins.
+ */
+.post-article-content-classic p {
   white-space: pre-line;
 }

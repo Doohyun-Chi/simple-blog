@@ -34,12 +34,12 @@ function failureOf(error: unknown): SaveFailure {
 
 /**
  * Saves the post being written. The first save creates a draft; every later save updates that same post, even
- * when the slug was changed in between. If the post has disappeared (404) the next save creates it again. A save
+ * when the slug was changed in between. Given the slug of an existing post, even the first save updates it. If the post has disappeared (404) the next save creates it again. A save
  * answers whether it succeeded.
  */
-export function useSavePost(): { state: SaveState; save: (input: PostInput) => Promise<boolean> } {
+export function useSavePost(existingSlug: string | null = null): { state: SaveState; save: (input: PostInput) => Promise<boolean> } {
   const [state, updateState] = useState<SaveState>({ status: 'idle' })
-  const savedSlug = useRef<string | null>(null)
+  const savedSlug = useRef<string | null>(existingSlug)
 
   async function save(input: PostInput): Promise<boolean> {
     updateState({ status: 'saving' })

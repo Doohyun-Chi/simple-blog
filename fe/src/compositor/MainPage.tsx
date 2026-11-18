@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Contents } from '../component/Contents.tsx'
 import { Footer } from '../component/Footer.tsx'
 import { Header } from '../component/Header.tsx'
@@ -12,6 +13,7 @@ import { useSession } from '../model/useSession.ts'
 import { HomePost } from './HomePost.tsx'
 import { PostList } from './PostList.tsx'
 import { PostReader } from './PostReader.tsx'
+import { PostReviser } from './PostReviser.tsx'
 import { PostWriter } from './PostWriter.tsx'
 import { PostSearch } from './PostSearch.tsx'
 import { RecentPostsAside } from './RecentPostsAside.tsx'
@@ -33,7 +35,7 @@ export function MainPage() {
         currentQuery={currentQuery(route)}
         session={session}
       />
-      <Contents aside={route.kind === 'write' ? undefined : <RecentPostsAside recent={recent} canWrite={session.status === 'signedIn'} />}>
+      <Contents aside={route.kind === 'write' || route.kind === 'edit' ? undefined : <RecentPostsAside recent={recent} canWrite={session.status === 'signedIn'} />}>
         <RouteContent route={route} recent={recent} session={session} />
       </Contents>
       <Footer />
@@ -45,28 +47,30 @@ export function MainPage() {
 function RouteContent({ route, recent, session }: { route: Route; recent: Remote<PostSummary[]>; session: SessionState }) {
   switch (route.kind) {
     case 'home':
-      return <HomePost recent={recent} />
+      return <HomePost recent={recent} canEdit={session.status === 'signedIn'} />
     case 'list':
       return <PostList />
     case 'write':
-      return <WriteGate session={session} />
+      return <WriteGate session={session}><PostWriter /></WriteGate>
+    case 'edit':
+      return <WriteGate session={session}><PostReviser key={route.slug} slug={route.slug} /></WriteGate>
     case 'notFound':
       return <StatusMessage>Not found: <code>{route.path}</code></StatusMessage>
     case 'search':
       return <PostSearch key={`${route.queryType}:${route.query}`} queryType={route.queryType} query={route.query} />
     case 'content':
-      return <PostReader key={route.slug} slug={route.slug} />
+      return <PostReader key={route.slug} slug={route.slug} canEdit={route.type === 'post' && session.status === 'signedIn'} />
   }
 }
 
-/** Writing needs a signed-in visitor: the editor opens only then, and anyone else is told to sign in. */
-function WriteGate({ session }: { session: SessionState }) {
+/** Writing and revising need a signed-in visitor: the editor opens only then, and anyone else is told to sign in. */
+function WriteGate({ session, children }: { session: SessionState; children: ReactNode }) {
   switch (session.status) {
     case 'loading':
       return <StatusMessage>확인 중…</StatusMessage>
     case 'anonymous':
       return <StatusMessage>글을 쓰려면 로그인해야 합니다.</StatusMessage>
     case 'signedIn':
-      return <PostWriter />
+      return children
   }
 }

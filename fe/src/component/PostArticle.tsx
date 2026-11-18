@@ -6,6 +6,8 @@ import './PostArticle.css'
 
 interface PostArticleProps {
   post: PostBody
+  /** Where the 편집하기 link goes; without it the link is not shown. */
+  editHref?: string
 }
 
 /**
@@ -13,11 +15,14 @@ interface PostArticleProps {
  * (images and YouTube thumbnails included). Posts migrated from WordPress still hold HTML, so raw HTML is kept, but
  * sanitized: scripts, event handlers and the like never reach the page. Classic-editor content keeps its line breaks.
  */
-export function PostArticle({ post }: PostArticleProps) {
+export function PostArticle({ post, editHref }: PostArticleProps) {
   return (
     <article className="post-article">
       <h1 className="post-article-title">{post.title}</h1>
-      <time className="post-article-date" dateTime={post.date}>{dayOf(post.date)}</time>
+      <div className="post-article-meta">
+        <time className="post-article-date" dateTime={post.date}>{dayOf(post.date)}</time>
+        {editHref !== undefined && <a className="post-article-edit" href={editHref}>편집하기</a>}
+      </div>
       <div
         className={isClassicContent(post.content) ? 'post-article-content post-article-content-classic' : 'post-article-content'}
       >
