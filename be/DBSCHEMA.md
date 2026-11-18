@@ -39,3 +39,25 @@ indexes
 
 default reserved data entry
 - id 1, email: doohyunchi@gmail.com
+
+## Post scheme
+table name: tb_post
+columns
+- id: unique identifier
+- slug: post slug, unique identifier in string
+- title: mandatory post title
+- status: draft / private / publish
+- type: post, page, or etc.
+- content: longtext for markdown contents
+- author_id: user id referenced from tb_user
+- hash_tags: comma separated hash tags in text
+- sns_link: linked LinkedIn link if exists
+- created_datetime: zoned datetime
+- modified_datetime: zoned datetime
+
+indexes
+- unique index for id
+- unique index for slug
+- created_datetime for descending query
+- clustered index for type for query
+- clustered index for status for query
