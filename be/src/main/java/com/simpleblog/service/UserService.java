@@ -8,6 +8,8 @@ import java.util.Optional;
 
 import com.simpleblog.entity.BlogUser;
 import com.simpleblog.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class UserService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
 	/** The viewer id of a visitor who is not signed in. Ids start at 1, so it never matches an author. */
 	public static final long ANONYMOUS = 0;
@@ -56,9 +60,18 @@ public class UserService {
 	 * a user is registered when signing in, so one without a row cannot have written anything.
 	 */
 	public long currentViewerId() {
-		return currentEmail().flatMap((email) -> this.userRepository.findByEmail(normalized(email)))
-			.map(BlogUser::id)
-			.orElse(ANONYMOUS);
+		Optional<String> email = currentEmail();
+		long id = email.flatMap((value) -> this.userRepository.findByEmail(normalized(value))).map(BlogUser::id).orElse(ANONYMOUS);
+		LOGGER.info("Current viewer: session email={}, id={}, authentication={}", email.orElse(null), id, authenticationType());
+		return id;
+	}
+
+	private String authenticationType() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null) {
+			return null;
+		}
+		return authentication.getClass().getSimpleName() + "/" + authentication.getPrincipal().getClass().getSimpleName();
 	}
 
 	/** The id to record as the author of what the signed-in user of the current request creates, registering the user on first use. */

@@ -21,6 +21,8 @@ import com.simpleblog.exception.InvalidPostQueryException;
 import com.simpleblog.exception.PostNotFoundException;
 import com.simpleblog.exception.UnsupportedPostQueryTypeException;
 import com.simpleblog.repository.PostRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PostService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(PostService.class);
 
 	/** The statuses a client may set. */
 	private static final Set<String> STATUSES = Set.of("draft", "publish");
@@ -94,9 +98,11 @@ public class PostService {
 
 	@Transactional(readOnly = true)
 	public PostBody postBody(String slug) {
-		return this.postRepository.post(this.slugEncoder.encode(slug))
-			.map((post) -> PostBody.from(post, this.clock.getZone(), this.userService.currentViewerId()))
-			.orElseThrow(() -> new PostNotFoundException(slug));
+		long viewerId = this.userService.currentViewerId();
+		return this.postRepository.post(this.slugEncoder.encode(slug)).map((post) -> {
+			LOGGER.info("Read post slug={} by viewerId={} (authorId={})", post.slug(), viewerId, post.authorId());
+			return PostBody.from(post, this.clock.getZone(), viewerId);
+		}).orElseThrow(() -> new PostNotFoundException(slug));
 	}
 
 	/** Creates a draft post authored by the user of the current session. The slug must not be used by any row of TB_POST. */

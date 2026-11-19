@@ -26,9 +26,12 @@ export async function listOfPosts(request: PostListRequest, signal?: AbortSignal
   return body.posts
 }
 
-/** Calls `GET /public/api/v1/post/{slug}` (operationId: postBody) with the slug as readers see it. */
+/**
+ * Calls `GET /public/api/v1/post/{slug}` (operationId: postBody) with the slug as readers see it. The session cookie goes
+ * along, as the backend tells from it whether the signed-in user may edit the post (`canEdit`).
+ */
 export function postBody(slug: string, signal?: AbortSignal): Promise<PostBody> {
-  return requestJson<PostBody>(`${POST_PATH}/${encodeURIComponent(slug)}`, { signal })
+  return requestJson<PostBody>(`${POST_PATH}/${encodeURIComponent(slug)}`, { signal, credentials: 'include' })
 }
 
 /** Calls `POST /public/api/v1/post` (operationId: createPost). The new post is a draft. */

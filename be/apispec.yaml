@@ -723,9 +723,10 @@ components:
         canEdit:
           type: boolean
           description: >
-            Whether the requester may update and delete this post: true only for a signed-in user who is the author of
-            a row of type post (tb_post.author_id). It is false for an anonymous visitor, for another user's post,
-            for a post with no author, and for every page.
+            Whether the requester is the author of this row (tb_post.author_id): true only for a signed-in user who wrote
+            it, whatever its type. It is false for an anonymous visitor, for another user's row and for a row with no
+            author. Only rows of type post can be updated or deleted, so for a page it is true but the page still
+            cannot be changed through the API.
           examples:
             - false
     PageList:

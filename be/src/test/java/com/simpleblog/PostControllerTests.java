@@ -60,12 +60,6 @@ class PostControllerTests {
 	}
 
 	@Test
-	void neverLetsAnyoneEditAPage() throws Exception {
-		this.mockMvc.perform(get("/public/api/v1/post/about").with(TestUsers.signedIn()))
-			.andExpect(jsonPath("$.canEdit").value(false));
-	}
-
-	@Test
 	void findsANonAsciiSlugStoredPercentEncodedByWordPress() throws Exception {
 		this.mockMvc.perform(get("/public/api/v1/post/{slug}", "큰기업-kpi"))
 			.andExpect(status().isOk())

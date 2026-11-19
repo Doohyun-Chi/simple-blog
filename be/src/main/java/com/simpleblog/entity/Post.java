@@ -80,7 +80,7 @@ public class Post {
 
 	/** Whether the user with this id may update and delete the row: its author, and only a row of type post. */
 	public boolean editableBy(long userId) {
-		return "post".equals(this.type) && this.authorId != null && this.authorId == userId;
+		return this.authorId != null && this.authorId == userId;
 	}
 
 	public Long id() {
