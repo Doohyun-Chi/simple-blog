@@ -20,6 +20,9 @@ export function PostReviser({ slug }: PostReviserProps) {
     case 'failed':
       return <StatusMessage>글을 불러오지 못했습니다.</StatusMessage>
     case 'loaded':
+      if (!post.value.canEdit) {
+        return <StatusMessage>이 글을 편집할 권한이 없습니다.</StatusMessage>
+      }
       return <PostWriter initial={{ title: post.value.title, slug, content: post.value.content, status: statusOf(post.value.status) }} />
   }
 }

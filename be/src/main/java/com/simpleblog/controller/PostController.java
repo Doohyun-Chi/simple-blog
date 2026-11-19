@@ -46,14 +46,14 @@ public class PostController {
 
 	@PostMapping("/post")
 	@ResponseStatus(HttpStatus.CREATED)
-	public PostBody createPost(@AuthenticationPrincipal OidcUser user, @RequestBody PostInput input) {
-		return this.postService.createPost(this.userService.idOf(user.getEmail()), input);
+	public PostBody createPost(@RequestBody PostInput input) {
+		return this.postService.createPost(input);
 	}
 
 	@DeleteMapping("/post/{slug}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void deletePost(@AuthenticationPrincipal OidcUser user, @PathVariable String slug) {
-		this.postService.deletePost(this.userService.idOf(user.getEmail()), slug);
+	public void deletePost(@PathVariable String slug) {
+		this.postService.deletePost(slug);
 	}
 
 	@PutMapping("/post/{slug}")

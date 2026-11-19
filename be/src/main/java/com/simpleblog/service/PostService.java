@@ -46,18 +46,21 @@ public class PostService {
 
 	private final LikePattern likePattern;
 
+	private final UserService userService;
+
 	private final Clock clock;
 
 	private final int titleMaxLength;
 
 	private final int slugMaxLength;
 
-	public PostService(PostRepository postRepository, SlugEncoder slugEncoder, LikePattern likePattern, Clock clock,
-			@Value("${simpleblog.post.title.max-length}") int titleMaxLength,
+	public PostService(PostRepository postRepository, SlugEncoder slugEncoder, LikePattern likePattern, UserService userService,
+			Clock clock, @Value("${simpleblog.post.title.max-length}") int titleMaxLength,
 			@Value("${simpleblog.post.slug.max-length}") int slugMaxLength) {
 		this.postRepository = postRepository;
 		this.slugEncoder = slugEncoder;
 		this.likePattern = likePattern;
+		this.userService = userService;
 		this.clock = clock;
 		this.titleMaxLength = titleMaxLength;
 		this.slugMaxLength = slugMaxLength;
@@ -92,45 +95,53 @@ public class PostService {
 	@Transactional(readOnly = true)
 	public PostBody postBody(String slug) {
 		return this.postRepository.post(this.slugEncoder.encode(slug))
-			.map((post) -> PostBody.from(post, this.clock.getZone()))
+			.map((post) -> PostBody.from(post, this.clock.getZone(), this.userService.currentViewerId()))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 	}
 
-	/** Creates a draft post authored by the user with this id. The slug must not be used by any row of TB_POST. */
+	/** Creates a draft post authored by the user of the current session. The slug must not be used by any row of TB_POST. */
 	@Transactional
-	public PostBody createPost(long authorId, PostInput input) {
+	public PostBody createPost(PostInput input) {
+		long authorId = this.userService.currentWriterId();
 		String slug = storedSlugOf(input);
 		if (this.postRepository.slugInUse(slug)) {
 			throw new DuplicatePostSlugException(input.slug());
 		}
 		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), utcNow());
 		applyStatus(post, input);
-		return PostBody.from(this.postRepository.save(post), this.clock.getZone());
+		return PostBody.from(this.postRepository.save(post), this.clock.getZone(), authorId);
 	}
 
-	/** Replaces title, slug and content of the post with the path slug; a different body slug renames it. */
+	/**
+	 * Replaces title, slug and content of the post with the path slug; a different body slug renames it. Only its author,
+	 * taken from the session of the current request, may do it.
+	 */
 	@Transactional
 	public PostBody updatePost(String slug, PostInput input) {
 		String newSlug = storedSlugOf(input);
 		Post post = this.postRepository.writablePost(this.slugEncoder.encode(slug))
 			.orElseThrow(() -> new PostNotFoundException(slug));
+		long viewerId = this.userService.currentViewerId();
+		if (!post.editableBy(viewerId)) {
+			throw new NotPostAuthorException(slug);
+		}
 		if (this.postRepository.slugInUseExcept(newSlug, post.id())) {
 			throw new DuplicatePostSlugException(input.slug());
 		}
 		post.revise(input.title(), newSlug, input.content(), utcNow());
 		applyStatus(post, input);
-		return PostBody.from(post, this.clock.getZone());
+		return PostBody.from(post, this.clock.getZone(), viewerId);
 	}
 
 	/**
-	 * Deletes the post with this slug on behalf of the user with this id, who must be its author. Only rows of type post
-	 * can be deleted, never pages, attachments or revisions.
+	 * Deletes the post with this slug on behalf of the user of the current session, who must be its author. Only rows of
+	 * type post can be deleted, never pages, attachments or revisions.
 	 */
 	@Transactional
-	public void deletePost(long userId, String slug) {
+	public void deletePost(String slug) {
 		Post post = this.postRepository.writablePost(this.slugEncoder.encode(slug))
 			.orElseThrow(() -> new PostNotFoundException(slug));
-		if (post.authorId() == null || post.authorId() != userId) {
+		if (!post.editableBy(this.userService.currentViewerId())) {
 			throw new NotPostAuthorException(slug);
 		}
 		this.postRepository.delete(post);

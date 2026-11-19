@@ -292,6 +292,7 @@ paths:
         Replaces title, slug and content of the post identified by the path slug. The status is changed only when the body
         has a status ('publish' publishes the post, 'draft' makes it a draft again); otherwise it stays as it is.
         If the body slug differs from the path slug, the post is renamed; the old slug no longer resolves.
+        Only the author of the post (tb_post.author_id) can update it, and only posts can be updated, never pages.
       operationId: updatePost
       tags:
         - Posts
@@ -322,7 +323,7 @@ paths:
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
-          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie), or the post was written by another user. The response body is not part of the contract.
         '404':
           description: No row in tb_post has the path slug. The response body is not part of the contract.
         '409':
@@ -388,6 +389,7 @@ paths:
                 status: publish
                 date: '2026-11-05T09:45:11'
                 modified: '2026-11-05T09:45:11'
+                canEdit: false
         '404':
           description: No row in tb_post has this slug. The response body is not part of the contract.
   /public/api/v1/medias:
@@ -688,6 +690,7 @@ components:
         - status
         - date
         - modified
+        - canEdit
       properties:
         title:
           type: string
@@ -717,6 +720,14 @@ components:
           description: tb_post.modified_datetime (UTC), shown in the same local format as date
           examples:
             - '2026-11-05T09:45:11'
+        canEdit:
+          type: boolean
+          description: >
+            Whether the requester may update and delete this post: true only for a signed-in user who is the author of
+            a row of type post (tb_post.author_id). It is false for an anonymous visitor, for another user's post,
+            for a post with no author, and for every page.
+          examples:
+            - false
     PageList:
       type: object
       required:

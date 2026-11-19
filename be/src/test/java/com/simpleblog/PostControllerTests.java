@@ -22,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @Sql(statements = """
+		insert into tb_user (ID, EMAIL, PROVIDER, REGISTERED_DATE) values
+		(1, 'owner@example.com', 'google', now()),
+		(2, 'other@example.com', 'google', now());
 		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
 		(1, 'KPI', '<p>body</p>', 'kpi', 'post', 'publish', 1, '2026-11-05 00:45:11', '2026-11-06 01:00:00'),
 		(2, 'Draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
@@ -42,7 +45,24 @@ class PostControllerTests {
 			.andExpect(jsonPath("$.content").value("<p>body</p>"))
 			.andExpect(jsonPath("$.status").value("publish"))
 			.andExpect(jsonPath("$.date").value("2026-11-05T09:45:11"))
-			.andExpect(jsonPath("$.modified").value("2026-11-06T10:00:00"));
+			.andExpect(jsonPath("$.modified").value("2026-11-06T10:00:00"))
+			.andExpect(jsonPath("$.canEdit").value(false));
+	}
+
+	@Test
+	void letsOnlyTheAuthorEditAPost() throws Exception {
+		this.mockMvc.perform(get("/public/api/v1/post/kpi").with(TestUsers.signedIn()))
+			.andExpect(jsonPath("$.canEdit").value(true));
+		this.mockMvc.perform(get("/public/api/v1/post/kpi").with(TestUsers.signedIn("other@example.com")))
+			.andExpect(jsonPath("$.canEdit").value(false));
+		this.mockMvc.perform(get("/public/api/v1/post/kpi").with(TestUsers.signedIn("unregistered@example.com")))
+			.andExpect(jsonPath("$.canEdit").value(false));
+	}
+
+	@Test
+	void neverLetsAnyoneEditAPage() throws Exception {
+		this.mockMvc.perform(get("/public/api/v1/post/about").with(TestUsers.signedIn()))
+			.andExpect(jsonPath("$.canEdit").value(false));
 	}
 
 	@Test

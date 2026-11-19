@@ -25,6 +25,8 @@ export interface PostBody {
   status: string
   date: string
   modified: string
+  /** Whether the visitor may revise and delete this post: signed in and its author. Decided by the backend. */
+  canEdit: boolean
 }
 
 /** Narrows a raw query string value to a known query type, falling back to the spec default. */

@@ -4,10 +4,13 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Locale;
+import java.util.Optional;
 
 import com.simpleblog.entity.BlogUser;
 import com.simpleblog.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 
@@ -46,6 +49,29 @@ public class UserService {
 	/** The id of whoever is reading: the signed-in user's, or {@link #ANONYMOUS} (no user has it) for an anonymous visitor. */
 	public long viewerId(OidcUser user) {
 		return user == null ? ANONYMOUS : idOf(user.getEmail());
+	}
+
+	/**
+	 * The id of the user whose session makes the current request, or {@link #ANONYMOUS} when there is none. It only reads:
+	 * a user is registered when signing in, so one without a row cannot have written anything.
+	 */
+	public long currentViewerId() {
+		return currentEmail().flatMap((email) -> this.userRepository.findByEmail(normalized(email)))
+			.map(BlogUser::id)
+			.orElse(ANONYMOUS);
+	}
+
+	/** The id to record as the author of what the signed-in user of the current request creates, registering the user on first use. */
+	public long currentWriterId() {
+		return idOf(currentEmail().orElseThrow(() -> new IllegalStateException("There is no signed-in user for this request")));
+	}
+
+	private Optional<String> currentEmail() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication != null && authentication.getPrincipal() instanceof OidcUser user) {
+			return Optional.ofNullable(user.getEmail()).filter((email) -> !email.isBlank());
+		}
+		return Optional.empty();
 	}
 
 	private BlogUser register(String email, String provider) {

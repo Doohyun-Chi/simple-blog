@@ -5,12 +5,10 @@ import { usePostBody } from '../model/usePostBody.ts'
 
 interface PostReaderProps {
   slug: string
-  /** Whether the visitor may revise this post: shows the 편집하기 link. */
-  canEdit: boolean
 }
 
-/** The content area for /post/{slug} and /page/{slug}: loads the body and shows it. */
-export function PostReader({ slug, canEdit }: PostReaderProps) {
+/** The content area for /post/{slug} and /page/{slug}: loads the body and shows it; the 편집하기 link follows its `canEdit`. */
+export function PostReader({ slug }: PostReaderProps) {
   const post = usePostBody(slug)
   switch (post.state) {
     case 'loading':
@@ -18,6 +16,6 @@ export function PostReader({ slug, canEdit }: PostReaderProps) {
     case 'failed':
       return <StatusMessage>글을 불러오지 못했습니다.</StatusMessage>
     case 'loaded':
-      return <PostArticle post={post.value} editHref={canEdit ? editPath(slug) : undefined} />
+      return <PostArticle post={post.value} editHref={post.value.canEdit ? editPath(slug) : undefined} />
   }
 }

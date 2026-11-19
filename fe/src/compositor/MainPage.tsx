@@ -49,7 +49,7 @@ export function MainPage() {
 function RouteContent({ route, recent, session }: { route: Route; recent: Remote<PostSummary[]>; session: SessionState }) {
   switch (route.kind) {
     case 'home':
-      return <HomePost recent={recent} canEdit={session.status === 'signedIn'} />
+      return <HomePost recent={recent} />
     case 'list':
       return <PostList />
     case 'write':
@@ -61,7 +61,7 @@ function RouteContent({ route, recent, session }: { route: Route; recent: Remote
     case 'search':
       return <PostSearch key={`${route.queryType}:${route.query}`} queryType={route.queryType} query={route.query} />
     case 'content':
-      return <PostReader key={route.slug} slug={route.slug} canEdit={route.type === 'post' && session.status === 'signedIn'} />
+      return <PostReader key={route.slug} slug={route.slug} />
   }
 }
 

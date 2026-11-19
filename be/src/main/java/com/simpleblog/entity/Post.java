@@ -78,6 +78,11 @@ public class Post {
 		this.modifiedAt = utcNow;
 	}
 
+	/** Whether the user with this id may update and delete the row: its author, and only a row of type post. */
+	public boolean editableBy(long userId) {
+		return "post".equals(this.type) && this.authorId != null && this.authorId == userId;
+	}
+
 	public Long id() {
 		return this.id;
 	}

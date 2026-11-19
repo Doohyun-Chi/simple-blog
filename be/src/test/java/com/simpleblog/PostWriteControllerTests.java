@@ -41,7 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @Sql(statements = """
-		insert into tb_user (ID, EMAIL, PROVIDER, REGISTERED_DATE) values (1, 'owner@example.com', 'google', now());
+		insert into tb_user (ID, EMAIL, PROVIDER, REGISTERED_DATE) values
+		(1, 'owner@example.com', 'google', now()),
+		(2, 'other@example.com', 'google', now());
 		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
 		(1001, 'KPI', '<p>old</p>', 'kpi', 'post', 'publish', 1, '2020-01-01 00:00:00', '2020-01-02 00:00:00'),
 		(1002, 'A draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2021-01-01 00:00:00', '2021-01-01 00:00:00'),
@@ -137,7 +139,8 @@ class PostWriteControllerTests {
 			.andExpect(jsonPath("$.content").value("<p>hi</p>"))
 			.andExpect(jsonPath("$.status").value("draft"))
 			.andExpect(jsonPath("$.date").value("2026-11-17T10:30:00"))
-			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"));
+			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"))
+			.andExpect(jsonPath("$.canEdit").value(true));
 		Map<String, Object> row = row("new-thought");
 		org.assertj.core.api.Assertions.assertThat(row)
 			.containsEntry("TYPE", "post")
@@ -193,9 +196,23 @@ class PostWriteControllerTests {
 			.andExpect(jsonPath("$.content").value("<p>new</p>"))
 			.andExpect(jsonPath("$.status").value("publish"))
 			.andExpect(jsonPath("$.date").value("2020-01-01T09:00:00"))
-			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"));
+			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"))
+			.andExpect(jsonPath("$.canEdit").value(true));
 		org.assertj.core.api.Assertions.assertThat(row("kpi").get("MODIFIED_DATETIME").toString())
 			.startsWith("2026-11-17 01:30:00");
+	}
+
+	@Test
+	void refusesUpdatingAPostWrittenByAnotherUser() throws Exception {
+		this.mockMvc.perform(updated("kpi", json("Hijacked", "kpi", "x")).with(TestUsers.signedIn("other@example.com")))
+			.andExpect(status().isForbidden());
+		org.assertj.core.api.Assertions.assertThat(row("kpi")).containsEntry("TITLE", "KPI");
+	}
+
+	@Test
+	void refusesUpdatingAPostForASignedInUserWithNoRegistration() throws Exception {
+		this.mockMvc.perform(updated("kpi", json("Hijacked", "kpi", "x")).with(TestUsers.signedIn("new@example.com")))
+			.andExpect(status().isForbidden());
 	}
 
 	@Test
