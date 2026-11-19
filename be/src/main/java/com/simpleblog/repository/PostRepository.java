@@ -37,7 +37,7 @@ public interface PostRepository extends Repository<Post, Long> {
 
 	Post save(Post post);
 
-	/** Removes the row. Only PostService#deletePost calls it, for a row of type post. */
+	/** Removes the row. Only PostService#deletePost calls it, for a row of type post or page. */
 	void delete(Post post);
 
 	/** Whether any row, of any type or status, already has this stored slug. */
@@ -48,9 +48,9 @@ public interface PostRepository extends Repository<Post, Long> {
 	@Query("select count(p) > 0 from Post p where p.slug = :slug and p.id <> :id")
 	boolean slugInUseExcept(String slug, Long id);
 
-	/** The post to update: only rows of type post can be written, never pages, attachments or revisions. */
-	@Query("select p from Post p where p.slug = :slug and p.type = 'post'")
-	Optional<Post> writablePost(String slug);
+	/** The row to update or delete: a post or a page, never an attachment or a revision. */
+	@Query("select p from Post p where p.slug = :slug and p.type in ('post', 'page')")
+	Optional<Post> editablePost(String slug);
 
 	/** The row with this slug, of any type or status. SLUG is unique across all of them, so there is at most one. */
 	@Query("select p from Post p where p.slug = :slug")

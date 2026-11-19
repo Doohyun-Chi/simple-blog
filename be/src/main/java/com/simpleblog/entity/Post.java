@@ -103,6 +103,10 @@ public class Post {
 		return this.slug;
 	}
 
+	public String type() {
+		return this.type;
+	}
+
 	public String status() {
 		return this.status;
 	}

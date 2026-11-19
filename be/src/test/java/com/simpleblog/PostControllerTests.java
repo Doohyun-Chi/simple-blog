@@ -44,6 +44,7 @@ class PostControllerTests {
 			.andExpect(jsonPath("$.title").value("KPI"))
 			.andExpect(jsonPath("$.content").value("<p>body</p>"))
 			.andExpect(jsonPath("$.status").value("publish"))
+			.andExpect(jsonPath("$.type").value("post"))
 			.andExpect(jsonPath("$.date").value("2026-11-05T09:45:11"))
 			.andExpect(jsonPath("$.modified").value("2026-11-06T10:00:00"))
 			.andExpect(jsonPath("$.canEdit").value(false));

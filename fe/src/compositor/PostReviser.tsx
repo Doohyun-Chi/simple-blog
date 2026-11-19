@@ -1,4 +1,5 @@
 import { StatusMessage } from '../component/StatusMessage.tsx'
+import { contentTypeOf } from '../model/route.ts'
 import { usePostBody } from '../model/usePostBody.ts'
 import { PostWriter } from './PostWriter.tsx'
 
@@ -23,6 +24,9 @@ export function PostReviser({ slug }: PostReviserProps) {
       if (!post.value.canEdit) {
         return <StatusMessage>이 글을 편집할 권한이 없습니다.</StatusMessage>
       }
-      return <PostWriter initial={{ title: post.value.title, slug, content: post.value.content, status: statusOf(post.value.status) }} />
+      return <PostWriter
+          initial={{ title: post.value.title, slug, content: post.value.content, status: statusOf(post.value.status) }}
+          contentType={contentTypeOf(post.value)}
+        />
   }
 }

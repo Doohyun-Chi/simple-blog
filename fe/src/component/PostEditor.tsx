@@ -36,7 +36,7 @@ import { FullScreenContext } from '../model/FullScreen.ts'
 import { uploadFailureText } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
 import { googleLoginUrl } from '../model/identityApi.ts'
-import { contentPath, LIST_PATH } from '../model/route.ts'
+import { type ContentType, contentPath, LIST_PATH } from '../model/route.ts'
 import { useLeaveGuard } from '../model/useLeaveGuard.ts'
 import type { RemoveResult, SaveFailure, SaveState } from '../model/useSavePost.ts'
 import { useSessionKeepAlive } from '../model/useSessionKeepAlive.ts'
@@ -129,6 +129,8 @@ interface PostEditorProps {
   onRemove: () => Promise<RemoveResult>
   /** The post to revise. Without it the editor starts empty. */
   initial?: PostInput
+  /** Where the post is read, for the 보기 link. Defaults to a post. */
+  contentType?: ContentType
 }
 
 /** The line under a field. */
@@ -141,9 +143,9 @@ function FieldHint({ note }: { note: ReactNode }) {
 }
 
 /** The line under the title: the save in progress or failed, else a warning while changes are unsaved, else the last save. */
-function noteOf(state: SaveState, unsaved: boolean, published: boolean): ReactNode {
+function noteOf(state: SaveState, unsaved: boolean, published: boolean, contentType: ContentType): ReactNode {
   const busyOrFailed = state.status === 'saving' || state.status === 'failed'
-  return unsaved && !busyOrFailed ? '저장하지 않은 변경이 있습니다.' : saveNote(state, published)
+  return unsaved && !busyOrFailed ? '저장하지 않은 변경이 있습니다.' : saveNote(state, published, contentType)
 }
 
 /** Tells the writer the session ended and how to sign in again without leaving the editor, so nothing written is lost. */
@@ -162,14 +164,14 @@ function SessionExpiredNote() {
   )
 }
 
-function saveNote(state: SaveState, published: boolean): ReactNode {
+function saveNote(state: SaveState, published: boolean, contentType: ContentType): ReactNode {
   switch (state.status) {
     case 'idle':
       return null
     case 'saving':
       return '저장 중…'
     case 'saved':
-      return <>{published ? '저장했습니다.' : '초안으로 저장했습니다.'} <a href={contentPath('post', state.slug)}>보기</a></>
+      return <>{published ? '저장했습니다.' : '초안으로 저장했습니다.'} <a href={contentPath(contentType, state.slug)}>보기</a></>
     case 'failed':
       return SAVE_FAILURE_TEXT[state.failure]
   }
@@ -181,7 +183,7 @@ function saveNote(state: SaveState, published: boolean): ReactNode {
  * backend refuses longer ones. The slug is limited to the characters the spec allows as it is typed. 공개 saves
  * the post as published and 삭제 deletes it, after asking. Hashtags have no field in the spec, so they are not sent.
  */
-export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST }: PostEditorProps) {
+export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, contentType = 'post' }: PostEditorProps) {
   const [title, updateTitle] = useState(initial.title)
   const [slug, updateSlug] = useState(initial.slug)
   const [markdown, updateMarkdown] = useState(initial.content)
@@ -252,7 +254,7 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST }
               keepAlive.touch()
             }}
             />
-            <FieldHint note={removeNote ?? noteOf(saveState, unsaved, published)} />
+            <FieldHint note={removeNote ?? noteOf(saveState, unsaved, published, contentType)} />
           </div>
           <button
             className="post-editor-button"

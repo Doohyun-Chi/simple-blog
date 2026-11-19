@@ -23,6 +23,8 @@ export interface PostBody {
   title: string
   content: string
   status: string
+  /** As stored: post or page; any other type is read like a post. */
+  type: string
   date: string
   modified: string
   /** Whether the visitor may revise and delete this post: signed in and its author. Decided by the backend. */

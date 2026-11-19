@@ -138,6 +138,7 @@ class PostWriteControllerTests {
 			.andExpect(jsonPath("$.slug").value("new-thought"))
 			.andExpect(jsonPath("$.content").value("<p>hi</p>"))
 			.andExpect(jsonPath("$.status").value("draft"))
+			.andExpect(jsonPath("$.type").value("post"))
 			.andExpect(jsonPath("$.date").value("2026-11-17T10:30:00"))
 			.andExpect(jsonPath("$.modified").value("2026-11-17T10:30:00"))
 			.andExpect(jsonPath("$.canEdit").value(true));
@@ -238,10 +239,22 @@ class PostWriteControllerTests {
 	}
 
 	@Test
-	void answersNotFoundForAnUnknownSlugAndForRowsThatAreNotPosts() throws Exception {
-		for (String slug : new String[] { "no-such-post", "about", "hi-there" }) {
+	void answersNotFoundForAnUnknownSlugAndForRowsThatAreNeitherPostsNorPages() throws Exception {
+		for (String slug : new String[] { "no-such-post", "hi-there" }) {
 			this.mockMvc.perform(updated(slug, json("T", "t-" + slug, "x"))).andExpect(status().isNotFound());
 		}
+	}
+
+	@Test
+	void updatesAPageForItsAuthorAndRefusesAnotherUser() throws Exception {
+		this.mockMvc.perform(updated("about", json("About us", "about", "<p>new</p>")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.title").value("About us"))
+			.andExpect(jsonPath("$.type").value("page"))
+			.andExpect(jsonPath("$.canEdit").value(true));
+		this.mockMvc.perform(updated("about", json("Hijacked", "about", "x")).with(TestUsers.signedIn("other@example.com")))
+			.andExpect(status().isForbidden());
+		org.assertj.core.api.Assertions.assertThat(row("about")).containsEntry("TYPE", "page").containsEntry("TITLE", "About us");
 	}
 
 	@Test
@@ -281,11 +294,20 @@ class PostWriteControllerTests {
 	}
 
 	@Test
-	void answersNotFoundWhenDeletingAnUnknownSlugOrARowThatIsNotAPost() throws Exception {
-		for (String slug : new String[] { "no-such-post", "about", "hi-there" }) {
+	void answersNotFoundWhenDeletingAnUnknownSlugOrARowThatIsNeitherAPostNorAPage() throws Exception {
+		for (String slug : new String[] { "no-such-post", "hi-there" }) {
 			this.mockMvc.perform(deleted(slug)).andExpect(status().isNotFound());
 		}
-		assertThat(rowsWithSlug("about") + rowsWithSlug("hi-there")).isEqualTo(2);
+		assertThat(rowsWithSlug("hi-there")).isEqualTo(1);
+	}
+
+	@Test
+	void deletesAPageForItsAuthorAndRefusesAnotherUser() throws Exception {
+		this.mockMvc.perform(delete(POST + "/about").with(TestUsers.signedIn("other@example.com")).with(csrf()))
+			.andExpect(status().isForbidden());
+		assertThat(rowsWithSlug("about")).isEqualTo(1);
+		this.mockMvc.perform(deleted("about")).andExpect(status().isNoContent());
+		assertThat(rowsWithSlug("about")).isZero();
 	}
 
 	@Test

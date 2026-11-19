@@ -292,7 +292,7 @@ paths:
         Replaces title, slug and content of the post identified by the path slug. The status is changed only when the body
         has a status ('publish' publishes the post, 'draft' makes it a draft again); otherwise it stays as it is.
         If the body slug differs from the path slug, the post is renamed; the old slug no longer resolves.
-        Only the author of the post (tb_post.author_id) can update it, and only posts can be updated, never pages.
+        Only the author of the row (tb_post.author_id) can update it, and only posts and pages can be updated, never other types such as attachments.
       operationId: updatePost
       tags:
         - Posts
@@ -333,8 +333,8 @@ paths:
     delete:
       summary: Delete a post
       description: >
-        Deletes the post identified by the path slug: its tb_post row is removed for good, whatever its status, and
-        the slug resolves no more. Only the author of the post (tb_post.author_id) can delete it, and only posts can be deleted, never pages. Media items the post used are not touched.
+        Deletes the post or page identified by the path slug: its tb_post row is removed for good, whatever its status, and
+        the slug resolves no more. Only the author of the row (tb_post.author_id) can delete it, and only posts and pages can be deleted, never other types such as attachments. Media items it used are not touched.
       operationId: deletePost
       tags:
         - Posts
@@ -355,7 +355,7 @@ paths:
         '403':
           description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie), or the post was written by another user. The response body is not part of the contract.
         '404':
-          description: No post has the path slug; a row of another type, such as a page, counts as none. The response body is not part of the contract.
+          description: No post or page has the path slug; a row of another type, such as an attachment, counts as none. The response body is not part of the contract.
         '500':
           description: Failed to delete. The response body is not part of the contract.
     get:
@@ -387,6 +387,7 @@ paths:
                 slug: '%ed%81%b0%ea%b8%b0%ec%97%85%ec%9d%98-%eb%b0%b0%ec%9b%80-kpi'
                 content: '<!-- wp:paragraph --><p>...</p><!-- /wp:paragraph -->'
                 status: publish
+                type: post
                 date: '2026-11-05T09:45:11'
                 modified: '2026-11-05T09:45:11'
                 canEdit: false
@@ -688,6 +689,7 @@ components:
         - slug
         - content
         - status
+        - type
         - date
         - modified
         - canEdit
@@ -708,6 +710,11 @@ components:
           description: tb_post.status as stored (e.g. publish, draft, private); rows of any status are returned
           examples:
             - publish
+        type:
+          type: string
+          description: tb_post.type as stored (e.g. post, page); readers open a page at /page/{slug} and a post at /post/{slug}
+          examples:
+            - post
         date:
           type: string
           description: >
@@ -725,8 +732,7 @@ components:
           description: >
             Whether the requester is the author of this row (tb_post.author_id): true only for a signed-in user who wrote
             it, whatever its type. It is false for an anonymous visitor, for another user's row and for a row with no
-            author. Only rows of type post can be updated or deleted, so for a page it is true but the page still
-            cannot be changed through the API.
+            author. A post or a page can be updated and deleted by its author.
           examples:
             - false
     PageList:

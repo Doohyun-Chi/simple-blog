@@ -11,11 +11,11 @@ import com.simpleblog.entity.Post;
  * {@code date} and {@code modified} are the site's local time with no offset, like the WordPress REST API's fields
  * of the same names; the table keeps them in UTC. {@code canEdit} tells whether the requester may update and delete it.
  */
-public record PostBody(String title, String slug, String content, String status, LocalDateTime date,
+public record PostBody(String title, String slug, String content, String status, String type, LocalDateTime date,
 		LocalDateTime modified, boolean canEdit) {
 
 	public static PostBody from(Post post, ZoneId siteZone, long viewerId) {
-		return new PostBody(post.title(), post.slug(), post.content(), post.status(), local(post.createdAt(), siteZone),
+		return new PostBody(post.title(), post.slug(), post.content(), post.status(), post.type(), local(post.createdAt(), siteZone),
 				local(post.modifiedAt(), siteZone), post.editableBy(viewerId));
 	}
 

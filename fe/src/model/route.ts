@@ -1,4 +1,4 @@
-import { DEFAULT_POST_QUERY_TYPE, type PostQueryType, postQueryTypeOf } from './Post.ts'
+import { DEFAULT_POST_QUERY_TYPE, type PostBody, type PostQueryType, postQueryTypeOf } from './Post.ts'
 
 /** Kinds of content the app can show. Each maps to a top-level path segment: /page/{slug}, /post/{slug}. */
 export type ContentType = 'page' | 'post'
@@ -64,6 +64,11 @@ export function currentPageSlug(route: Route): string | null {
 /** Builds the URL path for a piece of content, encoding the slug so non-ASCII slugs stay valid. */
 export function contentPath(type: ContentType, slug: string): string {
   return `/${type}/${encodeURIComponent(slug)}`
+}
+
+/** Where readers open this row: pages at /page/{slug}, everything else at /post/{slug}. */
+export function contentTypeOf(post: Pick<PostBody, 'type'>): ContentType {
+  return post.type === 'page' ? 'page' : 'post'
 }
 
 /** Builds the URL path for revising a post, encoding the slug like contentPath. */

@@ -120,7 +120,7 @@ public class PostService {
 	@Transactional
 	public PostBody updatePost(String slug, PostInput input) {
 		String newSlug = storedSlugOf(input);
-		Post post = this.postRepository.writablePost(this.slugEncoder.encode(slug))
+		Post post = this.postRepository.editablePost(this.slugEncoder.encode(slug))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 		long viewerId = this.userService.currentViewerId();
 		if (!post.editableBy(viewerId)) {
@@ -136,11 +136,11 @@ public class PostService {
 
 	/**
 	 * Deletes the post with this slug on behalf of the user of the current session, who must be its author. Only rows of
-	 * type post can be deleted, never pages, attachments or revisions.
+	 * type post or page can be deleted, never attachments or revisions.
 	 */
 	@Transactional
 	public void deletePost(String slug) {
-		Post post = this.postRepository.writablePost(this.slugEncoder.encode(slug))
+		Post post = this.postRepository.editablePost(this.slugEncoder.encode(slug))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 		if (!post.editableBy(this.userService.currentViewerId())) {
 			throw new NotPostAuthorException(slug);
