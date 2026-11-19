@@ -35,7 +35,9 @@ export function MainPage() {
         currentQuery={currentQuery(route)}
         session={session}
       />
-      <Contents aside={route.kind === 'write' || route.kind === 'edit' ? undefined : <RecentPostsAside recent={recent} canWrite={session.status === 'signedIn'} />}>
+      <Contents aside={route.kind === 'write' || route.kind === 'edit' ? undefined : <RecentPostsAside recent={recent} canWrite={session.status === 'signedIn'}
+            showAd={route.kind === 'home' || route.kind === 'content'}
+          />}>
         <RouteContent route={route} recent={recent} session={session} />
       </Contents>
       <Footer />
