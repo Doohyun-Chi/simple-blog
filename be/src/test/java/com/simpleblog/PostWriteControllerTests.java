@@ -48,7 +48,9 @@ import org.springframework.transaction.annotation.Transactional;
 		(1001, 'KPI', '<p>old</p>', 'kpi', 'post', 'publish', 1, '2020-01-01 00:00:00', '2020-01-02 00:00:00'),
 		(1002, 'A draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2021-01-01 00:00:00', '2021-01-01 00:00:00'),
 		(1003, 'About', 'page body', 'about', 'page', 'publish', 1, '2022-01-01 00:00:00', '2022-01-01 00:00:00'),
-		(1004, 'Image', '', 'hi-there', 'attachment', 'inherit', 1, '2023-01-01 00:00:00', '2023-01-01 00:00:00');
+		(1004, 'Image', '', 'hi-there', 'attachment', 'inherit', 1, '2023-01-01 00:00:00', '2023-01-01 00:00:00'),
+		(1005, 'Digits', 'old', 'post-2026', 'post', 'publish', 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+		(1006, 'Korean', 'old', '%ed%81%b0-kpi', 'post', 'draft', 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
 		""")
 class PostWriteControllerTests {
 
@@ -243,6 +245,26 @@ class PostWriteControllerTests {
 		for (String slug : new String[] { "no-such-post", "hi-there" }) {
 			this.mockMvc.perform(updated(slug, json("T", "t-" + slug, "x"))).andExpect(status().isNotFound());
 		}
+	}
+
+	@Test
+	void keepsAnUnchangedSlugThatBreaksTheSlugRule() throws Exception {
+		this.mockMvc.perform(updated("post-2026", json("Digits 2", "post-2026", "new")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.slug").value("post-2026"))
+			.andExpect(jsonPath("$.title").value("Digits 2"));
+		this.mockMvc.perform(updated("큰-kpi", jsonWithStatus("Korean", "큰-kpi", "new", "publish")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.slug").value("%ed%81%b0-kpi"))
+			.andExpect(jsonPath("$.status").value("publish"));
+	}
+
+	@Test
+	void stillAppliesTheSlugRuleToANewSlugAndToTheRestOfTheInput() throws Exception {
+		this.mockMvc.perform(updated("post-2026", json("Digits", "post-2027", "x"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(updated("post-2026", json("", "post-2026", "x"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(updated("post-2026", json("Digits", "post-2026", null))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(created(json("Digits", "post-2026", "x"))).andExpect(status().isBadRequest());
 	}
 
 	@Test

@@ -291,7 +291,9 @@ paths:
       description: >
         Replaces title, slug and content of the post identified by the path slug. The status is changed only when the body
         has a status ('publish' publishes the post, 'draft' makes it a draft again); otherwise it stays as it is.
-        If the body slug differs from the path slug, the post is renamed; the old slug no longer resolves.
+        If the body slug differs from the path slug, the post is renamed; the old slug no longer resolves, and the new slug
+        must follow the slug rule of PostInput. A body slug equal to the path slug keeps the slug as it is, whatever
+        characters it has, so rows migrated from WordPress can be updated.
         Only the author of the row (tb_post.author_id) can update it, and only posts and pages can be updated, never other types such as attachments.
       operationId: updatePost
       tags:
@@ -629,7 +631,8 @@ components:
           pattern: '^[A-Za-z-]+$'
           description: |
             User friendly and unique URL, stored at tb_post.slug. Only English letters (A-Z, a-z) and '-' are
-            allowed: no space, digit, non-ASCII or other character. Anything else is rejected with 400.
+            allowed: no space, digit, non-ASCII or other character. Anything else is rejected with 400, except that an
+            update may send the slug the row already has (the path slug of PUT) as it is, whatever it contains.
         content:
           type: string
           description: tb_post.content

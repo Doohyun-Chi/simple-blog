@@ -142,6 +142,12 @@ function FieldHint({ note }: { note: ReactNode }) {
   )
 }
 
+/** The line under the slug: the characters a new slug may have, and that a slug the post already has can stay as it is. */
+function slugNote(slug: string, savedSlug: string): string {
+  const rule = '영문 대소문자와 - 만 사용할 수 있습니다.'
+  return slug === savedSlug && cleanSlug(slug) !== slug ? `기존 slug는 그대로 저장됩니다. 바꾸려면 ${rule}` : rule
+}
+
 /** The line under the title: the save in progress or failed, else a warning while changes are unsaved, else the last save. */
 function noteOf(state: SaveState, unsaved: boolean, published: boolean, contentType: ContentType): ReactNode {
   const busyOrFailed = state.status === 'saving' || state.status === 'failed'
@@ -197,7 +203,7 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
   const input = { title, slug, content: markdown }
-  const canSave = isSavable(input) && saveState.status !== 'saving'
+  const canSave = isSavable(input, saved.slug) && saveState.status !== 'saving'
   const unsaved = isUnsaved(input, saved)
   const sessionExpired = keepAlive.expired || (saveState.status === 'failed' && saveState.failure === 'expired')
   useLeaveGuard(unsaved && !removed)
@@ -300,7 +306,7 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
             keepAlive.touch()
           }}
           />
-          <FieldHint note="영문 대소문자와 - 만 사용할 수 있습니다." />
+          <FieldHint note={slugNote(slug, saved.slug)} />
         </div>
         <MDXEditor
           className="post-editor-body mdxeditor-full-height"

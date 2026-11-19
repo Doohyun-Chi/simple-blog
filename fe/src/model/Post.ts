@@ -99,9 +99,13 @@ export function cleanSlug(slug: string): string {
   return slug.replace(/\s/g, '-').replace(SLUG_FORBIDDEN, '')
 }
 
-/** Whether a post can be sent: a title with a visible character and a slug made of allowed characters. */
-export function isSavable(input: PostInput): boolean {
-  return input.title.trim() !== '' && input.slug !== '' && cleanSlug(input.slug) === input.slug
+/**
+ * Whether a post can be sent: a title with a visible character and a slug made of allowed characters. A slug the post
+ * already has (`savedSlug`) passes as it is, as the backend keeps it on update; rows migrated from WordPress often
+ * have digits or Korean in it.
+ */
+export function isSavable(input: PostInput, savedSlug: string): boolean {
+  return input.title.trim() !== '' && input.slug !== '' && (cleanSlug(input.slug) === input.slug || input.slug === savedSlug)
 }
 
 /** Whether the post being written differs from what was last saved (nothing saved yet counts as an empty post). */

@@ -119,7 +119,7 @@ public class PostService {
 	 */
 	@Transactional
 	public PostBody updatePost(String slug, PostInput input) {
-		String newSlug = storedSlugOf(input);
+		String newSlug = storedSlugOfUpdate(slug, input);
 		Post post = this.postRepository.editablePost(this.slugEncoder.encode(slug))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 		long viewerId = this.userService.currentViewerId();
@@ -160,13 +160,21 @@ public class PostService {
 		return LocalDateTime.now(this.clock.withZone(ZoneOffset.UTC)).truncatedTo(ChronoUnit.SECONDS);
 	}
 
+	/**
+	 * Like {@link #storedSlugOf}, except that a body slug equal to the path slug keeps the slug as it is stored without the
+	 * slug rules, so a row migrated from WordPress with digits or non-ASCII characters in its slug can still be updated.
+	 */
+	private String storedSlugOfUpdate(String pathSlug, PostInput input) {
+		if (input.slug() == null || !this.slugEncoder.encode(input.slug()).equals(this.slugEncoder.encode(pathSlug))) {
+			return storedSlugOf(input);
+		}
+		requireValidFields(input);
+		return this.slugEncoder.encode(pathSlug);
+	}
+
 	/** Checks the input against be/apispec.yaml and returns the slug in the stored form. */
 	private String storedSlugOf(PostInput input) {
-		requireValidTitle(input.title());
-		requireValidStatus(input.status());
-		if (input.content() == null) {
-			throw new InvalidPostException("content is required");
-		}
+		requireValidFields(input);
 		if (input.slug() == null || !SLUG.matcher(input.slug()).matches()) {
 			throw new InvalidPostException("slug must be made of English letters and '-' only");
 		}
@@ -174,6 +182,14 @@ public class PostService {
 			throw new InvalidPostException("slug is too long: it is limited to " + this.slugMaxLength);
 		}
 		return input.slug();
+	}
+
+	private void requireValidFields(PostInput input) {
+		requireValidTitle(input.title());
+		requireValidStatus(input.status());
+		if (input.content() == null) {
+			throw new InvalidPostException("content is required");
+		}
 	}
 
 	private void requireValidStatus(String status) {
