@@ -50,6 +50,14 @@ class PostControllerTests {
 	}
 
 	@Test
+	void takesTheUserIdFromTheSessionWithoutLookingUpTheEmail() throws Exception {
+		this.mockMvc.perform(get("/public/api/v1/post/kpi").with(TestUsers.signedInWithId("not-in-the-table@example.com", 1)))
+			.andExpect(jsonPath("$.canEdit").value(true));
+		this.mockMvc.perform(get("/public/api/v1/post/kpi").with(TestUsers.signedInWithId("owner@example.com", 2)))
+			.andExpect(jsonPath("$.canEdit").value(false));
+	}
+
+	@Test
 	void letsOnlyTheAuthorEditAPost() throws Exception {
 		this.mockMvc.perform(get("/public/api/v1/post/kpi").with(TestUsers.signedIn()))
 			.andExpect(jsonPath("$.canEdit").value(true));

@@ -46,13 +46,13 @@ public class MediaController {
 	@PostMapping(path = "/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<MediaInfo> createImage(@AuthenticationPrincipal OidcUser user, @RequestPart("file") MultipartFile file)
 			throws IOException {
-		long ownerId = this.userService.idOf(user.getEmail());
+		long ownerId = this.userService.idOf(user);
 		return ResponseEntity.status(HttpStatus.CREATED).body(this.mediaService.uploadImage(ownerId, file.getOriginalFilename(), file.getBytes()));
 	}
 
 	@PostMapping(path = "/media", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<MediaInfo> createVideo(@AuthenticationPrincipal OidcUser user, @RequestBody ExternalMediaInput input) {
-		MediaService.Registration registration = this.mediaService.registerVideo(this.userService.idOf(user.getEmail()), input.url());
+		MediaService.Registration registration = this.mediaService.registerVideo(this.userService.idOf(user), input.url());
 		return ResponseEntity.status(registration.created() ? HttpStatus.CREATED : HttpStatus.OK).body(registration.media());
 	}
 

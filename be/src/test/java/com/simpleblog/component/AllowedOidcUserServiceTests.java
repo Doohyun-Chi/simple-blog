@@ -13,6 +13,7 @@ import com.simpleblog.entity.BlogUser;
 import com.simpleblog.repository.UserRepository;
 import com.simpleblog.service.UserService;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -32,6 +33,7 @@ class AllowedOidcUserServiceTests {
 
 		@Override
 		public BlogUser save(BlogUser user) {
+			ReflectionTestUtils.setField(user, "id", (long) AllowedOidcUserServiceTests.this.users.size() + 1);
 			AllowedOidcUserServiceTests.this.users.put(user.email(), user);
 			return user;
 		}
@@ -63,7 +65,7 @@ class AllowedOidcUserServiceTests {
 	void anyVerifiedUserSignsInAndIsRegisteredWhenTheListIsEmpty() {
 		OidcUser user = userOf("anyone@example.com", true);
 		AllowedOidcUserService open = new AllowedOidcUserService(new AllowedUsers(new String[0]), this.userService, (request) -> user);
-		assertThat(open.loadUser(request())).isSameAs(user);
+		assertThat(open.loadUser(request()).getEmail()).isEqualTo("anyone@example.com");
 		assertThat(this.users).containsOnlyKeys("anyone@example.com");
 	}
 
@@ -78,7 +80,10 @@ class AllowedOidcUserServiceTests {
 	@Test
 	void anAllowedVerifiedUserSignsIn() {
 		OidcUser user = userOf("owner@example.com", true);
-		assertThat(serviceReturning(user).loadUser(request())).isSameAs(user);
+		OidcUser loaded = serviceReturning(user).loadUser(request());
+		assertThat(loaded.getEmail()).isEqualTo("owner@example.com");
+		assertThat(loaded).isInstanceOfSatisfying(BlogOidcUser.class,
+				(signedIn) -> assertThat(signedIn.userId()).isEqualTo(this.users.get("owner@example.com").id()));
 	}
 
 	@Test
