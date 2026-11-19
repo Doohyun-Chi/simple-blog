@@ -21,6 +21,7 @@ import {
   toolbarPlugin,
 } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
+import { IconDeviceFloppy, IconTrash, IconWorldCheck, IconWorldUpload } from '@tabler/icons-react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import {
   cleanSlug,
@@ -253,22 +254,35 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST }
             />
             <FieldHint note={removeNote ?? noteOf(saveState, unsaved, published)} />
           </div>
-          <button className="post-editor-button" type="button" disabled={!canSave} onClick={() => void saveNow()}>저장</button>
+          <button
+            className="post-editor-button"
+            type="button"
+            title="저장"
+            aria-label="저장"
+            disabled={!canSave}
+            onClick={() => void saveNow()}
+          >
+            <IconDeviceFloppy size="1.25em" aria-hidden="true" />
+          </button>
           <button
             className="post-editor-button post-editor-publish"
             type="button"
+            title={published ? '공개됨' : '공개'}
+            aria-label={published ? '공개됨' : '공개'}
             disabled={!canSave || published}
             onClick={() => void publishNow()}
           >
-            {published ? '공개됨' : '공개'}
+            {published ? <IconWorldCheck size="1.25em" aria-hidden="true" /> : <IconWorldUpload size="1.25em" aria-hidden="true" />}
           </button>
           <button
             className="post-editor-button post-editor-remove"
             type="button"
+            title="삭제"
+            aria-label="삭제"
             disabled={!exists || removed || saveState.status === 'saving'}
             onClick={() => void removeNow()}
           >
-            삭제
+            <IconTrash size="1.25em" aria-hidden="true" />
           </button>
         </div>
         <div className="post-editor-field-group">

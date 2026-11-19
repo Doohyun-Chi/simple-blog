@@ -37,6 +37,11 @@
   color: var(--text-draft);
 }
 
+/* Sits on the text's line, in the link's colour. */
+.recent-post-list-icon {
+  vertical-align: -0.125em;
+}
+
 .recent-post-list-all {
   color: var(--accent);
   font-weight: 600;

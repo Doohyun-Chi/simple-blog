@@ -1,3 +1,4 @@
+import { IconFilePlus } from '@tabler/icons-react'
 import { type PostSummary, readerSlug } from '../model/Post.ts'
 import { contentPath, LIST_PATH, WRITE_PATH } from '../model/route.ts'
 import './RecentPostList.css'
@@ -32,7 +33,7 @@ export function RecentPostList({ posts, canWrite }: RecentPostListProps) {
         {canWrite && (
           <li>
             <a className="recent-post-list-link recent-post-list-all" href={WRITE_PATH}>
-              <span aria-hidden="true">➕</span> 새로운 생각
+              <IconFilePlus className="recent-post-list-icon" size="1em" aria-hidden="true" /> 새로운 생각
             </a>
           </li>
         )}
