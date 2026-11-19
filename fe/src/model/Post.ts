@@ -91,8 +91,8 @@ export const POST_TITLE_MAX_LENGTH = 130
 /** The longest slug. Mirrors `maxLength` of `PostInput.slug` in be/apispec.yaml; shown, not enforced, like the title's. */
 export const POST_SLUG_MAX_LENGTH = 200
 
-/** What a slug must not contain: the spec allows only English letters and `-`. */
-const SLUG_FORBIDDEN = /[^A-Za-z-]/g
+/** What a slug must not contain: the spec allows only English letters, digits and `-`. */
+const SLUG_FORBIDDEN = /[^A-Za-z0-9-]/g
 
 /** Turns typed text into slug characters: spaces become `-` and other forbidden characters are dropped. */
 export function cleanSlug(slug: string): string {
@@ -102,7 +102,7 @@ export function cleanSlug(slug: string): string {
 /**
  * Whether a post can be sent: a title with a visible character and a slug made of allowed characters. A slug the post
  * already has (`savedSlug`) passes as it is, as the backend keeps it on update; rows migrated from WordPress often
- * have digits or Korean in it.
+ * have an underscore or Korean in it.
  */
 export function isSavable(input: PostInput, savedSlug: string): boolean {
   return input.title.trim() !== '' && input.slug !== '' && (cleanSlug(input.slug) === input.slug || input.slug === savedSlug)

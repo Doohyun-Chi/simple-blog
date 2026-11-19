@@ -144,7 +144,7 @@ function FieldHint({ note }: { note: ReactNode }) {
 
 /** The line under the slug: the characters a new slug may have, and that a slug the post already has can stay as it is. */
 function slugNote(slug: string, savedSlug: string): string {
-  const rule = '영문 대소문자와 - 만 사용할 수 있습니다.'
+  const rule = '영문 대소문자, 숫자와 - 만 사용할 수 있습니다.'
   return slug === savedSlug && cleanSlug(slug) !== slug ? `기존 slug는 그대로 저장됩니다. 바꾸려면 ${rule}` : rule
 }
 

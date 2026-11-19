@@ -37,8 +37,8 @@ public class PostService {
 
 	private static final int MAX_LIMIT = 100;
 
-	/** English letters and '-' only; no space. */
-	private static final Pattern SLUG = Pattern.compile("[A-Za-z-]+");
+	/** English letters, digits and '-' only; no space. */
+	private static final Pattern SLUG = Pattern.compile("[A-Za-z0-9-]+");
 
 	private final PostRepository postRepository;
 
@@ -162,7 +162,7 @@ public class PostService {
 
 	/**
 	 * Like {@link #storedSlugOf}, except that a body slug equal to the path slug keeps the slug as it is stored without the
-	 * slug rules, so a row migrated from WordPress with digits or non-ASCII characters in its slug can still be updated.
+	 * slug rules, so a row migrated from WordPress with an underscore or non-ASCII characters in its slug can still be updated.
 	 */
 	private String storedSlugOfUpdate(String pathSlug, PostInput input) {
 		if (input.slug() == null || !this.slugEncoder.encode(input.slug()).equals(this.slugEncoder.encode(pathSlug))) {
@@ -176,7 +176,7 @@ public class PostService {
 	private String storedSlugOf(PostInput input) {
 		requireValidFields(input);
 		if (input.slug() == null || !SLUG.matcher(input.slug()).matches()) {
-			throw new InvalidPostException("slug must be made of English letters and '-' only");
+			throw new InvalidPostException("slug must be made of English letters, digits and '-' only");
 		}
 		if (input.slug().length() > this.slugMaxLength) {
 			throw new InvalidPostException("slug is too long: it is limited to " + this.slugMaxLength);

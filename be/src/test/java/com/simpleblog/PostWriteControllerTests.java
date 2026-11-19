@@ -49,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 		(1002, 'A draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2021-01-01 00:00:00', '2021-01-01 00:00:00'),
 		(1003, 'About', 'page body', 'about', 'page', 'publish', 1, '2022-01-01 00:00:00', '2022-01-01 00:00:00'),
 		(1004, 'Image', '', 'hi-there', 'attachment', 'inherit', 1, '2023-01-01 00:00:00', '2023-01-01 00:00:00'),
-		(1005, 'Digits', 'old', 'post-2026', 'post', 'publish', 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
+		(1005, 'Digits', 'old', 'post_2026', 'post', 'publish', 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
 		(1006, 'Korean', 'old', '%ed%81%b0-kpi', 'post', 'draft', 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
 		""")
 class PostWriteControllerTests {
@@ -172,7 +172,7 @@ class PostWriteControllerTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "has space", " lead", "trail ", "큰기업", "with1digit", "under_score", "a/b", "a?b", "100%" })
+	@ValueSource(strings = { "has space", " lead", "trail ", "큰기업", "under_score", "a/b", "a?b", "100%" })
 	void refusesASlugWithAnythingButEnglishLettersAndHyphen(String slug) throws Exception {
 		this.mockMvc.perform(created(json("Title", slug, "body"))).andExpect(status().isBadRequest());
 		this.mockMvc.perform(updated("kpi", json("Title", slug, "body"))).andExpect(status().isBadRequest());
@@ -249,9 +249,9 @@ class PostWriteControllerTests {
 
 	@Test
 	void keepsAnUnchangedSlugThatBreaksTheSlugRule() throws Exception {
-		this.mockMvc.perform(updated("post-2026", json("Digits 2", "post-2026", "new")))
+		this.mockMvc.perform(updated("post_2026", json("Digits 2", "post_2026", "new")))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.slug").value("post-2026"))
+			.andExpect(jsonPath("$.slug").value("post_2026"))
 			.andExpect(jsonPath("$.title").value("Digits 2"));
 		this.mockMvc.perform(updated("큰-kpi", jsonWithStatus("Korean", "큰-kpi", "new", "publish")))
 			.andExpect(status().isOk())
@@ -261,10 +261,17 @@ class PostWriteControllerTests {
 
 	@Test
 	void stillAppliesTheSlugRuleToANewSlugAndToTheRestOfTheInput() throws Exception {
-		this.mockMvc.perform(updated("post-2026", json("Digits", "post-2027", "x"))).andExpect(status().isBadRequest());
-		this.mockMvc.perform(updated("post-2026", json("", "post-2026", "x"))).andExpect(status().isBadRequest());
-		this.mockMvc.perform(updated("post-2026", json("Digits", "post-2026", null))).andExpect(status().isBadRequest());
-		this.mockMvc.perform(created(json("Digits", "post-2026", "x"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(updated("post_2026", json("Digits", "post_2027", "x"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(updated("post_2026", json("", "post_2026", "x"))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(updated("post_2026", json("Digits", "post_2026", null))).andExpect(status().isBadRequest());
+		this.mockMvc.perform(created(json("Underscore", "post_2026", "x"))).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void acceptsDigitsInASlugWhenCreatingAndRenaming() throws Exception {
+		this.mockMvc.perform(created(json("Year", "kpi-2026", "x"))).andExpect(status().isCreated())
+			.andExpect(jsonPath("$.slug").value("kpi-2026"));
+		this.mockMvc.perform(updated("kpi", json("KPI", "kpi-2", "x"))).andExpect(status().isOk());
 	}
 
 	@Test
