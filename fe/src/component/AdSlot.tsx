@@ -32,7 +32,7 @@ export function AdSlot({ position }: AdSlotProps) {
         data-ad-client={unit.client}
         data-ad-slot={unit.slot}
         data-ad-format="auto"
-        data-full-width-responsive="true"
+        data-full-width-responsive="false"
       />
     </div>
   )

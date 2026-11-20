@@ -1,13 +1,12 @@
-/** Where an ad unit sits: above and below a post body, or in the info area. Each has its own AdSense ad unit. */
-export type AdPosition = 'top' | 'bottom' | 'aside'
+/** Where an ad unit sits: below a post body, or in the info area. Each has its own AdSense ad unit. */
+export type AdPosition = 'post' | 'aside'
 
 /** The publisher ID (`ca-pub-…`, the `data-ad-client`). It is public, not a secret; empty means ads are off. */
 const CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT ?? '').trim()
 
 /** The ad unit IDs (`data-ad-slot`) from the AdSense console, one per position. A position without one shows no ad. */
 const SLOTS: Record<AdPosition, string> = {
-  top: (import.meta.env.VITE_ADSENSE_SLOT_TOP ?? '').trim(),
-  bottom: (import.meta.env.VITE_ADSENSE_SLOT_BOTTOM ?? '').trim(),
+  post: (import.meta.env.VITE_ADSENSE_SLOT_POST ?? '').trim(),
   aside: (import.meta.env.VITE_ADSENSE_SLOT_ASIDE ?? '').trim(),
 }
 

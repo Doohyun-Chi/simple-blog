@@ -24,13 +24,12 @@ export function PostArticle({ post, editHref }: PostArticleProps) {
         <time className="post-article-date" dateTime={post.date}>{dayOf(post.date)}</time>
         {editHref !== undefined && <a className="post-article-edit" href={editHref}>편집하기</a>}
       </div>
-      <AdSlot position="top" />
       <div
         className={isClassicContent(post.content) ? 'post-article-content post-article-content-classic' : 'post-article-content'}
       >
         <Markdown rehypePlugins={[rehypeRaw, rehypeSanitize]}>{post.content}</Markdown>
       </div>
-      <AdSlot position="bottom" />
+      <AdSlot position="post" />
     </article>
   )
 }

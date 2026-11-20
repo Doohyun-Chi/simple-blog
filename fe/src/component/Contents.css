@@ -30,8 +30,6 @@
   box-sizing: border-box;
   padding: 1.5em 0 1.5em 2rem;
   border-left: 1px solid var(--border);
-  overflow-x: hidden;
-  overflow-y: auto;
 }
 
 /* On a narrow screen the info area goes below the reading area and the whole area scrolls. */

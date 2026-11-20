@@ -2,4 +2,11 @@
   display: flex;
   flex-direction: column;
   height: 100svh;
+  /*
+   * AdSense puts `height: auto !important` on the elements around an ad, which would stretch this page to the height of its
+   * content and leave nothing to scroll inside. An inline height cannot override a max-height, so the page stays as tall as
+   * the window and the areas inside still scroll. It must stay in the normal flow: taken out of it (position: fixed), the
+   * popup container MDXEditor appends to the body would move up over the editor.
+   */
+  max-height: 100svh;
 }
