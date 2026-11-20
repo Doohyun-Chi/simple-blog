@@ -127,6 +127,72 @@ paths:
               description: The session cookie, only on success
               schema:
                 type: string
+  /public/share/{slug}:
+    get:
+      summary: Open Graph and Twitter card tags of a post or a page, for sharing its link
+      description: >
+        For link-preview crawlers (KakaoTalk, Facebook, Slack and the like), which do not run the frontend's scripts:
+        share this URL instead of the post view URL. It answers a small HTML page whose head holds the Open Graph tags of
+        the post and whose body holds one link to the post view, so a person who lands here can follow it. Nothing is
+        redirected, because a crawler must be able to read the tags. Only a published row of type post or page has a share
+        page; any other row, and an unknown slug, is 404, so a draft or private post never leaks its title or text.
+        The values are HTML-escaped.
+
+        - `og:title` is the title.
+
+        - `og:description` is the first 200 characters of the content as plain text (Markdown, HTML tags and WordPress
+        block comments removed, whitespace collapsed), cut before a word so that no word is broken, with `…` appended
+        when anything was cut (so at most 201 characters). A text of 200 characters or fewer is used whole, without the
+        `…`. A first word longer than 200 characters is cut at 200 and gets the `…`.
+
+        - `og:image` is the first image in the content, Markdown `![alt](src)` or HTML `<img src>`, as an absolute URL: a
+        relative source is resolved against this server's origin, and an absolute one, such as an external image of a
+        post migrated from WordPress, is used as it is. When the content has no image it is the frontend's
+        `/realizing-future.jpg` (for example https://www.chidoo.me/realizing-future.jpg).
+
+        - `og:url` is the post view URL with the same slug: the frontend's `/post/{slug}` for a post and `/page/{slug}`
+        for a page, the slug as readers see it and URL-encoded once. The frontend's origin is the server's
+        `simpleblog.auth.frontend-url`.
+
+        - `twitter:card` is always `summary_large_image`, as there is always an image. X (Twitter) takes the title,
+        description and image from the `og:` tags above.
+      operationId: shareOfPost
+      tags:
+        - Share
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: >
+            The slug as readers see it, URL-encoded once, exactly as for `GET /public/api/v1/post/{slug}`.
+          schema:
+            type: string
+          example: kpi-power-in-big-company
+      responses:
+        '200':
+          description: The share page
+          content:
+            text/html:
+              schema:
+                type: string
+              example: |
+                <!doctype html>
+                <html lang="ko">
+                <head>
+                <meta charset="utf-8" />
+                <title>글 제목</title>
+                <meta property="og:title" content="글 제목" />
+                <meta property="og:description" content="요약…" />
+                <meta property="og:image" content="https://blog.chidoo.me/public/api/v1/media/thumb" />
+                <meta property="og:url" content="https://www.chidoo.me/post/kpi-power-in-big-company" />
+                <meta name="twitter:card" content="summary_large_image" />
+                </head>
+                <body>
+                <a href="https://www.chidoo.me/post/kpi-power-in-big-company">글 제목</a>
+                </body>
+                </html>
+        '404':
+          description: No published post or page has this slug. The response body is not part of the contract.
   /public/api/v1/me:
     get:
       summary: The signed-in user
