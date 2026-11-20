@@ -1,0 +1,15 @@
+/* Feed orange, like the logo feed readers show. */
+.feed-link {
+  display: inline-flex;
+  flex: none;
+  padding: 0;
+  color: #ee802f;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.feed-link:hover,
+.feed-link:focus-visible {
+  filter: brightness(1.15);
+}

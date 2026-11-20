@@ -1,7 +1,7 @@
 import { IconCheck, IconCopy } from '@tabler/icons-react'
-import { useEffect, useState } from 'react'
 import { LinkedInLogo } from './LinkedInLogo.tsx'
 import { linkedInShareUrl, openLinkedInShare } from '../model/share.ts'
+import { useCopyToClipboard } from '../model/useCopyToClipboard.ts'
 import './ShareLinks.css'
 
 interface ShareLinksProps {
@@ -9,25 +9,9 @@ interface ShareLinksProps {
   url: string
 }
 
-/** How long 복사됨 stays after the link was copied. */
-const COPIED_MILLIS = 2000
-
 /** 공유하기 copies the link to the clipboard; the LinkedIn logo after it opens LinkedIn's page for writing a post, in a popup. */
 export function ShareLinks({ url }: ShareLinksProps) {
-  const [copied, setCopied] = useState(false)
-  useEffect(() => {
-    if (!copied) {
-      return
-    }
-    const timer = setTimeout(() => setCopied(false), COPIED_MILLIS)
-    return () => clearTimeout(timer)
-  }, [copied])
-  const copy = () => {
-    navigator.clipboard.writeText(url).then(
-      () => setCopied(true),
-      () => setCopied(false),
-    )
-  }
+  const { copied, copy } = useCopyToClipboard(url)
   return (
     <span className="share-links">
       <button type="button" className="share-links-copy" onClick={copy}>

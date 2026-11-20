@@ -3,7 +3,7 @@ import { listOfPosts } from './postApi.ts'
 import { type Remote, useRemote } from './useRemote.ts'
 
 /** How many posts the info area shows. The spec allows 1 to 100. */
-const RECENT_POST_LIMIT = 10
+const RECENT_POST_LIMIT = 7
 
 /** The most posts the list view shows (fe/DESIGN.md). Search is not capped. Paging with PREV and NEXT needs an offset in the spec first. */
 const LIST_POST_LIMIT = 20

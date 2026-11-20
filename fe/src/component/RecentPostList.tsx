@@ -2,6 +2,7 @@ import { IconFilePlus } from '@tabler/icons-react'
 import { type PostSummary, readerSlug } from '../model/Post.ts'
 import { contentPath, LIST_PATH, WRITE_PATH } from '../model/route.ts'
 import { AdSlot } from './AdSlot.tsx'
+import { FeedLink } from './FeedLink.tsx'
 import './RecentPostList.css'
 
 interface RecentPostListProps {
@@ -12,7 +13,10 @@ interface RecentPostListProps {
   showAd: boolean
 }
 
-/** The info area's list: only the titles, each linking to its body, then links to the list of all posts and to the writing area. */
+/**
+ * The info area's list: only the titles, each linking to its body, then the link to all posts with the feed logo beside it,
+ * and the link to the writing area.
+ */
 export function RecentPostList({ posts, canWrite, showAd }: RecentPostListProps) {
   return (
     <>
@@ -30,8 +34,9 @@ export function RecentPostList({ posts, canWrite, showAd }: RecentPostListProps)
             </a>
           </li>
         ))}
-        <li>
+        <li className="recent-post-list-all-row">
           <a className="recent-post-list-link recent-post-list-all" href={LIST_PATH}>전체 목록</a>
+          <FeedLink />
         </li>
         {canWrite && (
           <li>
