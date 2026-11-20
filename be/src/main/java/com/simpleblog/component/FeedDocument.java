@@ -13,7 +13,6 @@ import com.simpleblog.dto.Feed;
 import com.simpleblog.dto.FeedEntry;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.HtmlUtils;
 
 /**
  * Writes the Atom 1.0 document of the feed (RFC 4287): titles and links only. The document is the template
@@ -66,8 +65,28 @@ public class FeedDocument {
 		return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(time.withNano(0));
 	}
 
+	/** Only the five characters XML predefines; HtmlUtils would write HTML-only entities such as &eacute; that XML parsers reject. */
 	private static String escape(String text) {
-		return HtmlUtils.htmlEscape(text);
+		StringBuilder escaped = new StringBuilder(text.length());
+		text.codePoints().filter(FeedDocument::isXmlChar).forEach((point) -> escaped.append(escaped(point)));
+		return escaped.toString();
+	}
+
+	private static String escaped(int point) {
+		return switch (point) {
+			case '&' -> "&amp;";
+			case '<' -> "&lt;";
+			case '>' -> "&gt;";
+			case '"' -> "&quot;";
+			case '\'' -> "&apos;";
+			default -> Character.toString(point);
+		};
+	}
+
+	/** The characters XML 1.0 allows; the others (most control characters) would make the whole feed unparsable. */
+	private static boolean isXmlChar(int point) {
+		return point == 0x9 || point == 0xA || point == 0xD || (point >= 0x20 && point <= 0xD7FF)
+				|| (point >= 0xE000 && point <= 0xFFFD) || (point >= 0x10000 && point <= 0x10FFFF);
 	}
 
 }

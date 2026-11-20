@@ -5,7 +5,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.StringReader;
 import java.util.concurrent.TimeUnit;
+
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.xml.sax.InputSource;
 
 /** GET /public/feed against H2: published posts only, titles and links only, newest 20, and the 24 hour local cache. */
 @SpringBootTest(properties = "simpleblog.auth.frontend-url=https://www.chidoo.me/")
@@ -58,6 +62,14 @@ class FeedControllerTests {
 			.andReturn()
 			.getResponse()
 			.getContentAsString();
+	}
+
+	@Test
+	void escapesOnlyWhatXmlPredefinesSoTheFeedStaysParsableWithAccentsQuotesAndControlCharacters() throws Exception {
+		this.jdbcTemplate.update("update tb_post set TITLE = ? where ID = 5", "Caf\u00e9 \u201cquote\u201d \u2014 it's\u0001 \ud83d\ude00");
+		String feed = feed();
+		assertThat(feed).contains("<title>Caf\u00e9 \u201cquote\u201d \u2014 it&apos;s \ud83d\ude00</title>").doesNotContain("&eacute;", "&mdash;");
+		DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new InputSource(new StringReader(feed)));
 	}
 
 	@Test
