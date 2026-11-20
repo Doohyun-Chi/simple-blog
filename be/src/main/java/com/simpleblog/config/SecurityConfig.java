@@ -42,9 +42,10 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectProvider<ClientRegistrationRepository> clients,
-			AllowedOidcUserService userService, @Value("${simpleblog.auth.frontend-url:}") String frontendUrl) throws Exception {
+			AllowedOidcUserService userService, @Value("${simpleblog.auth.frontend-url:}") String frontendUrl,
+			@Value("${simpleblog.csrf.cookie-domain:}") String csrfCookieDomain) throws Exception {
 		http.cors(Customizer.withDefaults())
-			.csrf((csrf) -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+			.csrf((csrf) -> csrf.csrfTokenRepository(csrfTokens(csrfCookieDomain))
 				.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
 			.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
 			.authorizeHttpRequests((requests) -> requests.requestMatchers("/public/api/v1/me")
@@ -63,6 +64,18 @@ public class SecurityConfig {
 			http.oauth2Login((login) -> googleLogin(login, userService, frontendUrl.replaceAll("/+$", "")));
 		}
 		return http.build();
+	}
+
+	/**
+	 * Publishes the token for the frontend's script to read. When the frontend is on another host (www.chidoo.me, with the
+	 * backend on blog.chidoo.me) the cookie must be set for their shared parent domain, or the frontend cannot see it.
+	 */
+	private CookieCsrfTokenRepository csrfTokens(String cookieDomain) {
+		CookieCsrfTokenRepository tokens = CookieCsrfTokenRepository.withHttpOnlyFalse();
+		if (!cookieDomain.isBlank()) {
+			tokens.setCookieCustomizer((cookie) -> cookie.domain(cookieDomain.trim()));
+		}
+		return tokens;
 	}
 
 	/** The sign-in URLs, and where the browser goes afterwards: the frontend's home page, flagged when it failed. */
