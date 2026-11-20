@@ -1,0 +1,31 @@
+.share-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75em;
+}
+
+.share-links-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.share-links-copy:hover {
+  text-decoration: underline;
+}
+
+/* LinkedIn's brand blue. */
+.share-links-linkedin {
+  display: inline-flex;
+  color: #0a66c2;
+}
+
+.share-links-linkedin:hover {
+  filter: brightness(1.15);
+}

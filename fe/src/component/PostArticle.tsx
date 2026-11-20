@@ -3,12 +3,15 @@ import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
 import { dayOf, isClassicContent, type PostBody } from '../model/Post.ts'
 import { AdSlot } from './AdSlot.tsx'
+import { ShareLinks } from './ShareLinks.tsx'
 import './PostArticle.css'
 
 interface PostArticleProps {
   post: PostBody
   /** Where the 편집하기 link goes; without it the link is not shown. */
   editHref?: string
+  /** The link the share buttons copy and post to LinkedIn; without it they are not shown. */
+  shareHref?: string
 }
 
 /**
@@ -16,12 +19,13 @@ interface PostArticleProps {
  * (images and YouTube thumbnails included). Posts migrated from WordPress still hold HTML, so raw HTML is kept, but
  * sanitized: scripts, event handlers and the like never reach the page. Classic-editor content keeps its line breaks.
  */
-export function PostArticle({ post, editHref }: PostArticleProps) {
+export function PostArticle({ post, editHref, shareHref }: PostArticleProps) {
   return (
     <article className="post-article">
       <h1 className="post-article-title">{post.title}</h1>
       <div className="post-article-meta">
         <time className="post-article-date" dateTime={post.date}>{dayOf(post.date)}</time>
+        {shareHref !== undefined && <ShareLinks url={shareHref} />}
         {editHref !== undefined && <a className="post-article-edit" href={editHref}>편집하기</a>}
       </div>
       <div
