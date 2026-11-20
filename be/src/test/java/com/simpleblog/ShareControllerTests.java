@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.simpleblog.component.SharePage;
+import com.simpleblog.dto.ShareTags;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,23 +49,30 @@ class ShareControllerTests {
 		assertThat(page).contains("<meta property=\"og:title\" content=\"A &lt;b&gt;&quot;quoted&quot;&lt;/b&gt; title\" />")
 			.contains("<meta property=\"og:description\" content=\"Intro text\" />")
 			.contains("<meta property=\"og:image\" content=\"https://cdn.example/a.jpg\" />")
-			.contains("<meta property=\"og:url\" content=\"https://www.chidoo.me/post/kpi\" />")
 			.contains("<meta name=\"twitter:card\" content=\"summary_large_image\" />")
-			.contains("<a href=\"https://www.chidoo.me/post/kpi\">A &lt;b&gt;&quot;quoted&quot;&lt;/b&gt; title</a>");
+			.contains("<a href=\"https://www.chidoo.me/post/kpi\">A &lt;b&gt;&quot;quoted&quot;&lt;/b&gt; title</a>")
+			.contains("<script>location.replace(document.querySelector('a').href)</script>")
+			.doesNotContain("og:url");
 	}
 
 	@Test
 	void fallsBackToTheSiteImageAndLinksAPageToItsPageUrl() throws Exception {
 		String page = pageOf("about");
 		assertThat(page).contains("content=\"https://www.chidoo.me/realizing-future.jpg\"")
-			.contains("<meta property=\"og:url\" content=\"https://www.chidoo.me/page/about\" />");
+			.contains("<a href=\"https://www.chidoo.me/page/about\">About</a>");
 	}
 
 	@Test
 	void findsAStoredPercentEncodedSlugByItsReaderFormAndCompletesARelativeImage() throws Exception {
 		String page = pageOf("큰기업-kpi");
 		assertThat(page).contains("content=\"http://localhost/public/api/v1/media/thumb\"")
-			.contains("<meta property=\"og:url\" content=\"https://www.chidoo.me/post/%ED%81%B0%EA%B8%B0%EC%97%85-kpi\" />");
+			.contains("<a href=\"https://www.chidoo.me/post/%ED%81%B0%EA%B8%B0%EC%97%85-kpi\">큰기업</a>");
+	}
+
+	@Test
+	void fillsEachHolderOnceEvenWhenAValueLooksLikeAHolder() {
+		String page = new SharePage().render(new ShareTags("{{url}} $1", "d", "https://x/y.jpg", "https://x/z"));
+		assertThat(page).contains("<title>{{url}} $1</title>").contains("<a href=\"https://x/z\">{{url}} $1</a>").doesNotContain("{{title}}");
 	}
 
 	@Test
