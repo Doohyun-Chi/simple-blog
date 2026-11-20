@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.simpleblog.component.FeedRefresh;
 import com.simpleblog.component.LikePattern;
 import com.simpleblog.component.SlugEncoder;
 import com.simpleblog.dto.PostBody;
@@ -48,6 +49,8 @@ public class PostService {
 
 	private final UserService userService;
 
+	private final FeedRefresh feedRefresh;
+
 	private final Clock clock;
 
 	private final int titleMaxLength;
@@ -55,12 +58,13 @@ public class PostService {
 	private final int slugMaxLength;
 
 	public PostService(PostRepository postRepository, SlugEncoder slugEncoder, LikePattern likePattern, UserService userService,
-			Clock clock, @Value("${simpleblog.post.title.max-length}") int titleMaxLength,
+			FeedRefresh feedRefresh, Clock clock, @Value("${simpleblog.post.title.max-length}") int titleMaxLength,
 			@Value("${simpleblog.post.slug.max-length}") int slugMaxLength) {
 		this.postRepository = postRepository;
 		this.slugEncoder = slugEncoder;
 		this.likePattern = likePattern;
 		this.userService = userService;
+		this.feedRefresh = feedRefresh;
 		this.clock = clock;
 		this.titleMaxLength = titleMaxLength;
 		this.slugMaxLength = slugMaxLength;
@@ -110,6 +114,7 @@ public class PostService {
 		}
 		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), utcNow());
 		applyStatus(post, input);
+		this.feedRefresh.afterPostChange();
 		return PostBody.from(this.postRepository.save(post), this.clock.getZone(), authorId);
 	}
 
@@ -131,6 +136,7 @@ public class PostService {
 		}
 		post.revise(input.title(), newSlug, input.content(), utcNow());
 		applyStatus(post, input);
+		this.feedRefresh.afterPostChange();
 		return PostBody.from(post, this.clock.getZone(), viewerId);
 	}
 
@@ -146,6 +152,7 @@ public class PostService {
 			throw new NotPostAuthorException(slug);
 		}
 		this.postRepository.delete(post);
+		this.feedRefresh.afterPostChange();
 	}
 
 	/** Applies the status of the input when it has one. */

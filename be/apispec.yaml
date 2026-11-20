@@ -196,6 +196,66 @@ paths:
                 </html>
         '404':
           description: No published post or page has this slug. The response body is not part of the contract.
+  /public/feed:
+    get:
+      summary: Atom feed of the newest published posts
+      description: >
+        An Atom 1.0 feed (RFC 4287) for feed readers. It lists the 20 newest published posts (type post, status publish;
+        pages, drafts and private rows are never listed, whoever asks), ordered like `GET /public/api/v1/posts`: creation date newest
+        first, then id descending. The response is `application/atom+xml; charset=utf-8`, and every text value is
+        XML-escaped. The server keeps the feed in a local cache that expires 24 hours after it was loaded, and drops it
+        as soon as a post is created, updated or deleted, so the next request shows the change.
+
+        Feed level elements:
+
+        - `title` is the blog's name, `Dreaming for the Future`.
+
+        - `id` and the `link rel="alternate"` are the frontend's origin (`simpleblog.auth.frontend-url`) with `/`; the
+        `link rel="self"` is this feed's own URL.
+
+        - `updated` is the `updated` of the first entry, or the server's current time when there is no post.
+
+        Each post is one `entry`:
+
+        - `id` and `link rel="alternate"` are the post view URL: the frontend's `/post/{slug}`, the slug as readers see
+        it and URL-encoded once. The `id` is that URL so it stays the same as long as the slug does.
+
+        - `title` is the title.
+
+        - `published` is the creation date and `updated` the modification date, both as RFC 3339 times with the
+        server's zone offset (for example `2026-11-05T09:45:11+09:00`).
+
+        - There is no `summary` or `content`: an entry carries only the title and the link, so a reader follows the link
+        to read the post.
+
+        - `author` has the `name` of the blog's writer, `Dreaming for the Future`, as the posts hold no author name yet.
+      operationId: atomFeed
+      tags:
+        - Feed
+      responses:
+        '200':
+          description: The feed; an Atom document with no `entry` when there is no published post
+          content:
+            application/atom+xml:
+              schema:
+                type: string
+              example: |
+                <?xml version="1.0" encoding="utf-8"?>
+                <feed xmlns="http://www.w3.org/2005/Atom">
+                  <title>Dreaming for the Future</title>
+                  <id>https://www.chidoo.me/</id>
+                  <link rel="alternate" href="https://www.chidoo.me/" />
+                  <link rel="self" href="https://blog.chidoo.me/public/feed" />
+                  <updated>2026-11-05T09:45:11+09:00</updated>
+                  <entry>
+                    <id>https://www.chidoo.me/post/kpi-power-in-big-company</id>
+                    <title>KPI, 조직을 움직이는 힘</title>
+                    <link rel="alternate" href="https://www.chidoo.me/post/kpi-power-in-big-company" />
+                    <published>2026-11-05T09:45:11+09:00</published>
+                    <updated>2026-11-06T10:00:00+09:00</updated>
+                    <author><name>Dreaming for the Future</name></author>
+                  </entry>
+                </feed>
   /public/api/v1/me:
     get:
       summary: The signed-in user
@@ -840,10 +900,10 @@ components:
             - integer
             - 'null'
           format: int64
-          description: Always null: tb_post has no parent
+          description: 'Always null: tb_post has no parent'
         menuOrder:
           type: integer
-          description: Always 0: tb_post has no menu order
+          description: 'Always 0: tb_post has no menu order'
         publishedAt:
           type: string
           format: date-time

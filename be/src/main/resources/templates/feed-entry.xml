@@ -1,0 +1,8 @@
+  <entry>
+    <id>{{url}}</id>
+    <title>{{title}}</title>
+    <link rel="alternate" href="{{url}}" />
+    <published>{{published}}</published>
+    <updated>{{updated}}</updated>
+    <author><name>{{name}}</name></author>
+  </entry>

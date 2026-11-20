@@ -3,6 +3,7 @@ package com.simpleblog.repository;
 import java.util.List;
 import java.util.Optional;
 
+import com.simpleblog.dto.FeedRow;
 import com.simpleblog.dto.PageSummary;
 import com.simpleblog.dto.PostSummary;
 import com.simpleblog.entity.Post;
@@ -34,6 +35,13 @@ public interface PostRepository extends Repository<Post, Long> {
 			  and (lower(p.title) like :pattern escape '\\' or lower(p.content) like :pattern escape '\\')
 			order by p.createdAt desc, p.id desc""")
 	List<PostSummary> listOfPostsContaining(String pattern, long viewerId, Pageable pageable);
+
+	/** The newest published posts for the feed, whoever asks: never a draft, a private post or a page. The pageable only limits the count. */
+	@Query("""
+			select new com.simpleblog.dto.FeedRow(p.title, p.slug, p.createdAt, p.modifiedAt) from Post p
+			where p.type = 'post' and p.status = 'publish'
+			order by p.createdAt desc, p.id desc""")
+	List<FeedRow> listOfFeedRows(Pageable pageable);
 
 	Post save(Post post);
 
