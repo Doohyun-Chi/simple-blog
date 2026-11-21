@@ -26,11 +26,13 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import {
   cleanSlug,
   EMPTY_POST,
+  hashTagsText,
   isSavable,
   isUnsaved,
   POST_SLUG_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
   type PostInput,
+  typedHashTags,
 } from '../model/Post.ts'
 import { FullScreenContext } from '../model/FullScreen.ts'
 import { uploadFailureText } from '../model/Media.ts'
@@ -187,12 +189,14 @@ function saveNote(state: SaveState, published: boolean, contentType: ContentType
  * The writing area from fe/DESIGN.md: the title with the save and publish buttons beside it, the slug, the MDX body
  * filling the rest, and the hashtags on the last line. The title and slug limits appear as placeholders only; the
  * backend refuses longer ones. The slug is limited to the characters the spec allows as it is typed. 공개 saves
- * the post as published and 삭제 deletes it, after asking. Hashtags have no field in the spec, so they are not sent.
+ * the post as published and 삭제 deletes it, after asking. The hashtags are typed with or without # and sent as the
+ * comma separated stored text.
  */
 export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, contentType = 'post' }: PostEditorProps) {
   const [title, updateTitle] = useState(initial.title)
   const [slug, updateSlug] = useState(initial.slug)
   const [markdown, updateMarkdown] = useState(initial.content)
+  const [typedTags, updateTypedTags] = useState(typedHashTags(initial.hashTags ?? ''))
   const [fullScreen, updateFullScreen] = useState(false)
   const [saved, updateSaved] = useState<PostInput>(initial)
   const [published, updatePublished] = useState(initial.status === 'publish')
@@ -202,7 +206,7 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
   const keepAlive = useSessionKeepAlive()
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
-  const input = { title, slug, content: markdown }
+  const input = { title, slug, content: markdown, hashTags: hashTagsText(typedTags) }
   const canSave = isSavable(input, saved.slug) && saveState.status !== 'saving'
   const unsaved = isUnsaved(input, saved)
   const sessionExpired = keepAlive.expired || (saveState.status === 'failed' && saveState.failure === 'expired')
@@ -322,7 +326,18 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
         />
         {imageNote !== null && <FieldHint note={imageNote} />}
       {sessionExpired && <SessionExpiredNote />}
-        <input className="post-editor-field" name="hashtags" type="text" placeholder="#해시태그" aria-label="해시태그" />
+        <input
+          className="post-editor-field"
+          name="hashtags"
+          type="text"
+          placeholder="#해시태그, 쉼표로 구분"
+          aria-label="해시태그"
+          value={typedTags}
+          onChange={(event) => {
+            updateTypedTags(event.target.value)
+            keepAlive.touch()
+          }}
+        />
       </form>
     </FullScreenContext>
   )

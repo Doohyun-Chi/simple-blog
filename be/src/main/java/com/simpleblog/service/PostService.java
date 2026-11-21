@@ -112,7 +112,7 @@ public class PostService {
 		if (this.postRepository.slugInUse(slug)) {
 			throw new DuplicatePostSlugException(input.slug());
 		}
-		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), utcNow());
+		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), input.hashTags(), utcNow());
 		applyStatus(post, input);
 		this.feedRefresh.afterPostChange();
 		return PostBody.from(this.postRepository.save(post), this.clock.getZone(), authorId);
@@ -134,7 +134,7 @@ public class PostService {
 		if (this.postRepository.slugInUseExcept(newSlug, post.id())) {
 			throw new DuplicatePostSlugException(input.slug());
 		}
-		post.revise(input.title(), newSlug, input.content(), utcNow());
+		post.revise(input.title(), newSlug, input.content(), input.hashTags(), utcNow());
 		applyStatus(post, input);
 		this.feedRefresh.afterPostChange();
 		return PostBody.from(post, this.clock.getZone(), viewerId);

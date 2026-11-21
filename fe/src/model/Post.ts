@@ -38,6 +38,20 @@ export function hashTagsOf(hashTags: string): string[] {
   return hashTags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== '')
 }
 
+/** The text a writer typed as hash tags (`#a, #b c`) in the stored form: tags without #, trimmed, joined by commas. */
+export function hashTagsText(typed: string): string {
+  return typed
+    .split(',')
+    .map((tag) => tag.trim().replace(/^#+\s*/, ''))
+    .filter((tag) => tag !== '')
+    .join(',')
+}
+
+/** The hash tags of a saved post as the writer types them: each with a # prefix, separated by a comma and a space. */
+export function typedHashTags(hashTags: string): string {
+  return hashTagsOf(hashTags).map((tag) => `#${tag}`).join(', ')
+}
+
 /** Narrows a raw query string value to a known query type, falling back to the spec default. */
 export function postQueryTypeOf(value: string | null): PostQueryType {
   return value === 'tag' || value === 'keyword' ? value : DEFAULT_POST_QUERY_TYPE
@@ -87,6 +101,8 @@ export interface PostInput {
   content: string
   /** Optional: publish makes the post public. Left out, a new post is a draft and an updated one keeps its status. */
   status?: 'draft' | 'publish'
+  /** Optional: comma separated, without the # prefix; an empty string removes the tags, left out keeps them. See hashTagsText. */
+  hashTags?: string
 }
 
 /**
@@ -117,8 +133,9 @@ export function isSavable(input: PostInput, savedSlug: string): boolean {
 
 /** Whether the post being written differs from what was last saved (nothing saved yet counts as an empty post). */
 export function isUnsaved(input: PostInput, saved: PostInput): boolean {
-  return input.title !== saved.title || input.slug !== saved.slug || input.content.trim() !== saved.content.trim()
+  return input.title !== saved.title || input.slug !== saved.slug || input.content.trim() !== saved.content.trim() ||
+    (input.hashTags ?? '') !== (saved.hashTags ?? '')
 }
 
 /** The post before anything is written or saved. */
-export const EMPTY_POST: PostInput = { title: '', slug: '', content: '' }
+export const EMPTY_POST: PostInput = { title: '', slug: '', content: '', hashTags: '' }

@@ -58,13 +58,14 @@ public class Post {
 	}
 
 	/** A new draft post. The slug is the stored form; see SlugEncoder. {@code utcNow} is both of its times. */
-	public static Post draftOf(long authorId, String title, String slug, String content, LocalDateTime utcNow) {
+	public static Post draftOf(long authorId, String title, String slug, String content, String hashTags,
+			LocalDateTime utcNow) {
 		Post post = new Post();
 		post.authorId = authorId;
 		post.type = "post";
 		post.status = "draft";
 		post.createdAt = utcNow;
-		post.revise(title, slug, content, utcNow);
+		post.revise(title, slug, content, hashTags, utcNow);
 		return post;
 	}
 
@@ -73,8 +74,14 @@ public class Post {
 		this.status = status;
 	}
 
-	/** Replaces title, slug and content and records the modification time. The status stays as it is. */
-	public void revise(String title, String slug, String content, LocalDateTime utcNow) {
+	/**
+	 * Replaces title, slug and content and records the modification time. The status stays as it is, and so do the
+	 * hash tags when none are given (null).
+	 */
+	public void revise(String title, String slug, String content, String hashTags, LocalDateTime utcNow) {
+		if (hashTags != null) {
+			this.hashTags = hashTags;
+		}
 		this.title = title;
 		this.slug = slug;
 		this.content = content;

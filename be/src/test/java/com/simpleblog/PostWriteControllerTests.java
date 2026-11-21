@@ -127,6 +127,22 @@ class PostWriteControllerTests {
 	}
 
 	@Test
+	void savesTheHashTagsOfANewPostAndKeepsThemWhenAnUpdateLeavesThemOut() throws Exception {
+		String body = "{\"title\": \"Tagged\", \"slug\": \"tagged\", \"content\": \"x\", \"hashTags\": \"경영,KPI\"}";
+		this.mockMvc.perform(created(body)).andExpect(status().isCreated()).andExpect(jsonPath("$.hashTags").value("경영,KPI"));
+		this.mockMvc.perform(updated("tagged", json("Tagged", "tagged", "y"))).andExpect(jsonPath("$.hashTags").value("경영,KPI"));
+		org.assertj.core.api.Assertions.assertThat(row("tagged")).containsEntry("HASH_TAGS", "경영,KPI");
+	}
+
+	@Test
+	void replacesOrClearsTheHashTagsOnUpdate() throws Exception {
+		this.mockMvc.perform(updated("kpi", "{\"title\": \"KPI\", \"slug\": \"kpi\", \"content\": \"x\", \"hashTags\": \"a,b\"}"))
+			.andExpect(jsonPath("$.hashTags").value("a,b"));
+		this.mockMvc.perform(updated("kpi", "{\"title\": \"KPI\", \"slug\": \"kpi\", \"content\": \"x\", \"hashTags\": \"\"}"))
+			.andExpect(jsonPath("$.hashTags").value(""));
+	}
+
+	@Test
 	void refusesAStatusOtherThanDraftOrPublish() throws Exception {
 		this.mockMvc.perform(created(jsonWithStatus("Odd", "odd", "body", "private"))).andExpect(status().isBadRequest());
 		this.mockMvc.perform(updated("kpi", jsonWithStatus("KPI", "kpi", "body", "trash"))).andExpect(status().isBadRequest());

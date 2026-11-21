@@ -25,7 +25,7 @@ export function PostReviser({ slug }: PostReviserProps) {
         return <StatusMessage>이 글을 편집할 권한이 없습니다.</StatusMessage>
       }
       return <PostWriter
-          initial={{ title: post.value.title, slug, content: post.value.content, status: statusOf(post.value.status) }}
+          initial={{ title: post.value.title, slug, content: post.value.content, status: statusOf(post.value.status), hashTags: post.value.hashTags }}
           contentType={contentTypeOf(post.value)}
         />
   }
