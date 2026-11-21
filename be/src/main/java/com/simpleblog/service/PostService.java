@@ -53,6 +53,9 @@ public class PostService {
 
 	private final Clock clock;
 
+	/** The size of TB_POST.HASH_TAGS, VARCHAR(200) in be/db/TB_POST.sql. */
+	private static final int HASH_TAGS_MAX_LENGTH = 200;
+
 	private final int titleMaxLength;
 
 	private final int slugMaxLength;
@@ -193,6 +196,7 @@ public class PostService {
 
 	private void requireValidFields(PostInput input) {
 		requireValidTitle(input.title());
+		requireValidHashTags(input.hashTags());
 		requireValidStatus(input.status());
 		if (input.content() == null) {
 			throw new InvalidPostException("content is required");
@@ -202,6 +206,12 @@ public class PostService {
 	private void requireValidStatus(String status) {
 		if (status != null && !STATUSES.contains(status)) {
 			throw new InvalidPostException("status must be draft or publish");
+		}
+	}
+
+	private void requireValidHashTags(String hashTags) {
+		if (hashTags != null && hashTags.codePointCount(0, hashTags.length()) > HASH_TAGS_MAX_LENGTH) {
+			throw new InvalidPostException("hashTags is too long: it is limited to " + HASH_TAGS_MAX_LENGTH);
 		}
 	}
 

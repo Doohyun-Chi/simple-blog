@@ -135,6 +135,13 @@ class PostWriteControllerTests {
 	}
 
 	@Test
+	void refusesHashTagsLongerThanTheColumn() throws Exception {
+		String tags = "a".repeat(201);
+		this.mockMvc.perform(created("{\"title\": \"T\", \"slug\": \"long-tags\", \"content\": \"x\", \"hashTags\": \"" + tags + "\"}"))
+			.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void replacesOrClearsTheHashTagsOnUpdate() throws Exception {
 		this.mockMvc.perform(updated("kpi", "{\"title\": \"KPI\", \"slug\": \"kpi\", \"content\": \"x\", \"hashTags\": \"a,b\"}"))
 			.andExpect(jsonPath("$.hashTags").value("a,b"));

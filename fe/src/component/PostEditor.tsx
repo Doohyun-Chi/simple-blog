@@ -29,6 +29,7 @@ import {
   hashTagsText,
   isSavable,
   isUnsaved,
+  POST_HASH_TAGS_MAX_LENGTH,
   POST_SLUG_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
   type PostInput,
@@ -114,7 +115,7 @@ const REMOVE_FAILURE_TEXT: Record<'forbidden' | 'failed', string> = {
 }
 
 const SAVE_FAILURE_TEXT: Record<SaveFailure, string> = {
-  invalid: '제목과 Slug를 확인해 주세요.',
+  invalid: '제목, Slug, 해시태그를 확인해 주세요.',
   duplicate: '이미 사용 중인 Slug입니다.',
   expired: '로그인이 만료되어 저장하지 못했습니다.',
   forbidden: '저장할 권한이 없습니다.',
@@ -330,7 +331,7 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
           className="post-editor-field"
           name="hashtags"
           type="text"
-          placeholder="#해시태그, 쉼표로 구분"
+          placeholder={`#해시태그, 쉼표로 구분 (최대 ${POST_HASH_TAGS_MAX_LENGTH}자)`}
           aria-label="해시태그"
           value={typedTags}
           onChange={(event) => {

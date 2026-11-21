@@ -776,9 +776,10 @@ components:
             draft and an updated post keeps its status. Any other value is rejected with 400.
         hashTags:
           type: string
+          maxLength: 200
           description: >
             Optional. tb_post.hash_tags: the hash tags separated by commas, without the `#` prefix (e.g. `경영,KPI`),
-            stored as sent. An empty string removes every tag. Left out, a created post has none and an updated post
+            stored as sent, at most 200 characters in all (the column is VARCHAR(200)); a longer text is rejected with 400. An empty string removes every tag. Left out, a created post has none and an updated post
             keeps its tags.
           examples:
             - 경영,KPI

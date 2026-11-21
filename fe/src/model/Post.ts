@@ -111,6 +111,9 @@ export interface PostInput {
  */
 export const POST_TITLE_MAX_LENGTH = 130
 
+/** The longest hash tag text, commas included. Mirrors `maxLength` of `PostInput.hashTags` in be/apispec.yaml; enforced by the backend. */
+export const POST_HASH_TAGS_MAX_LENGTH = 200
+
 /** The longest slug. Mirrors `maxLength` of `PostInput.slug` in be/apispec.yaml; shown, not enforced, like the title's. */
 export const POST_SLUG_MAX_LENGTH = 200
 
