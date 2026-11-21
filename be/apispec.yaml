@@ -521,6 +521,7 @@ paths:
                 type: post
                 date: '2026-11-05T09:45:11'
                 modified: '2026-11-05T09:45:11'
+                hashTags: 경영,KPI,조직
                 canEdit: false
         '404':
           description: No row in tb_post has this slug. The response body is not part of the contract.
@@ -824,6 +825,7 @@ components:
         - type
         - date
         - modified
+        - hashTags
         - canEdit
       properties:
         title:
@@ -859,6 +861,13 @@ components:
           description: tb_post.modified_datetime (UTC), shown in the same local format as date
           examples:
             - '2026-11-05T09:45:11'
+        hashTags:
+          type: string
+          description: >
+            tb_post.hash_tags as stored: the hash tags separated by commas, without the `#` prefix (e.g. `경영,KPI,조직`).
+            An empty string when the row has none. The client splits it at commas, trims each tag and skips empty ones.
+          examples:
+            - 경영,KPI,조직
         canEdit:
           type: boolean
           description: >

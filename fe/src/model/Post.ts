@@ -27,8 +27,15 @@ export interface PostBody {
   type: string
   date: string
   modified: string
+  /** Comma separated, without the # prefix; empty when there are none. See hashTagsOf. */
+  hashTags: string
   /** Whether the visitor may revise and delete this post: signed in and its author. Decided by the backend. */
   canEdit: boolean
+}
+
+/** The hash tags of the comma separated stored text: each trimmed, empty ones skipped. */
+export function hashTagsOf(hashTags: string): string[] {
+  return hashTags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== '')
 }
 
 /** Narrows a raw query string value to a known query type, falling back to the spec default. */

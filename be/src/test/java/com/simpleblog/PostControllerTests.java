@@ -25,12 +25,12 @@ import org.springframework.transaction.annotation.Transactional;
 		insert into tb_user (ID, EMAIL, PROVIDER, REGISTERED_DATE) values
 		(1, 'owner@example.com', 'google', now()),
 		(2, 'other@example.com', 'google', now());
-		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
-		(1, 'KPI', '<p>body</p>', 'kpi', 'post', 'publish', 1, '2026-11-05 00:45:11', '2026-11-06 01:00:00'),
-		(2, 'Draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(3, 'Private', 'private body', 'a-private', 'post', 'private', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(5, 'About', 'page body', 'about', 'page', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(6, '큰기업', 'korean body', '%ed%81%b0%ea%b8%b0%ec%97%85-kpi', 'post', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME, HASH_TAGS) values
+		(1, 'KPI', '<p>body</p>', 'kpi', 'post', 'publish', 1, '2026-11-05 00:45:11', '2026-11-06 01:00:00', '경영,KPI'),
+		(2, 'Draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00', null),
+		(3, 'Private', 'private body', 'a-private', 'post', 'private', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00', null),
+		(5, 'About', 'page body', 'about', 'page', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00', null),
+		(6, '큰기업', 'korean body', '%ed%81%b0%ea%b8%b0%ec%97%85-kpi', 'post', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00', null);
 		""")
 class PostControllerTests {
 
@@ -48,6 +48,12 @@ class PostControllerTests {
 			.andExpect(jsonPath("$.date").value("2026-11-05T09:45:11"))
 			.andExpect(jsonPath("$.modified").value("2026-11-06T10:00:00"))
 			.andExpect(jsonPath("$.canEdit").value(false));
+	}
+
+	@Test
+	void returnsTheStoredHashTagsOrAnEmptyStringWhenThereAreNone() throws Exception {
+		this.mockMvc.perform(get("/public/api/v1/post/kpi")).andExpect(jsonPath("$.hashTags").value("경영,KPI"));
+		this.mockMvc.perform(get("/public/api/v1/post/about")).andExpect(jsonPath("$.hashTags").value(""));
 	}
 
 	@Test

@@ -3,6 +3,7 @@ import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
 import { dayOf, isClassicContent, type PostBody } from '../model/Post.ts'
 import { AdSlot } from './AdSlot.tsx'
+import { HashTagList } from './HashTagList.tsx'
 import { ShareLinks } from './ShareLinks.tsx'
 import './PostArticle.css'
 
@@ -33,6 +34,7 @@ export function PostArticle({ post, editHref, shareHref }: PostArticleProps) {
       >
         <Markdown rehypePlugins={[rehypeRaw, rehypeSanitize]}>{post.content}</Markdown>
       </div>
+      <HashTagList hashTags={post.hashTags} />
       <AdSlot position="post" />
     </article>
   )

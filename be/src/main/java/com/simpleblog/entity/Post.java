@@ -45,6 +45,9 @@ public class Post {
 	@Column(name = "STATUS")
 	private String status;
 
+	@Column(name = "HASH_TAGS")
+	private String hashTags;
+
 	@Column(name = "CREATED_DATETIME")
 	private LocalDateTime createdAt;
 
@@ -109,6 +112,11 @@ public class Post {
 
 	public String status() {
 		return this.status;
+	}
+
+	/** Comma separated, without the # prefix; null when the row has none. */
+	public String hashTags() {
+		return this.hashTags;
 	}
 
 	/** UTC. */
