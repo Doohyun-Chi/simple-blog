@@ -628,7 +628,9 @@ paths:
       summary: Get the file of an image
       description: >
         Returns the stored bytes of an internal media item with its mime type, for use as an image source. External
-        items have no file here.
+        items have no file here. The bytes are exactly the ones uploaded: nothing is re-encoded, resized or stripped, so
+        data carried inside the file survives, such as the diagram in a PNG exported from draw.io with "Include a copy
+        of my diagram", which the editor reads to reopen the diagram.
       operationId: getMediaFile
       tags:
         - Media

@@ -22,7 +22,7 @@ import {
   toolbarPlugin,
 } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
-import { useMemo, useState } from 'react'
+import { type FC, useMemo, useState } from 'react'
 import {
   EMPTY_POST,
   POST_HASH_TAGS_MAX_LENGTH,
@@ -41,6 +41,8 @@ import { HintedField, PostEditorField } from './PostEditorField.tsx'
 import { PostEditorActions } from './PostEditorActions.tsx'
 import { FieldHint, SessionExpiredNote, SlugNote, TitleNote } from './PostEditorNotes.tsx'
 import { ViewModeToggle } from './ViewModeToggle.tsx'
+import { DrawioImageToolbar } from './DrawioImageToolbar.tsx'
+import { InsertDrawio } from './InsertDrawio.tsx'
 import { MediaPanel } from './MediaPanel.tsx'
 import { InsertMermaid, MermaidCodeBlockEditor } from './MermaidCodeBlockEditor.tsx'
 import './PostEditor.css'
@@ -87,7 +89,9 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
     thematicBreakPlugin(),
     linkPlugin(),
     linkDialogPlugin(),
-    imagePlugin({ imageUploadHandler: uploadedImageUrl }),
+    // imagePlugin types EditImageToolbar as taking no props, yet renders it with the image's props, as its own
+    // editImageToolbarComponent$ cell (FC<EditImageToolbarProps>) says; hence the cast.
+    imagePlugin({ imageUploadHandler: uploadedImageUrl, EditImageToolbar: DrawioImageToolbar as FC }),
     codeBlockPlugin({ defaultCodeBlockLanguage: '', codeBlockEditorDescriptors: [MERMAID_CODE_BLOCK] }),
     codeMirrorPlugin({ codeBlockLanguages: CODE_LANGUAGES }),
     diffSourcePlugin({ viewMode: 'rich-text' }),
@@ -105,6 +109,7 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
             <MediaPanel />
             <InsertCodeBlock />
             <InsertMermaid />
+            <InsertDrawio />
           </ViewModeToggle>
           <FullScreenToggle />
         </>

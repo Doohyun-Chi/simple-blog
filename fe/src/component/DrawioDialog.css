@@ -1,0 +1,36 @@
+/* Almost the whole window: draw.io needs room for its own toolbars and panels. */
+.drawio-dialog {
+  width: calc(100vw - 2rem);
+  height: calc(100vh - 2rem);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--paper);
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.drawio-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.5em 1em;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawio-dialog-note {
+  flex: 1 1 auto;
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+.drawio-dialog-frame {
+  flex: 1 1 auto;
+  width: 100%;
+  border: 0;
+}

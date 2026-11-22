@@ -9,7 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.zip.CRC32;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
@@ -71,6 +75,38 @@ class MediaControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(content().contentType("image/png"))
 			.andExpect(content().bytes(PNG));
+	}
+
+	/** A PNG chunk: length, type, data and the CRC of type and data. */
+	private static byte[] chunk(String type, byte[] data) {
+		byte[] typeBytes = type.getBytes(StandardCharsets.US_ASCII);
+		CRC32 crc = new CRC32();
+		crc.update(typeBytes);
+		crc.update(data);
+		return ByteBuffer.allocate(12 + data.length).putInt(data.length).put(typeBytes).put(data).putInt((int) crc.getValue()).array();
+	}
+
+	/** A PNG as draw.io exports it with "Include a copy of my diagram": the diagram rides in a tEXt chunk named mxfile. */
+	private static byte[] drawioPng() {
+		ByteArrayOutputStream png = new ByteArrayOutputStream();
+		png.writeBytes(new byte[] { (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A });
+		png.writeBytes(chunk("IHDR", new byte[] { 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0 }));
+		png.writeBytes(chunk("tEXt", "mxfile\0%3Cmxfile%3E%3Cdiagram%20name%3D%22Page-1%22%3E...%3C%2Fdiagram%3E%3C%2Fmxfile%3E"
+			.getBytes(StandardCharsets.ISO_8859_1)));
+		png.writeBytes(chunk("IEND", new byte[0]));
+		return png.toByteArray();
+	}
+
+	@Test
+	void servesAnEditableDrawioPngByteForByteSoTheDiagramInsideSurvives() throws Exception {
+		byte[] drawio = drawioPng();
+		String body = this.mockMvc.perform(upload("flow.drawio.png", "image/png", drawio))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.mimeType").value("image/png"))
+			.andReturn().getResponse().getContentAsString();
+		this.mockMvc.perform(get(JsonPath.<String>read(body, "$.url")))
+			.andExpect(status().isOk())
+			.andExpect(content().bytes(drawio));
 	}
 
 	@Test
