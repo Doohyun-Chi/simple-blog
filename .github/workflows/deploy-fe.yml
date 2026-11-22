@@ -20,8 +20,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: web/package-lock.json
-      - run: npm run build
+          cache-dependency-path: fe/package-lock.json
+      - run: npm ci && npm run build
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
