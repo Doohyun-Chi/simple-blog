@@ -1,0 +1,25 @@
+/*
+ * A diagram keeps its natural size so its text stays readable; one wider than the reading area scrolls sideways inside
+ * its box. A narrower one is centred. Block with auto margins, not text-align, so an overflowing one starts at the left
+ * edge instead of being cut off on both sides.
+ */
+.mermaid-diagram {
+  margin: 1em 0;
+  overflow-x: auto;
+
+  & svg {
+    display: block;
+    max-width: none;
+    height: auto;
+    margin: 0 auto;
+  }
+}
+
+.mermaid-diagram-failed {
+  margin: 1em 0;
+}
+
+.mermaid-diagram-note {
+  font-size: 0.8em;
+  color: var(--text-muted);
+}

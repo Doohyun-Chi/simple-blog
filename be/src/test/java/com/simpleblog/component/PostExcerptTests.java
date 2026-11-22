@@ -22,6 +22,17 @@ class PostExcerptTests {
 	}
 
 	@Test
+	void dropsFencedCodeBlocksSuchAsMermaidDiagrams() {
+		String content = "Before\n\n```mermaid\ngraph TD\n  A-->B\n```\n\nMiddle\n\n~~~~java\nint x;\n~~~~\n\nAfter";
+		assertThat(this.excerpt.descriptionOf(content)).isEqualTo("Before Middle After");
+	}
+
+	@Test
+	void dropsAnUnclosedFenceToTheEndAndKeepsInlineCode() {
+		assertThat(this.excerpt.descriptionOf("Use `x` here\n\n```\nnever closed")).isEqualTo("Use x here");
+	}
+
+	@Test
 	void cutsBeforeAWordAndAddsAnEllipsis() {
 		String content = "word ".repeat(60);
 		String description = this.excerpt.descriptionOf(content);

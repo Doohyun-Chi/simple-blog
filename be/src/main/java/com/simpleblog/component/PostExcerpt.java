@@ -17,6 +17,12 @@ public class PostExcerpt {
 
 	private static final Pattern COMMENT = Pattern.compile("<!--.*?-->", Pattern.DOTALL);
 
+	/**
+	 * A fenced code block such as a Mermaid diagram: an opening fence of three or more backticks or tildes, then everything up
+	 * to a closing fence of the same characters, or to the end when it is never closed. Its source is no reading text.
+	 */
+	private static final Pattern FENCED_CODE = Pattern.compile("(?ms)^ {0,3}(`{3,}|~{3,})[^\\n]*$.*?(?:^ {0,3}\\1[`~]*[ \\t]*$|\\z)");
+
 	private static final Pattern IMAGE = Pattern.compile("!\\[[^\\]]*]\\([^)]*\\)");
 
 	private static final Pattern LINK = Pattern.compile("\\[([^\\]]*)]\\([^)]*\\)");
@@ -77,6 +83,7 @@ public class PostExcerpt {
 
 	private String plainTextOf(String content) {
 		String text = COMMENT.matcher(content == null ? "" : content).replaceAll(" ");
+		text = FENCED_CODE.matcher(text).replaceAll(" ");
 		text = IMAGE.matcher(text).replaceAll(" ");
 		text = LINK.matcher(text).replaceAll("$1");
 		text = TAG.matcher(text).replaceAll(" ");

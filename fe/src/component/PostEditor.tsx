@@ -53,6 +53,7 @@ const CODE_LANGUAGES = {
   sh: 'Shell',
   json: 'JSON',
   yaml: 'YAML',
+  mermaid: 'Mermaid',
 }
 
 /**

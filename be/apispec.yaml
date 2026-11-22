@@ -143,8 +143,8 @@ paths:
 
         - `og:title` is the title.
 
-        - `og:description` is the first 200 characters of the content as plain text (Markdown, HTML tags and WordPress
-        block comments removed, whitespace collapsed), cut before a word so that no word is broken, with `…` appended
+        - `og:description` is the first 200 characters of the content as plain text (Markdown, HTML tags, WordPress
+        block comments and fenced code blocks such as Mermaid diagrams removed, whitespace collapsed), cut before a word so that no word is broken, with `…` appended
         when anything was cut (so at most 201 characters). A text of 200 characters or fewer is used whole, without the
         `…`. A first word longer than 200 characters is cut at 200 and gets the `…`.
 
