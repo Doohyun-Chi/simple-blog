@@ -21,31 +21,24 @@ import {
   toolbarPlugin,
 } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
-import { IconDeviceFloppy, IconTrash, IconWorldCheck, IconWorldUpload } from '@tabler/icons-react'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
-  cleanSlug,
   EMPTY_POST,
-  hashTagsText,
-  isSavable,
-  isUnsaved,
   POST_HASH_TAGS_MAX_LENGTH,
   POST_SLUG_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
   type PostInput,
-  PostStatus,
   PostType,
-  typedHashTags,
 } from '../model/Post.ts'
 import { FullScreenContext } from '../model/FullScreen.ts'
 import { uploadFailureText } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
-import { googleLoginUrl } from '../model/identityApi.ts'
-import { contentPath, LIST_PATH } from '../model/route.ts'
-import { useLeaveGuard } from '../model/useLeaveGuard.ts'
-import type { RemoveResult, SaveFailure, SaveState } from '../model/useSavePost.ts'
-import { useSessionKeepAlive } from '../model/useSessionKeepAlive.ts'
+import { usePostDraft } from '../model/usePostDraft.ts'
+import type { RemoveResult, SaveState } from '../model/useSavePost.ts'
 import { FullScreenToggle } from './FullScreenToggle.tsx'
+import { HintedField, PostEditorField } from './PostEditorField.tsx'
+import { PostEditorActions } from './PostEditorActions.tsx'
+import { FieldHint, SessionExpiredNote, SlugNote, TitleNote } from './PostEditorNotes.tsx'
 import { ViewModeToggle } from './ViewModeToggle.tsx'
 import { MediaPanel } from './MediaPanel.tsx'
 import './PostEditor.css'
@@ -111,20 +104,6 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
 
 const REMOVE_QUESTION = '이 글을 삭제할까요? 삭제한 글은 되돌릴 수 없습니다.'
 
-const REMOVE_FAILURE_TEXT: Record<'forbidden' | 'failed', string> = {
-  forbidden: '작성자만 글을 삭제할 수 있습니다.',
-  failed: '삭제하지 못했습니다. 로그인 상태를 확인하고 잠시 후 다시 시도해 주세요.',
-}
-
-const SAVE_FAILURE_TEXT: Record<SaveFailure, string> = {
-  invalid: '제목, Slug, 해시태그를 확인해 주세요.',
-  duplicate: '이미 사용 중인 Slug입니다.',
-  expired: '로그인이 만료되어 저장하지 못했습니다.',
-  forbidden: '저장할 권한이 없습니다.',
-  missing: '저장된 글을 찾을 수 없습니다. 다시 저장하면 새 글로 저장합니다.',
-  failed: '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.',
-}
-
 interface PostEditorProps {
   /** Where the last save stands. */
   saveState: SaveState
@@ -138,208 +117,67 @@ interface PostEditorProps {
   contentType?: PostType
 }
 
-/** The line under a field. */
-function FieldHint({ note }: { note: ReactNode }) {
-  return (
-    <div className="post-editor-hint">
-      <span className="post-editor-note" role="status">{note}</span>
-    </div>
-  )
-}
-
-/** The line under the slug: the characters a new slug may have, and that a slug the post already has can stay as it is. */
-function slugNote(slug: string, savedSlug: string): string {
-  const rule = '영문 대소문자, 숫자와 - 만 사용할 수 있습니다.'
-  return slug === savedSlug && cleanSlug(slug) !== slug ? `기존 slug는 그대로 저장됩니다. 바꾸려면 ${rule}` : rule
-}
-
-/** The line under the title: the save in progress or failed, else a warning while changes are unsaved, else the last save. */
-function noteOf(state: SaveState, unsaved: boolean, published: boolean, contentType: PostType): ReactNode {
-  const busyOrFailed = state.status === 'saving' || state.status === 'failed'
-  return unsaved && !busyOrFailed ? '저장하지 않은 변경이 있습니다.' : saveNote(state, published, contentType)
-}
-
-/** Tells the writer the session ended and how to sign in again without leaving the editor, so nothing written is lost. */
-function SessionExpiredNote() {
-  return (
-    <FieldHint
-      note={
-        <>
-          로그인이 만료되었습니다.
-          {' '}
-          <a href={googleLoginUrl()} target="_blank" rel="noreferrer">새 탭에서 다시 로그인</a>
-          한 뒤 저장해 주세요. 작성 중인 내용은 이 탭에 그대로 남아 있습니다.
-        </>
-      }
-    />
-  )
-}
-
-function saveNote(state: SaveState, published: boolean, contentType: PostType): ReactNode {
-  switch (state.status) {
-    case 'idle':
-      return null
-    case 'saving':
-      return '저장 중…'
-    case 'saved':
-      return <>{published ? '저장했습니다.' : '초안으로 저장했습니다.'} <a href={contentPath(contentType, state.slug)}>보기</a></>
-    case 'failed':
-      return SAVE_FAILURE_TEXT[state.failure]
-  }
-}
-
 /**
  * The writing area from fe/DESIGN.md: the title with the save and publish buttons beside it, the slug, the MDX body
  * filling the rest, and the hashtags on the last line. The title and slug limits appear as placeholders only; the
  * backend refuses longer ones. The slug is limited to the characters the spec allows as it is typed. 공개 saves
  * the post as published and 삭제 deletes it, after asking. The hashtags are typed with or without # and sent as the
- * comma separated stored text.
+ * comma separated stored text. What the post holds and what the buttons do lives in usePostDraft.
  */
 export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, contentType = PostType.POST }: PostEditorProps) {
-  const [title, updateTitle] = useState(initial.title)
-  const [slug, updateSlug] = useState(initial.slug)
-  const [markdown, updateMarkdown] = useState(initial.content)
-  const [typedTags, updateTypedTags] = useState(typedHashTags(initial.hashTags ?? ''))
+  const draft = usePostDraft({ initial, saveState, onSave, onRemove })
   const [fullScreen, updateFullScreen] = useState(false)
-  const [saved, updateSaved] = useState<PostInput>(initial)
-  const [published, updatePublished] = useState(initial.status === PostStatus.PUBLISH)
-  const [exists, updateExists] = useState(initial !== EMPTY_POST)
-  const [removed, updateRemoved] = useState(false)
-  const [removeNote, updateRemoveNote] = useState<string | null>(null)
-  const keepAlive = useSessionKeepAlive()
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
-  const input = { title, slug, content: markdown, hashTags: hashTagsText(typedTags) }
-  const canSave = isSavable(input, saved.slug) && saveState.status !== 'saving'
-  const unsaved = isUnsaved(input, saved)
-  const sessionExpired = keepAlive.expired || (saveState.status === 'failed' && saveState.failure === 'expired')
-  useLeaveGuard(unsaved && !removed)
-  useEffect(() => {
-    if (removed) {
-      window.location.assign(LIST_PATH)
-    }
-  }, [removed])
-
-  async function saveNow() {
-    if (await onSave(input)) {
-      updateSaved(input)
-      updateExists(true)
-    }
-  }
-
-  /** Asks first, as a deletion cannot be undone; once the post is gone the editor leaves for the list of all posts. */
-  async function removeNow() {
-    if (!window.confirm(REMOVE_QUESTION)) {
-      return
-    }
-    updateRemoveNote(null)
-    const result = await onRemove()
-    if (result === 'removed') {
-      updateRemoved(true)
-    } else {
-      updateRemoveNote(REMOVE_FAILURE_TEXT[result])
-    }
-  }
-
-  /** Saves the post as published, creating it first when it was never saved. */
-  async function publishNow() {
-    if (await onSave({ ...input, status: PostStatus.PUBLISH })) {
-      updateSaved(input)
-      updateExists(true)
-      updatePublished(true)
-    }
-  }
-
   return (
     <FullScreenContext value={{ on: fullScreen, toggle: () => updateFullScreen((on) => !on) }}>
       <form className={fullScreen ? 'post-editor post-editor-full-screen' : 'post-editor'} aria-label="글 작성" onSubmit={(event) => event.preventDefault()}>
         <div className="post-editor-title-line">
-          <div className="post-editor-field-group">
-            <input
-              className="post-editor-field"
-              name="title"
-              type="text"
-              placeholder={`제목 (최대 ${POST_TITLE_MAX_LENGTH}자)`}
-              aria-label="제목"
-              value={title}
-              onChange={(event) => {
-              updateTitle(event.target.value)
-              keepAlive.touch()
-            }}
-            />
-            <FieldHint note={removeNote ?? noteOf(saveState, unsaved, published, contentType)} />
-          </div>
-          <button
-            className="post-editor-button"
-            type="button"
-            title="저장"
-            aria-label="저장"
-            disabled={!canSave}
-            onClick={() => void saveNow()}
-          >
-            <IconDeviceFloppy size="1.25em" aria-hidden="true" />
-          </button>
-          <button
-            className="post-editor-button post-editor-publish"
-            type="button"
-            title={published ? '공개됨' : '공개'}
-            aria-label={published ? '공개됨' : '공개'}
-            disabled={!canSave || published}
-            onClick={() => void publishNow()}
-          >
-            {published ? <IconWorldCheck size="1.25em" aria-hidden="true" /> : <IconWorldUpload size="1.25em" aria-hidden="true" />}
-          </button>
-          <button
-            className="post-editor-button post-editor-remove"
-            type="button"
-            title="삭제"
-            aria-label="삭제"
-            disabled={!exists || removed || saveState.status === 'saving'}
-            onClick={() => void removeNow()}
-          >
-            <IconTrash size="1.25em" aria-hidden="true" />
-          </button>
-        </div>
-        <div className="post-editor-field-group">
-          <input
-            className="post-editor-field"
-            name="slug"
-            type="text"
-            placeholder={`Slug (최대 ${POST_SLUG_MAX_LENGTH}자)`}
-            aria-label="Slug"
-            value={slug}
-            onChange={(event) => {
-            updateSlug(cleanSlug(event.target.value))
-            keepAlive.touch()
-          }}
+          <HintedField
+            name="title"
+            label="제목"
+            placeholder={`제목 (최대 ${POST_TITLE_MAX_LENGTH}자)`}
+            value={draft.title}
+            onEdit={draft.editTitle}
+            note={<TitleNote saveState={saveState} unsaved={draft.unsaved} published={draft.published} contentType={contentType}
+              removeFailure={draft.removeFailure} />}
           />
-          <FieldHint note={slugNote(slug, saved.slug)} />
+          <PostEditorActions
+            canSave={draft.canSave}
+            canRemove={draft.canRemove}
+            published={draft.published}
+            onSave={() => void draft.save()}
+            onPublish={() => void draft.publish()}
+            onRemove={() => void draft.remove(() => window.confirm(REMOVE_QUESTION))}
+          />
         </div>
+        <HintedField
+          name="slug"
+          label="Slug"
+          placeholder={`Slug (최대 ${POST_SLUG_MAX_LENGTH}자)`}
+          value={draft.slug}
+          onEdit={draft.editSlug}
+          note={<SlugNote slug={draft.slug} savedSlug={draft.savedSlug} />}
+        />
         <MDXEditor
           className="post-editor-body mdxeditor-full-height"
           contentEditableClassName="post-editor-content"
-          markdown={markdown}
+          markdown={draft.content}
           onChange={(value) => {
-            updateMarkdown(value)
-          keepAlive.touch()
+            draft.editContent(value)
             updateImageNote(null)
           }}
           placeholder="본문"
           plugins={plugins}
         />
         {imageNote !== null && <FieldHint note={imageNote} />}
-      {sessionExpired && <SessionExpiredNote />}
-        <input
-          className="post-editor-field"
+        {draft.sessionExpired && <SessionExpiredNote />}
+        <PostEditorField
           name="hashtags"
-          type="text"
+          label="해시태그"
           placeholder={`#해시태그, 쉼표로 구분 (최대 ${POST_HASH_TAGS_MAX_LENGTH}자)`}
-          aria-label="해시태그"
-          value={typedTags}
-          onChange={(event) => {
-            updateTypedTags(event.target.value)
-            keepAlive.touch()
-          }}
+          value={draft.typedTags}
+          onEdit={draft.editTags}
         />
       </form>
     </FullScreenContext>

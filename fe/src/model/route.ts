@@ -26,31 +26,61 @@ const CONTENT_PATH = new RegExp(`^/(${Object.values(PostType).join('|')})/([^/]+
 const TYPE_INDEX = 1
 const SLUG_INDEX = 2
 
+/** Reads one kind of route from a URL path and its query string, or null when the path is not of that kind. */
+type RouteMatcher = (pathname: string, search: string) => Route | null
+
+/** The path without one trailing slash, so `/posts/` reads like `/posts`. */
+function trimmedPath(pathname: string): string {
+  return pathname.replace(/\/$/, '')
+}
+
+function homeRoute(pathname: string): Route | null {
+  return pathname === '' || pathname === '/' ? { kind: 'home' } : null
+}
+
+/** A route at a fixed path, with or without a trailing slash. */
+function fixedRoute(path: string, kind: 'list' | 'write'): RouteMatcher {
+  return (pathname) => (trimmedPath(pathname) === path ? { kind } : null)
+}
+
+function searchRoute(pathname: string, search: string): Route | null {
+  return SEARCH_PATH.test(pathname) ? searchRouteOf(new URLSearchParams(search)) : null
+}
+
+/**
+ * A route whose path carries a slug: null when the pattern does not match, not found when it matches but the slug
+ * cannot be decoded, else the route `toRoute` makes of the match and the decoded slug.
+ */
+function slugRoute(pattern: RegExp, slugIndex: number, toRoute: (match: RegExpExecArray, slug: string) => Route): RouteMatcher {
+  return (pathname) => {
+    const match = pattern.exec(pathname)
+    if (!match) {
+      return null
+    }
+    const slug = decodedSlug(match[slugIndex])
+    return slug === null ? { kind: 'notFound', path: pathname } : toRoute(match, slug)
+  }
+}
+
+/** The kinds of route in the order they are tried: the first that matches wins. */
+const ROUTE_MATCHERS: RouteMatcher[] = [
+  homeRoute,
+  fixedRoute(LIST_PATH, 'list'),
+  fixedRoute(WRITE_PATH, 'write'),
+  searchRoute,
+  slugRoute(EDIT_PATH, 1, (_match, slug) => ({ kind: 'edit', slug })),
+  slugRoute(CONTENT_PATH, SLUG_INDEX, (match, slug) => ({ kind: 'content', type: match[TYPE_INDEX] as PostType, slug })),
+]
+
 /** Resolves a URL path such as `/page/about`, with its query string such as `?query=kpi`, to the route it represents. */
 export function routeOf(pathname: string, search: string = ''): Route {
-  if (pathname === '' || pathname === '/') {
-    return { kind: 'home' }
+  for (const matcher of ROUTE_MATCHERS) {
+    const route = matcher(pathname, search)
+    if (route !== null) {
+      return route
+    }
   }
-  if (pathname.replace(/\/$/, '') === LIST_PATH) {
-    return { kind: 'list' }
-  }
-  if (pathname.replace(/\/$/, '') === WRITE_PATH) {
-    return { kind: 'write' }
-  }
-  if (SEARCH_PATH.test(pathname)) {
-    return searchRouteOf(new URLSearchParams(search))
-  }
-  const edit = EDIT_PATH.exec(pathname)
-  if (edit) {
-    const editSlug = decodedSlug(edit[1])
-    return editSlug === null ? { kind: 'notFound', path: pathname } : { kind: 'edit', slug: editSlug }
-  }
-  const match = CONTENT_PATH.exec(pathname)
-  const slug = match ? decodedSlug(match[SLUG_INDEX]) : null
-  if (!match || slug === null) {
-    return { kind: 'notFound', path: pathname }
-  }
-  return { kind: 'content', type: match[TYPE_INDEX] as PostType, slug }
+  return { kind: 'notFound', path: pathname }
 }
 
 /** The slug of the page being shown, or null when the route is not a page (home, a post, or not found). */
