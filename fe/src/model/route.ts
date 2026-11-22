@@ -83,6 +83,16 @@ export function routeOf(pathname: string, search: string = ''): Route {
   return { kind: 'notFound', path: pathname }
 }
 
+/** Whether the route is the editor, writing a new post or revising one: it takes the whole content area, with no info area. */
+export function isEditorRoute(route: Route): boolean {
+  return route.kind === 'write' || route.kind === 'edit'
+}
+
+/** Whether the info area shows its ad: only beside the home post and a post or page being read. */
+export function showsAsideAd(route: Route): boolean {
+  return route.kind === 'home' || route.kind === 'content'
+}
+
 /** The slug of the page being shown, or null when the route is not a page (home, a post, or not found). */
 export function currentPageSlug(route: Route): string | null {
   return route.kind === 'content' && route.type === PostType.PAGE ? route.slug : null
