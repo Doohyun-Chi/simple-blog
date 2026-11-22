@@ -17,27 +17,42 @@ jobs:
       run:
         working-directory: fe
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: 22
+          persist-credentials: false   # 이후 단계에서 git 토큰이 필요 없음
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
           cache: npm
           cache-dependency-path: fe/package-lock.json
-      - run: npm ci && npm run build
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Install & build
+        run: |
+          node --version && npm --version
+          npm ci
+          npm run build
+
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ap-northeast-2
 
-      - run: aws s3 sync dist/ s3://simple-blog-deploy/fe/${GITHUB_SHA}/
+      - name: Upload to S3
+        run: aws s3 sync dist/ "s3://simple-blog-deploy/fe/${GITHUB_SHA}/" --only-show-errors
 
       - name: Deploy via SSM
         run: |
+          IID="${{ vars.EC2_INSTANCE_ID }}"
           CMD_ID=$(aws ssm send-command \
-            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --instance-ids "$IID" \
             --document-name AWS-RunShellScript \
+            --comment "deploy fe ${GITHUB_SHA::7}" \
             --parameters "commands=[\"/opt/deploy/deploy-fe.sh ${GITHUB_SHA}\"]" \
             --query Command.CommandId --output text)
-          aws ssm wait command-executed \
-            --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}"
+          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$IID" || true
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$IID" \
+            --query '{Status:Status,Out:StandardOutputContent,Err:StandardErrorContent}' --output json
+          STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$IID" \
+            --query Status --output text)
+          [ "$STATUS" = "Success" ]

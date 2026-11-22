@@ -22,9 +22,11 @@ jobs:
       run:
         working-directory: be
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: corretto
           java-version: 25
@@ -38,7 +40,7 @@ jobs:
           test -n "$JAR" || { echo "boot jar not found" >&2; exit 1; }
           cp "$JAR" app.jar
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ap-northeast-2

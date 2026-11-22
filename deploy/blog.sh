@@ -3,7 +3,7 @@
 set -euo pipefail
 
 APP_DIR=/home/ec2-user/simple-blog
-JAR="$APP_DIR/simple-blog-0.0.1-SNAPSHOT.jar"
+JAR="$APP_DIR/current/app.jar"
 ENV_FILE="$APP_DIR/blog.env"
 PID_FILE="$APP_DIR/blog.pid"
 LOG_FILE="$APP_DIR/blog.log"
