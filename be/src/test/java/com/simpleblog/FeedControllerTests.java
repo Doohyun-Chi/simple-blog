@@ -36,8 +36,7 @@ import org.xml.sax.InputSource;
 		(2, 'Draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2026-12-01 00:00:00', '2026-12-01 00:00:00'),
 		(3, 'Private', 'private body', 'a-private', 'post', 'private', 1, '2026-12-01 00:00:00', '2026-12-01 00:00:00'),
 		(4, 'About', 'no image', 'about', 'page', 'publish', 1, '2026-12-01 00:00:00', '2026-12-01 00:00:00'),
-		(5, '큰기업', 'body', '%ed%81%b0%ea%b8%b0%ec%97%85-kpi', 'post', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(6, 'Scan', 'scan', 'a-scan', 'attachment', 'publish', 1, '2026-12-01 00:00:00', '2026-12-01 00:00:00');
+		(5, '큰기업', 'body', '%ed%81%b0%ea%b8%b0%ec%97%85-kpi', 'post', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 		""")
 class FeedControllerTests {
 
@@ -85,7 +84,7 @@ class FeedControllerTests {
 			.contains("<link rel=\"alternate\" href=\"https://www.chidoo.me/post/%ED%81%B0%EA%B8%B0%EC%97%85-kpi\" />")
 			.contains("<published>2026-11-05T09:45:11+09:00</published>")
 			.contains("<updated>2026-11-06T10:00:00+09:00</updated>")
-			.doesNotContain("Draft", "Private", "About", "Scan", "secret body", "<summary", "<content");
+			.doesNotContain("Draft", "Private", "About", "secret body", "<summary", "<content");
 		assertThat(feed.split("<entry>").length - 1).isEqualTo(2);
 		assertThat(feed.indexOf("/post/kpi")).isLessThan(feed.indexOf("%ED%81%B0"));
 	}

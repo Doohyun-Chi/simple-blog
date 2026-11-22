@@ -1,11 +1,11 @@
 import { StatusMessage } from '../component/StatusMessage.tsx'
-import { contentTypeOf } from '../model/route.ts'
+import { PostStatus, type SettablePostStatus } from '../model/Post.ts'
 import { usePostBody } from '../model/usePostBody.ts'
 import { PostWriter } from './PostWriter.tsx'
 
 /** The stored status as the editor knows it: only publish matters, anything else (draft, private) can be published. */
-function statusOf(status: string): 'draft' | 'publish' {
-  return status === 'publish' ? 'publish' : 'draft'
+function statusOf(status: PostStatus): SettablePostStatus {
+  return status === PostStatus.PUBLISH ? PostStatus.PUBLISH : PostStatus.DRAFT
 }
 
 interface PostReviserProps {
@@ -26,7 +26,7 @@ export function PostReviser({ slug }: PostReviserProps) {
       }
       return <PostWriter
           initial={{ title: post.value.title, slug, content: post.value.content, status: statusOf(post.value.status), hashTags: post.value.hashTags }}
-          contentType={contentTypeOf(post.value)}
+          contentType={post.value.type}
         />
   }
 }

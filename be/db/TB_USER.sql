@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS TB_USER (
   UNIQUE INDEX IDX_TB_USER_EMAIL (EMAIL)
 ) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
--- The reserved entry: the owner, who already authors the posts of wp_posts (post_author 1).
+-- The reserved entry: the owner, the author of the existing posts.
 INSERT IGNORE INTO TB_USER (ID, EMAIL, PROVIDER, REGISTERED_DATE) VALUES (1, 'doohyunchi@gmail.com', 'google', UTC_TIMESTAMP(6));

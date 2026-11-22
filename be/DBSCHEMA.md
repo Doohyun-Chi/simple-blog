@@ -46,8 +46,9 @@ columns
 - id: unique identifier
 - slug: post slug, unique identifier in string
 - title: mandatory post title
-- status: draft / private / publish
-- type: post, page, or etc.
+- status: draft / private / publish, nothing else (PostStatus)
+- type: post or page, nothing else (PostType)
+- no CHECK constraint on any column, status and type included
 - content: longtext for markdown contents
 - author_id: user id referenced from tb_user
 - hash_tags: comma separated hash tags in text

@@ -1,5 +1,5 @@
 -- Post table, see DBSCHEMA.md. The schema is not managed by Hibernate (ddl-auto=none): run this once.
--- TB_POST_MIGRATION.sql copies the WordPress wp_posts into it.
+-- STATUS is draft, publish or private and TYPE is post or page (PostStatus, PostType); no CHECK constraint holds them.
 
 CREATE TABLE IF NOT EXISTS TB_POST (
   ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

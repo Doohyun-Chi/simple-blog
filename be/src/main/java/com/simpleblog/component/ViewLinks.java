@@ -2,6 +2,7 @@ package com.simpleblog.component;
 
 import java.nio.charset.StandardCharsets;
 
+import com.simpleblog.entity.PostType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
@@ -22,8 +23,8 @@ public class ViewLinks {
 	}
 
 	/** Pages are at /page/{slug}, posts at /post/{slug}: the slug as readers see it (decoded once), then URL-encoded. */
-	public String pathOf(String type, String storedSlug) {
-		return ("page".equals(type) ? "/page/" : "/post/") + UriUtils.encodePathSegment(readerSlug(storedSlug), StandardCharsets.UTF_8);
+	public String pathOf(PostType type, String storedSlug) {
+		return "/" + type.code() + "/" + UriUtils.encodePathSegment(readerSlug(storedSlug), StandardCharsets.UTF_8);
 	}
 
 	private static String readerSlug(String storedSlug) {

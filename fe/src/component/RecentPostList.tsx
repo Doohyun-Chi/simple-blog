@@ -1,5 +1,5 @@
 import { IconFilePlus } from '@tabler/icons-react'
-import { type PostSummary, readerSlug } from '../model/Post.ts'
+import { PostStatus, type PostSummary, PostType, readerSlug } from '../model/Post.ts'
 import { contentPath, LIST_PATH, WRITE_PATH } from '../model/route.ts'
 import { AdSlot } from './AdSlot.tsx'
 import { FeedLink } from './FeedLink.tsx'
@@ -26,10 +26,10 @@ export function RecentPostList({ posts, canWrite, showAd }: RecentPostListProps)
           <li key={post.id}>
             <a
               className="recent-post-list-link"
-              href={contentPath('post', readerSlug(post.slug))}
+              href={contentPath(PostType.POST, readerSlug(post.slug))}
               title={post.title}
             >
-              {post.status === 'draft' && <span className="recent-post-list-draft" aria-label="초안">* </span>}
+              {post.status === PostStatus.DRAFT && <span className="recent-post-list-draft" aria-label="초안">* </span>}
               {post.title}
             </a>
           </li>

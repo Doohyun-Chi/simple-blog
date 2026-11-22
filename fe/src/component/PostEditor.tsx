@@ -33,13 +33,15 @@ import {
   POST_SLUG_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
   type PostInput,
+  PostStatus,
+  PostType,
   typedHashTags,
 } from '../model/Post.ts'
 import { FullScreenContext } from '../model/FullScreen.ts'
 import { uploadFailureText } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
 import { googleLoginUrl } from '../model/identityApi.ts'
-import { type ContentType, contentPath, LIST_PATH } from '../model/route.ts'
+import { contentPath, LIST_PATH } from '../model/route.ts'
 import { useLeaveGuard } from '../model/useLeaveGuard.ts'
 import type { RemoveResult, SaveFailure, SaveState } from '../model/useSavePost.ts'
 import { useSessionKeepAlive } from '../model/useSessionKeepAlive.ts'
@@ -133,7 +135,7 @@ interface PostEditorProps {
   /** The post to revise. Without it the editor starts empty. */
   initial?: PostInput
   /** Where the post is read, for the 보기 link. Defaults to a post. */
-  contentType?: ContentType
+  contentType?: PostType
 }
 
 /** The line under a field. */
@@ -152,7 +154,7 @@ function slugNote(slug: string, savedSlug: string): string {
 }
 
 /** The line under the title: the save in progress or failed, else a warning while changes are unsaved, else the last save. */
-function noteOf(state: SaveState, unsaved: boolean, published: boolean, contentType: ContentType): ReactNode {
+function noteOf(state: SaveState, unsaved: boolean, published: boolean, contentType: PostType): ReactNode {
   const busyOrFailed = state.status === 'saving' || state.status === 'failed'
   return unsaved && !busyOrFailed ? '저장하지 않은 변경이 있습니다.' : saveNote(state, published, contentType)
 }
@@ -173,7 +175,7 @@ function SessionExpiredNote() {
   )
 }
 
-function saveNote(state: SaveState, published: boolean, contentType: ContentType): ReactNode {
+function saveNote(state: SaveState, published: boolean, contentType: PostType): ReactNode {
   switch (state.status) {
     case 'idle':
       return null
@@ -193,14 +195,14 @@ function saveNote(state: SaveState, published: boolean, contentType: ContentType
  * the post as published and 삭제 deletes it, after asking. The hashtags are typed with or without # and sent as the
  * comma separated stored text.
  */
-export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, contentType = 'post' }: PostEditorProps) {
+export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, contentType = PostType.POST }: PostEditorProps) {
   const [title, updateTitle] = useState(initial.title)
   const [slug, updateSlug] = useState(initial.slug)
   const [markdown, updateMarkdown] = useState(initial.content)
   const [typedTags, updateTypedTags] = useState(typedHashTags(initial.hashTags ?? ''))
   const [fullScreen, updateFullScreen] = useState(false)
   const [saved, updateSaved] = useState<PostInput>(initial)
-  const [published, updatePublished] = useState(initial.status === 'publish')
+  const [published, updatePublished] = useState(initial.status === PostStatus.PUBLISH)
   const [exists, updateExists] = useState(initial !== EMPTY_POST)
   const [removed, updateRemoved] = useState(false)
   const [removeNote, updateRemoveNote] = useState<string | null>(null)
@@ -241,7 +243,7 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
 
   /** Saves the post as published, creating it first when it was never saved. */
   async function publishNow() {
-    if (await onSave({ ...input, status: 'publish' })) {
+    if (await onSave({ ...input, status: PostStatus.PUBLISH })) {
       updateSaved(input)
       updateExists(true)
       updatePublished(true)

@@ -1,3 +1,4 @@
+import { PostType } from '../model/Post.ts'
 import { contentPath } from '../model/route.ts'
 import './Header.css'
 
@@ -12,7 +13,7 @@ export function Header() {
         <a className="header-link" href="/">Dreaming for the Future</a>
       </h1>
       <p className="header-subtitle">
-        <a className="header-link" href={contentPath('page', ABOUT_SLUG)}>영원한 개발자를 향해</a>
+        <a className="header-link" href={contentPath(PostType.PAGE, ABOUT_SLUG)}>영원한 개발자를 향해</a>
       </p>
     </header>
   )

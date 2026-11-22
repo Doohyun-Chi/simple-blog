@@ -1,5 +1,6 @@
 import { PostArticle } from '../component/PostArticle.tsx'
 import { StatusMessage } from '../component/StatusMessage.tsx'
+import { PostStatus } from '../model/Post.ts'
 import { editPath } from '../model/route.ts'
 import { shareUrl } from '../model/share.ts'
 import { usePostBody } from '../model/usePostBody.ts'
@@ -24,7 +25,7 @@ export function PostReader({ slug }: PostReaderProps) {
         <PostArticle
           post={post.value}
           editHref={post.value.canEdit ? editPath(slug) : undefined}
-          shareHref={post.value.status === 'publish' ? shareUrl(slug) : undefined}
+          shareHref={post.value.status === PostStatus.PUBLISH ? shareUrl(slug) : undefined}
         />
       )
   }

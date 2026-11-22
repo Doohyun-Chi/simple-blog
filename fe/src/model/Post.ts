@@ -3,13 +3,24 @@ export type PostQueryType = 'keyword' | 'tag'
 
 export const DEFAULT_POST_QUERY_TYPE: PostQueryType = 'keyword'
 
+/** Values of `PostBody.type` in be/apispec.yaml. Each is also the first path segment readers open it at: /post/{slug}, /page/{slug}. */
+export const PostType = { POST: 'post', PAGE: 'page' } as const
+export type PostType = (typeof PostType)[keyof typeof PostType]
+
+/** Values of `PostBody.status` and `PostSummary.status` in be/apispec.yaml. */
+export const PostStatus = { DRAFT: 'draft', PUBLISH: 'publish', PRIVATE: 'private' } as const
+export type PostStatus = (typeof PostStatus)[keyof typeof PostStatus]
+
+/** The statuses a writer may send in `PostInput.status`. */
+export type SettablePostStatus = typeof PostStatus.DRAFT | typeof PostStatus.PUBLISH
+
 /** Mirrors `PostSummary` in be/apispec.yaml. `slug` is the stored form; see readerSlug. */
 export interface PostSummary {
   id: number
   title: string
   slug: string
-  /** As stored: publish, or draft or private for the signed-in user's own posts. */
-  status: string
+  /** publish, or draft or private for the signed-in user's own posts. */
+  status: PostStatus
   date: string
 }
 
@@ -22,9 +33,8 @@ export interface PostList {
 export interface PostBody {
   title: string
   content: string
-  status: string
-  /** As stored: post or page; any other type is read like a post. */
-  type: string
+  status: PostStatus
+  type: PostType
   date: string
   modified: string
   /** Comma separated, without the # prefix; empty when there are none. See hashTagsOf. */
@@ -70,13 +80,13 @@ export function readerSlug(storedSlug: string): string {
 }
 
 /** The tag for a status that is not public: 초안 for a draft, 비공개 for a private post. Nothing for a published one. */
-export function statusLabelOf(status: string): string | null {
+export function statusLabelOf(status: PostStatus): string | null {
   switch (status) {
-    case 'draft':
+    case PostStatus.DRAFT:
       return '초안'
-    case 'private':
+    case PostStatus.PRIVATE:
       return '비공개'
-    default:
+    case PostStatus.PUBLISH:
       return null
   }
 }
@@ -100,7 +110,7 @@ export interface PostInput {
   slug: string
   content: string
   /** Optional: publish makes the post public. Left out, a new post is a draft and an updated one keeps its status. */
-  status?: 'draft' | 'publish'
+  status?: SettablePostStatus
   /** Optional: comma separated, without the # prefix; an empty string removes the tags, left out keeps them. See hashTagsText. */
   hashTags?: string
 }

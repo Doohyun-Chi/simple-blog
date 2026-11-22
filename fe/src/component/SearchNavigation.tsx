@@ -1,6 +1,7 @@
 import { googleLoginUrl } from '../model/identityApi.ts'
 import type { LoginFailure, SessionState } from '../model/Identity.ts'
 import type { PageSummary } from '../model/Page.ts'
+import { PostType } from '../model/Post.ts'
 import { contentPath, searchPath } from '../model/route.ts'
 import type { FormEvent } from 'react'
 import './SearchNavigation.css'
@@ -64,7 +65,7 @@ export function SearchNavigation({ pages, currentPageSlug, currentQuery, session
           <li key={page.id}>
             <a
               className="search-nav-link"
-              href={contentPath('page', page.slug)}
+              href={contentPath(PostType.PAGE, page.slug)}
               page-current={page.slug === currentPageSlug ? 'selected' : undefined}
             >
               {page.title}

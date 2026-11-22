@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { dayOf, type PostSummary, readerSlug, statusLabelOf } from '../model/Post.ts'
+import { dayOf, type PostSummary, PostType, readerSlug, statusLabelOf } from '../model/Post.ts'
 import { contentPath } from '../model/route.ts'
 import './PostSummaryList.css'
 
@@ -17,7 +17,7 @@ export function PostSummaryList({ heading, posts }: PostSummaryListProps) {
       <ol className="post-summary-list-items">
         {posts.map((post) => (
           <li key={post.id} className="post-summary-list-item">
-            <a className="post-summary-list-link" href={contentPath('post', readerSlug(post.slug))}>{post.title}</a>
+            <a className="post-summary-list-link" href={contentPath(PostType.POST, readerSlug(post.slug))}>{post.title}</a>
             {statusLabelOf(post.status) !== null && <span className="post-summary-list-tag">{statusLabelOf(post.status)}</span>}
             <time className="post-summary-list-date" dateTime={post.date}>{dayOf(post.date)}</time>
           </li>

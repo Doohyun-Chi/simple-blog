@@ -423,7 +423,7 @@ paths:
         If the body slug differs from the path slug, the post is renamed; the old slug no longer resolves, and the new slug
         must follow the slug rule of PostInput. A body slug equal to the path slug keeps the slug as it is, whatever
         characters it has, so rows migrated from WordPress can be updated.
-        Only the author of the row (tb_post.author_id) can update it, and only posts and pages can be updated, never other types such as attachments.
+        Only the author of the row (tb_post.author_id) can update it; every row is a post or a page.
       operationId: updatePost
       tags:
         - Posts
@@ -465,7 +465,7 @@ paths:
       summary: Delete a post
       description: >
         Deletes the post or page identified by the path slug: its tb_post row is removed for good, whatever its status, and
-        the slug resolves no more. Only the author of the row (tb_post.author_id) can delete it, and only posts and pages can be deleted, never other types such as attachments. Media items it used are not touched.
+        the slug resolves no more. Only the author of the row (tb_post.author_id) can delete it. Media items it used are not touched.
       operationId: deletePost
       tags:
         - Posts
@@ -486,7 +486,7 @@ paths:
         '403':
           description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie), or the post was written by another user. The response body is not part of the contract.
         '404':
-          description: No post or page has the path slug; a row of another type, such as an attachment, counts as none. The response body is not part of the contract.
+          description: No post or page has the path slug. The response body is not part of the contract.
         '500':
           description: Failed to delete. The response body is not part of the contract.
     get:
@@ -814,8 +814,12 @@ components:
             to get the slug readers see before building /post/{slug} or calling /public/api/v1/post/{slug}.
         status:
           type: string
+          enum:
+            - draft
+            - publish
+            - private
           description: >
-            tb_post.status as stored. Anyone gets publish; draft and private rows come back only to their author
+            tb_post.status. Anyone gets publish; draft and private rows come back only to their author
             (see the description of the operation).
           examples:
             - publish
@@ -850,12 +854,19 @@ components:
             It is not rendered HTML.
         status:
           type: string
-          description: tb_post.status as stored (e.g. publish, draft, private); rows of any status are returned
+          enum:
+            - draft
+            - publish
+            - private
+          description: tb_post.status; rows of any status are returned
           examples:
             - publish
         type:
           type: string
-          description: tb_post.type as stored (e.g. post, page); readers open a page at /page/{slug} and a post at /post/{slug}
+          enum:
+            - post
+            - page
+          description: tb_post.type; readers open a page at /page/{slug} and a post at /post/{slug}
           examples:
             - post
         date:

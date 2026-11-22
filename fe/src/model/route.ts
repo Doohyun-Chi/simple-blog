@@ -1,11 +1,8 @@
-import { DEFAULT_POST_QUERY_TYPE, type PostBody, type PostQueryType, postQueryTypeOf } from './Post.ts'
-
-/** Kinds of content the app can show. Each maps to a top-level path segment: /page/{slug}, /post/{slug}. */
-export type ContentType = 'page' | 'post'
+import { DEFAULT_POST_QUERY_TYPE, type PostQueryType, postQueryTypeOf, PostType } from './Post.ts'
 
 export type Route =
   | { kind: 'home' }
-  | { kind: 'content'; type: ContentType; slug: string }
+  | { kind: 'content'; type: PostType; slug: string }
   | { kind: 'list' }
   | { kind: 'write' }
   | { kind: 'edit'; slug: string }
@@ -25,7 +22,7 @@ const EDIT_PATH = /^\/edit\/([^/]+)\/?$/
 const SEARCH_PATH = /^\/search\/?$/
 
 /** Matches /page/{slug} and /post/{slug}, with an optional trailing slash. A slug is a single path segment. */
-const CONTENT_PATH = /^\/(page|post)\/([^/]+)\/?$/
+const CONTENT_PATH = new RegExp(`^/(${Object.values(PostType).join('|')})/([^/]+)/?$`)
 const TYPE_INDEX = 1
 const SLUG_INDEX = 2
 
@@ -53,22 +50,17 @@ export function routeOf(pathname: string, search: string = ''): Route {
   if (!match || slug === null) {
     return { kind: 'notFound', path: pathname }
   }
-  return { kind: 'content', type: match[TYPE_INDEX] as ContentType, slug }
+  return { kind: 'content', type: match[TYPE_INDEX] as PostType, slug }
 }
 
 /** The slug of the page being shown, or null when the route is not a page (home, a post, or not found). */
 export function currentPageSlug(route: Route): string | null {
-  return route.kind === 'content' && route.type === 'page' ? route.slug : null
+  return route.kind === 'content' && route.type === PostType.PAGE ? route.slug : null
 }
 
 /** Builds the URL path for a piece of content, encoding the slug so non-ASCII slugs stay valid. */
-export function contentPath(type: ContentType, slug: string): string {
+export function contentPath(type: PostType, slug: string): string {
   return `/${type}/${encodeURIComponent(slug)}`
-}
-
-/** Where readers open this row: pages at /page/{slug}, everything else at /post/{slug}. */
-export function contentTypeOf(post: Pick<PostBody, 'type'>): ContentType {
-  return post.type === 'page' ? 'page' : 'post'
 }
 
 /** Builds the URL path for revising a post, encoding the slug like contentPath. */

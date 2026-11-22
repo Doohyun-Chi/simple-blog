@@ -4,7 +4,6 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.simpleblog.component.FeedRefresh;
@@ -15,6 +14,7 @@ import com.simpleblog.dto.PostInput;
 import com.simpleblog.dto.PostList;
 import com.simpleblog.dto.PostQueryType;
 import com.simpleblog.entity.Post;
+import com.simpleblog.entity.PostStatus;
 import com.simpleblog.exception.DuplicatePostSlugException;
 import com.simpleblog.exception.InvalidPostException;
 import com.simpleblog.exception.NotPostAuthorException;
@@ -31,8 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PostService {
 
-	/** The statuses a client may set. */
-	private static final Set<String> STATUSES = Set.of("draft", "publish");
 
 	private static final int MIN_LIMIT = 1;
 
@@ -128,7 +126,7 @@ public class PostService {
 	@Transactional
 	public PostBody updatePost(String slug, PostInput input) {
 		String newSlug = storedSlugOfUpdate(slug, input);
-		Post post = this.postRepository.editablePost(this.slugEncoder.encode(slug))
+		Post post = this.postRepository.post(this.slugEncoder.encode(slug))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 		long viewerId = this.userService.currentViewerId();
 		if (!post.editableBy(viewerId)) {
@@ -144,12 +142,11 @@ public class PostService {
 	}
 
 	/**
-	 * Deletes the post with this slug on behalf of the user of the current session, who must be its author. Only rows of
-	 * type post or page can be deleted, never attachments or revisions.
+	 * Deletes the post or page with this slug on behalf of the user of the current session, who must be its author.
 	 */
 	@Transactional
 	public void deletePost(String slug) {
-		Post post = this.postRepository.editablePost(this.slugEncoder.encode(slug))
+		Post post = this.postRepository.post(this.slugEncoder.encode(slug))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 		if (!post.editableBy(this.userService.currentViewerId())) {
 			throw new NotPostAuthorException(slug);
@@ -203,8 +200,8 @@ public class PostService {
 		}
 	}
 
-	private void requireValidStatus(String status) {
-		if (status != null && !STATUSES.contains(status)) {
+	private void requireValidStatus(PostStatus status) {
+		if (status != null && !status.settable()) {
 			throw new InvalidPostException("status must be draft or publish");
 		}
 	}

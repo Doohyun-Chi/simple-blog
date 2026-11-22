@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { StatusMessage } from '../component/StatusMessage.tsx'
-import type { PostInput } from '../model/Post.ts'
-import type { ContentType } from '../model/route.ts'
+import type { PostInput, PostType } from '../model/Post.ts'
 import { useSavePost } from '../model/useSavePost.ts'
 
 /** The MDX editor is large, so it loads only when the writing area is opened and reading pages stay light. */
@@ -11,7 +10,7 @@ interface PostWriterProps {
   /** The post to revise: the editor starts with it and saves update it. Without it, a new post is written. */
   initial?: PostInput
   /** Where the saved post is read: a page is read at /page/{slug}. A new post is a post. */
-  contentType?: ContentType
+  contentType?: PostType
 }
 
 /** The content area for /write and /edit/{slug}: the editor, saving through the backend. */

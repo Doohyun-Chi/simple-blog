@@ -48,7 +48,6 @@ import org.springframework.transaction.annotation.Transactional;
 		(1001, 'KPI', '<p>old</p>', 'kpi', 'post', 'publish', 1, '2020-01-01 00:00:00', '2020-01-02 00:00:00'),
 		(1002, 'A draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2021-01-01 00:00:00', '2021-01-01 00:00:00'),
 		(1003, 'About', 'page body', 'about', 'page', 'publish', 1, '2022-01-01 00:00:00', '2022-01-01 00:00:00'),
-		(1004, 'Image', '', 'hi-there', 'attachment', 'inherit', 1, '2023-01-01 00:00:00', '2023-01-01 00:00:00'),
 		(1005, 'Digits', 'old', 'post_2026', 'post', 'publish', 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00'),
 		(1006, 'Korean', 'old', '%ed%81%b0-kpi', 'post', 'draft', 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
 		""")
@@ -181,7 +180,7 @@ class PostWriteControllerTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "kpi", "about", "hi-there" })
+	@ValueSource(strings = { "kpi", "a-draft", "about" })
 	void refusesASlugAnyRowAlreadyHasWithConflict(String slug) throws Exception {
 		this.mockMvc.perform(created(json("Title", slug, "body"))).andExpect(status().isConflict());
 	}
@@ -264,10 +263,8 @@ class PostWriteControllerTests {
 	}
 
 	@Test
-	void answersNotFoundForAnUnknownSlugAndForRowsThatAreNeitherPostsNorPages() throws Exception {
-		for (String slug : new String[] { "no-such-post", "hi-there" }) {
-			this.mockMvc.perform(updated(slug, json("T", "t-" + slug, "x"))).andExpect(status().isNotFound());
-		}
+	void answersNotFoundForAnUnknownSlug() throws Exception {
+		this.mockMvc.perform(updated("no-such-post", json("T", "t-no-such-post", "x"))).andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -335,7 +332,7 @@ class PostWriteControllerTests {
 	@Test
 	void deletesOnlyThePostWithThatSlug() throws Exception {
 		this.mockMvc.perform(deleted("kpi")).andExpect(status().isNoContent());
-		assertThat(rowsWithSlug("a-draft") + rowsWithSlug("about") + rowsWithSlug("hi-there")).isEqualTo(3);
+		assertThat(rowsWithSlug("a-draft") + rowsWithSlug("about")).isEqualTo(2);
 	}
 
 	@Test
@@ -346,11 +343,8 @@ class PostWriteControllerTests {
 	}
 
 	@Test
-	void answersNotFoundWhenDeletingAnUnknownSlugOrARowThatIsNeitherAPostNorAPage() throws Exception {
-		for (String slug : new String[] { "no-such-post", "hi-there" }) {
-			this.mockMvc.perform(deleted(slug)).andExpect(status().isNotFound());
-		}
-		assertThat(rowsWithSlug("hi-there")).isEqualTo(1);
+	void answersNotFoundWhenDeletingAnUnknownSlug() throws Exception {
+		this.mockMvc.perform(deleted("no-such-post")).andExpect(status().isNotFound());
 	}
 
 	@Test

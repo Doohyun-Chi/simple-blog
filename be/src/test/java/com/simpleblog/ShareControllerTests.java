@@ -26,8 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 		(2, 'Draft', 'draft body', 'a-draft', 'post', 'draft', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
 		(3, 'Private', 'private body', 'a-private', 'post', 'private', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
 		(4, 'About', 'no image', 'about', 'page', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(5, '큰기업', '![m](/public/api/v1/media/thumb) 본문', '%ed%81%b0%ea%b8%b0%ec%97%85-kpi', 'post', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(6, 'Scan', 'scan', 'a-scan', 'attachment', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+		(5, '큰기업', '![m](/public/api/v1/media/thumb) 본문', '%ed%81%b0%ea%b8%b0%ec%97%85-kpi', 'post', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 		""")
 class ShareControllerTests {
 
@@ -76,8 +75,8 @@ class ShareControllerTests {
 	}
 
 	@Test
-	void hasNoSharePageForADraftAPrivatePostAnAttachmentOrAnUnknownSlug() throws Exception {
-		for (String slug : new String[] { "a-draft", "a-private", "a-scan", "nothing-here" }) {
+	void hasNoSharePageForADraftAPrivatePostOrAnUnknownSlug() throws Exception {
+		for (String slug : new String[] { "a-draft", "a-private", "nothing-here" }) {
 			this.mockMvc.perform(get("/public/share/" + slug)).andExpect(status().isNotFound());
 		}
 	}

@@ -20,7 +20,8 @@ public interface PostRepository extends Repository<Post, Long> {
 	/** The published pages and, whatever their status, the pages of this viewer. Selects summaries only, so page content is never loaded. */
 	@Query("""
 			select new com.simpleblog.dto.PageSummary(p.id, p.title, p.slug, p.createdAt, p.modifiedAt) from Post p
-			where p.type = 'page' and (p.status = 'publish' or p.authorId = :viewerId)
+			where p.type = com.simpleblog.entity.PostType.PAGE
+			  and (p.status = com.simpleblog.entity.PostStatus.PUBLISH or p.authorId = :viewerId)
 			order by p.id""")
 	List<PageSummary> listOfPagesVisibleTo(long viewerId);
 
@@ -31,7 +32,8 @@ public interface PostRepository extends Repository<Post, Long> {
 	 */
 	@Query("""
 			select new com.simpleblog.dto.PostSummary(p.id, p.title, p.slug, p.status, p.createdAt) from Post p
-			where p.type = 'post' and (p.status = 'publish' or p.authorId = :viewerId)
+			where p.type = com.simpleblog.entity.PostType.POST
+			  and (p.status = com.simpleblog.entity.PostStatus.PUBLISH or p.authorId = :viewerId)
 			  and (lower(p.title) like :pattern escape '\\' or lower(p.content) like :pattern escape '\\')
 			order by p.createdAt desc, p.id desc""")
 	List<PostSummary> listOfPostsContaining(String pattern, long viewerId, Pageable pageable);
@@ -39,13 +41,13 @@ public interface PostRepository extends Repository<Post, Long> {
 	/** The newest published posts for the feed, whoever asks: never a draft, a private post or a page. The pageable only limits the count. */
 	@Query("""
 			select new com.simpleblog.dto.FeedRow(p.title, p.slug, p.createdAt, p.modifiedAt) from Post p
-			where p.type = 'post' and p.status = 'publish'
+			where p.type = com.simpleblog.entity.PostType.POST and p.status = com.simpleblog.entity.PostStatus.PUBLISH
 			order by p.createdAt desc, p.id desc""")
 	List<FeedRow> listOfFeedRows(Pageable pageable);
 
 	Post save(Post post);
 
-	/** Removes the row. Only PostService#deletePost calls it, for a row of type post or page. */
+	/** Removes the row. Only PostService#deletePost calls it. */
 	void delete(Post post);
 
 	/** Whether any row, of any type or status, already has this stored slug. */
@@ -56,11 +58,7 @@ public interface PostRepository extends Repository<Post, Long> {
 	@Query("select count(p) > 0 from Post p where p.slug = :slug and p.id <> :id")
 	boolean slugInUseExcept(String slug, Long id);
 
-	/** The row to update or delete: a post or a page, never an attachment or a revision. */
-	@Query("select p from Post p where p.slug = :slug and p.type in ('post', 'page')")
-	Optional<Post> editablePost(String slug);
-
-	/** The row with this slug, of any type or status. SLUG is unique across all of them, so there is at most one. */
+	/** The post or page with this slug, of any status. SLUG is unique across all of them, so there is at most one. */
 	@Query("select p from Post p where p.slug = :slug")
 	Optional<Post> post(String slug);
 

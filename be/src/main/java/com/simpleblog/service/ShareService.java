@@ -5,6 +5,7 @@ import com.simpleblog.component.SlugEncoder;
 import com.simpleblog.component.ViewLinks;
 import com.simpleblog.dto.ShareTags;
 import com.simpleblog.entity.Post;
+import com.simpleblog.entity.PostStatus;
 import com.simpleblog.exception.PostNotFoundException;
 import com.simpleblog.repository.PostRepository;
 import org.springframework.stereotype.Service;
@@ -46,9 +47,9 @@ public class ShareService {
 		return new ShareTags(post.title(), this.excerpt.descriptionOf(post.content()), image, url);
 	}
 
-	/** Only a published post or page has a share page, so a draft or a private post never shows its title or text. */
+	/** Only a published row has a share page, so a draft or a private post never shows its title or text. */
 	private static boolean shareable(Post post) {
-		return "publish".equals(post.status()) && ("post".equals(post.type()) || "page".equals(post.type()));
+		return post.status() == PostStatus.PUBLISH;
 	}
 
 }

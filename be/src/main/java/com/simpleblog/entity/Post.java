@@ -11,8 +11,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /**
- * The {@code TB_POST} table, see be/DBSCHEMA.md. Pages are rows with {@code TYPE = 'page'} and posts are rows with
- * {@code TYPE = 'post'}. Both datetimes are UTC; readers get them converted to the site's local time where the API
+ * The {@code TB_POST} table, see be/DBSCHEMA.md. Pages are rows of {@link PostType#PAGE} and posts are rows of
+ * {@link PostType#POST}. Both datetimes are UTC; readers get them converted to the site's local time where the API
  * says so.
  * <p>
  * Rows are only ever created as drafts of type post ({@link #draftOf}) and revised in title, slug and content
@@ -40,10 +40,10 @@ public class Post {
 	private String slug;
 
 	@Column(name = "TYPE")
-	private String type;
+	private PostType type;
 
 	@Column(name = "STATUS")
-	private String status;
+	private PostStatus status;
 
 	@Column(name = "HASH_TAGS")
 	private String hashTags;
@@ -62,15 +62,15 @@ public class Post {
 			LocalDateTime utcNow) {
 		Post post = new Post();
 		post.authorId = authorId;
-		post.type = "post";
-		post.status = "draft";
+		post.type = PostType.POST;
+		post.status = PostStatus.DRAFT;
 		post.createdAt = utcNow;
 		post.revise(title, slug, content, hashTags, utcNow);
 		return post;
 	}
 
-	/** Sets the status, which the service has checked to be draft or publish. */
-	public void moveTo(String status) {
+	/** Sets the status, which the service has checked to be one a client may set (see PostStatus#settable). */
+	public void moveTo(PostStatus status) {
 		this.status = status;
 	}
 
@@ -113,11 +113,11 @@ public class Post {
 		return this.slug;
 	}
 
-	public String type() {
+	public PostType type() {
 		return this.type;
 	}
 
-	public String status() {
+	public PostStatus status() {
 		return this.status;
 	}
 

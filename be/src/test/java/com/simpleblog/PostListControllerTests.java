@@ -17,8 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * GET /public/api/v1/posts against H2. Rows 1-3 are public posts; rows 4-8 mention KPI too but must never be listed:
- * a draft, a private post, a page and an attachment.
+ * GET /public/api/v1/posts against H2. Rows 1-3 are public posts; rows 4, 5 and 7 mention KPI too but must never be listed:
+ * a draft, a private post and a page.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -30,8 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 		(3, 'Unrelated', 'about 100 percent', 'unrelated', 'post', 'publish', 1, '2023-12-31 15:00:00', '2023-12-31 15:00:00'),
 		(4, 'KPI draft', 'kpi', 'kpi-draft', 'post', 'draft', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
 		(5, 'KPI private', 'kpi', 'kpi-private', 'post', 'private', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(7, 'KPI page', 'kpi', 'kpi-page', 'page', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00'),
-		(8, 'KPI image', 'kpi', 'kpi-image', 'attachment', 'inherit', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+		(7, 'KPI page', 'kpi', 'kpi-page', 'page', 'publish', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 		""")
 class PostListControllerTests {
 

@@ -11,6 +11,7 @@ import com.simpleblog.config.CacheConfig;
 import com.simpleblog.dto.Feed;
 import com.simpleblog.dto.FeedEntry;
 import com.simpleblog.dto.FeedRow;
+import com.simpleblog.entity.PostType;
 import com.simpleblog.repository.PostRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -47,7 +48,7 @@ public class FeedService {
 	}
 
 	private FeedEntry entryOf(FeedRow row) {
-		return new FeedEntry(row.title(), this.viewLinks.pathOf("post", row.slug()), localTime(row.createdAt()), localTime(row.modifiedAt()));
+		return new FeedEntry(row.title(), this.viewLinks.pathOf(PostType.POST, row.slug()), localTime(row.createdAt()), localTime(row.modifiedAt()));
 	}
 
 	/** The table keeps UTC; readers see the site's zone. */
