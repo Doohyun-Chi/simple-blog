@@ -1,6 +1,6 @@
 import { apiUrl, requestJson } from './apiClient.ts'
 import { csrfHeaders } from './csrfToken.ts'
-import type { Media, MediaList } from './Media.ts'
+import { type Media, type MediaList, MediaProvider } from './Media.ts'
 
 const MEDIA_PATH = '/public/api/v1/media'
 const MEDIAS_PATH = '/public/api/v1/medias'
@@ -26,7 +26,7 @@ export function mediaSlugOf(source: string): string | null {
 
 /** Where an image can be loaded from: the server-relative path of an internal item resolved against the backend. */
 export function mediaFileUrl(media: Media): string {
-  return media.provider === 'internal' ? apiUrl(media.url) : media.url
+  return media.provider === MediaProvider.EXTERNAL ? media.url : apiUrl(media.url)
 }
 
 /** Calls `GET /public/api/v1/medias` (operationId: listOfMedias): every media item, newest first. Needs the session. */

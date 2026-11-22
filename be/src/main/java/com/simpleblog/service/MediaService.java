@@ -86,7 +86,7 @@ public class MediaService {
 	}
 
 	public MediaFile file(String slug) {
-		Media media = this.mediaRepository.findBySlug(slug).filter(Media::isInternal)
+		Media media = this.mediaRepository.findBySlug(slug).filter(Media::storesFile)
 			.orElseThrow(() -> new MediaNotFoundException("No image with slug: " + slug));
 		return new MediaFile(this.storage.load(media.location()), media.mimeType());
 	}
@@ -102,7 +102,7 @@ public class MediaService {
 			.distinct()
 			.map(this.mediaRepository::findBySlug)
 			.flatMap(Optional::stream)
-			.filter((media) -> media.isInternal() && media.ownedBy(ownerId) && !this.mediaUsage.inUse(media.slug()))
+			.filter((media) -> media.storesFile() && media.ownedBy(ownerId) && !this.mediaUsage.inUse(media.slug()))
 			.forEach(this::discard);
 	}
 

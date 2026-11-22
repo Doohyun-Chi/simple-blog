@@ -18,10 +18,6 @@ import jakarta.persistence.Table;
 @Table(name = "TB_MEDIA")
 public class Media {
 
-	public static final String INTERNAL = "internal";
-
-	public static final String EXTERNAL = "external";
-
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "ID")
@@ -31,7 +27,7 @@ public class Media {
 	private String slug;
 
 	@Column(name = "PROVIDER")
-	private String provider;
+	private MediaProvider provider;
 
 	@Column(name = "MIME_TYPE")
 	private String mimeType;
@@ -51,7 +47,7 @@ public class Media {
 	protected Media() {
 	}
 
-	private Media(String slug, String provider, String mimeType, String location, String thumbnail, LocalDateTime date,
+	private Media(String slug, MediaProvider provider, String mimeType, String location, String thumbnail, LocalDateTime date,
 			long ownerId) {
 		this.slug = slug;
 		this.provider = provider;
@@ -63,26 +59,26 @@ public class Media {
 	}
 
 	public static Media internalImage(String slug, String mimeType, String storedName, LocalDateTime date, long ownerId) {
-		return new Media(slug, INTERNAL, mimeType, storedName, null, date, ownerId);
+		return new Media(slug, MediaProvider.INTERNAL, mimeType, storedName, null, date, ownerId);
 	}
 
 	public static Media externalVideo(String slug, String url, String thumbnail, LocalDateTime date, long ownerId) {
-		return new Media(slug, EXTERNAL, url, url, thumbnail, date, ownerId);
+		return new Media(slug, MediaProvider.EXTERNAL, url, url, thumbnail, date, ownerId);
 	}
 
 	public boolean ownedBy(long userId) {
 		return this.ownerId != null && this.ownerId == userId;
 	}
 
-	public boolean isInternal() {
-		return INTERNAL.equals(this.provider);
+	public boolean storesFile() {
+		return this.provider.storesFile();
 	}
 
 	public String slug() {
 		return this.slug;
 	}
 
-	public String provider() {
+	public MediaProvider provider() {
 		return this.provider;
 	}
 

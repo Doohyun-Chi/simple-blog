@@ -1,9 +1,13 @@
 import { ApiError } from './apiClient.ts'
 
+/** Values of `Media.provider` in be/apispec.yaml: an image file on the server, or a reference such as a YouTube URL. */
+export const MediaProvider = { INTERNAL: 'internal', EXTERNAL: 'external' } as const
+export type MediaProvider = (typeof MediaProvider)[keyof typeof MediaProvider]
+
 /** Mirrors `Media` in be/apispec.yaml. `url` of an image is a server-relative path; see mediaFileUrl. */
 export interface Media {
   slug: string
-  provider: 'internal' | 'external'
+  provider: MediaProvider
   mimeType: string
   url: string
   thumbnail: string | null
@@ -54,5 +58,5 @@ export function imageMarkdown(alt: string, url: string): string {
 
 /** Whether the item is a YouTube video (kept by reference) rather than an image file on the server. */
 export function isVideo(media: Media): boolean {
-  return media.provider === 'external'
+  return media.provider === MediaProvider.EXTERNAL
 }
