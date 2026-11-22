@@ -1,0 +1,41 @@
+name: deploy-fe
+on:
+  push:
+    branches: [main]
+    paths: ['fe/**']
+
+permissions:
+  id-token: write   # OIDC 토큰 발급에 필요
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm run build
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-northeast-2
+
+      - run: aws s3 sync dist/ s3://simple-blog-deploy/fe/${GITHUB_SHA}/
+
+      - name: Deploy via SSM
+        run: |
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --parameters "commands=[\"/opt/deploy/deploy-fe.sh ${GITHUB_SHA}\"]" \
+            --query Command.CommandId --output text)
+          aws ssm wait command-executed \
+            --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}"
