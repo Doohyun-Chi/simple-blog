@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'jacoco'
 	id 'org.springframework.boot' version '4.1.2'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -32,6 +33,33 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+jacoco {
+	toolVersion = '0.8.14'
+}
+
+// Coverage is measured only when asked for (./gradlew coverage), so test, build and bootRun stay uninstrumented.
+def coverageTasks = ['coverage', 'jacocoTestReport']
+def coverageRequested = gradle.startParameter.taskNames.any { name -> coverageTasks.any { name == it || name.endsWith(":${it}") } }
+
 tasks.named('test') {
 	useJUnitPlatform()
+	jacoco {
+		enabled = coverageRequested
+	}
+}
+
+tasks.named('jacocoTestReport') {
+	dependsOn tasks.named('test')
+	onlyIf { coverageRequested }
+	reports {
+		html.required = true
+		xml.required = true
+		csv.required = false
+	}
+}
+
+tasks.register('coverage') {
+	group = 'verification'
+	description = 'Runs the tests with JaCoCo and writes the coverage report to build/reports/jacoco/test.'
+	dependsOn tasks.named('jacocoTestReport')
 }

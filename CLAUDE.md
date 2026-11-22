@@ -72,6 +72,7 @@ BE는 JDK 25가 필요하다. Homebrew의 `openjdk@25`는 PATH에 자동으로 �
 # BE (be/ 에서 실행, http://localhost:8080)
 ./gradlew bootRun --args='--spring.profiles.active=local'
 ./gradlew test
+./gradlew coverage   # tests with JaCoCo; report at build/reports/jacoco/test/html/index.html
 ./gradlew build
 
 # FE (fe/ 에서 실행, http://localhost:5173)
