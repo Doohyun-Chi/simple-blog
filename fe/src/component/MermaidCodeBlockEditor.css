@@ -1,0 +1,25 @@
+.mermaid-code-block {
+  margin: 0.5em 0;
+}
+
+/* The preview under the source: like the article, a wide diagram keeps its size and scrolls sideways. */
+.mermaid-code-block-preview {
+  min-height: 2em;
+  padding: 0.75em;
+  overflow-x: auto;
+  border: 1px dashed var(--border);
+  border-top: 0;
+  background: var(--paper);
+
+  & svg {
+    display: block;
+    max-width: none;
+    height: auto;
+    margin: 0 auto;
+  }
+}
+
+.mermaid-code-block-note {
+  font-size: 0.8em;
+  color: var(--text-muted);
+}

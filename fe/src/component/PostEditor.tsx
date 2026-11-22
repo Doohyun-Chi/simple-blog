@@ -1,6 +1,7 @@
 import {
   BlockTypeSelect,
   BoldItalicUnderlineToggles,
+  type CodeBlockEditorDescriptor,
   CodeToggle,
   CreateLink,
   InsertCodeBlock,
@@ -41,6 +42,7 @@ import { PostEditorActions } from './PostEditorActions.tsx'
 import { FieldHint, SessionExpiredNote, SlugNote, TitleNote } from './PostEditorNotes.tsx'
 import { ViewModeToggle } from './ViewModeToggle.tsx'
 import { MediaPanel } from './MediaPanel.tsx'
+import { InsertMermaid, MermaidCodeBlockEditor } from './MermaidCodeBlockEditor.tsx'
 import './PostEditor.css'
 
 const CODE_LANGUAGES = {
@@ -54,6 +56,13 @@ const CODE_LANGUAGES = {
   json: 'JSON',
   yaml: 'YAML',
   mermaid: 'Mermaid',
+}
+
+/** A ```mermaid block is edited with its diagram drawn under the source; it outranks the plain code editor (priority 1). */
+const MERMAID_CODE_BLOCK: CodeBlockEditorDescriptor = {
+  priority: 10,
+  match: (language) => language === 'mermaid',
+  Editor: MermaidCodeBlockEditor,
 }
 
 /**
@@ -79,7 +88,7 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
     linkPlugin(),
     linkDialogPlugin(),
     imagePlugin({ imageUploadHandler: uploadedImageUrl }),
-    codeBlockPlugin({ defaultCodeBlockLanguage: '' }),
+    codeBlockPlugin({ defaultCodeBlockLanguage: '', codeBlockEditorDescriptors: [MERMAID_CODE_BLOCK] }),
     codeMirrorPlugin({ codeBlockLanguages: CODE_LANGUAGES }),
     diffSourcePlugin({ viewMode: 'rich-text' }),
     markdownShortcutPlugin(),
@@ -95,6 +104,7 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
             <CreateLink />
             <MediaPanel />
             <InsertCodeBlock />
+            <InsertMermaid />
           </ViewModeToggle>
           <FullScreenToggle />
         </>
