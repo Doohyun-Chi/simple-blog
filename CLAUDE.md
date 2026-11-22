@@ -38,6 +38,35 @@
 1. Compositor, Component, Model에 따른 구조와 패키지 구조를 갖는다.
 2. CSS를 포함(관련된) 부분은 실제 코드에 포함되지 않도록 한다.
 
+### 리팩터링 컨벤션
+
+공통
+- 함수의 cyclomatic complexity는 10 이하로 유지한다. BE는 `./gradlew coverage`의 JaCoCo COMPLEXITY로 확인하고, FE는 `npm run lint`가
+  10을 넘는 함수를 경고한다 (`fe/.oxlintrc.json`의 `complexity`).
+- 리팩터링은 동작을 바꾸지 않으며 기능 변경과 같은 커밋에 섞지 않는다. 테스트가 없는 FE 로직은 바꾸기 전과 후의 결과를 같은 입력으로 비교해
+  확인한다 (예: `routeOf`를 old/new로 나란히 실행하는 scratchpad 스크립트).
+- 상태, 타입처럼 정해진 도메인 값은 문자열 리터럴로 비교하지 않는다. BE는 enum, FE는 const 객체로 정의하고 그것으로 비교한다.
+- 실제로 저장될 수 없는 값을 방어하는 분기와 테스트는 두지 않는다. 다룰 값의 범위는 enum이 정한다.
+
+BE
+- 도메인 코드 값은 `code()`(`@JsonValue`)와 `of(code)`를 가진 enum으로 정의하고, `@Converter(autoApply = true)`인 `AttributeConverter`로
+  기존 코드 문자열 그대로 저장한다. 예: `PostType`, `PostStatus`. API의 JSON 값은 code 그대로 유지된다.
+- 값에 따라 달라지는 규칙은 enum의 필드나 메소드로 둔다 (예: `PostStatus.settable()`). 서비스에 `Set<String>` 같은 허용 목록을 두지 않는다.
+- JPQL에서는 enum 상수를 fully-qualified name으로 쓴다 (예: `com.simpleblog.entity.PostStatus.PUBLISH`).
+- DB에 CHECK 제약을 두지 않는다. 테스트의 H2도 `NoColumnCheckH2Dialect`로 Hibernate가 enum 컬럼에 CHECK를 만들지 못하게 한다.
+
+FE
+- `erasableSyntaxOnly`이므로 TS `enum` 대신 `as const` 객체와 같은 이름의 union type을 쓴다 (예: `model/Post.ts`의 `PostType`, `PostStatus`).
+- 종류별로 갈라지는 `if` 체인은 순서 있는 matcher 목록으로 바꾼다 (예: `route.ts`의 `ROUTE_MATCHERS`, 먼저 맞는 것이 이긴다).
+- 종류마다 다른 화면을 고르는 긴 `switch`는 mapped type으로 모든 종류를 강제하는 lookup table로 바꾼다 (예: `MainPage.tsx`의 `ROUTE_VIEWS`).
+- 큰 컴포넌트는 나눈다. 상태와 행동은 `model/use*.ts` hook으로 (예: `usePostDraft`), 마크업은 역할별 component 파일로 옮긴다
+  (예: `PostEditorActions`, `PostEditorField`, `PostEditorNotes`). 남은 컴포넌트는 배치만 담당한다.
+- 같은 조건을 여러 속성에서 반복하면 그 조건을 가진 작은 컴포넌트로 묶는다 (예: `PublishButton`).
+- hook은 `window.confirm` 같은 UI를 직접 부르지 않고 콜백으로 받는다 (예: `remove(confirmed)`). 화면 문구는 component에 두고, hook은
+  상태만 돌려준다 (예: `RemoveFailure`를 돌려주고 문구는 `PostEditorNotes`가 정한다).
+- 화면 규칙을 인라인 조건으로 쓰지 않고 이름 있는 helper로 둔다 (예: `isEditorRoute`, `showsAsideAd`).
+- `.tsx`에서는 컴포넌트만 export한다 (`react/only-export-components`). 공유할 로직은 `model/`의 `.ts`에 둔다.
+
 
 ## API contract
 
