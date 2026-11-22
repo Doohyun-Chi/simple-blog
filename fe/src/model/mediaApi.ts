@@ -18,6 +18,12 @@ export function registerVideo(url: string, signal?: AbortSignal): Promise<Media>
   return requestJson<Media>(MEDIA_PATH, { method: 'POST', headers, body: JSON.stringify({ url }), credentials: 'include', signal })
 }
 
+/** The slug of an internal image of this blog from where it is loaded (see mediaFileUrl), or null for any other source. */
+export function mediaSlugOf(source: string): string | null {
+  const prefix = apiUrl(`${MEDIA_PATH}/`)
+  return source.startsWith(prefix) && source.length > prefix.length ? source.slice(prefix.length) : null
+}
+
 /** Where an image can be loaded from: the server-relative path of an internal item resolved against the backend. */
 export function mediaFileUrl(media: Media): string {
   return media.provider === 'internal' ? apiUrl(media.url) : media.url

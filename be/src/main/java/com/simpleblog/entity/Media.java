@@ -70,6 +70,10 @@ public class Media {
 		return new Media(slug, EXTERNAL, url, url, thumbnail, date, ownerId);
 	}
 
+	public boolean ownedBy(long userId) {
+		return this.ownerId != null && this.ownerId == userId;
+	}
+
 	public boolean isInternal() {
 		return INTERNAL.equals(this.provider);
 	}

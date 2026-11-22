@@ -630,7 +630,8 @@ paths:
         Returns the stored bytes of an internal media item with its mime type, for use as an image source. External
         items have no file here. The bytes are exactly the ones uploaded: nothing is re-encoded, resized or stripped, so
         data carried inside the file survives, such as the diagram in a PNG exported from draw.io with "Include a copy
-        of my diagram", which the editor reads to reopen the diagram.
+        of my diagram", which the editor reads to reopen the diagram. An image the post save deleted as replaced (see
+        `PostInput.replacedMedia`) answers 404.
       operationId: getMediaFile
       tags:
         - Media
@@ -785,6 +786,18 @@ components:
             keeps its tags.
           examples:
             - 경영,KPI
+        replacedMedia:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+          description: >
+            Optional. Slugs of images the writer replaced while editing, such as a draw.io diagram saved again from the
+            editor, together with the versions uploaded along the way. Once the post is saved, each of them that is an
+            internal image uploaded by the writer and that the content of no post or page, of any status, refers to by its
+            file URL (`/public/api/v1/media/{slug}`) is deleted, row and file, for good. Any other slug, unknown, a video,
+            someone else's or still in use, is left as it is. If the save is refused, nothing is deleted. More than 100
+            slugs are rejected with 400. Left out or empty, nothing is deleted.
     PostList:
       type: object
       required:

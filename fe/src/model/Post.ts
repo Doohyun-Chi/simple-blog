@@ -113,7 +113,12 @@ export interface PostInput {
   status?: SettablePostStatus
   /** Optional: comma separated, without the # prefix; an empty string removes the tags, left out keeps them. See hashTagsText. */
   hashTags?: string
+  /** Optional: slugs of images the edit replaced; once the post is saved, those nothing shows any more are deleted. */
+  replacedMedia?: string[]
 }
+
+/** The most slugs one save may send in `replacedMedia`. Mirrors its `maxItems` in be/apispec.yaml. */
+export const REPLACED_MEDIA_MAX = 100
 
 /**
  * The longest title, in characters (Unicode code points). Mirrors `maxLength` of `PostInput.title` in be/apispec.yaml.

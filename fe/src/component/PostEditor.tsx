@@ -32,6 +32,7 @@ import {
   PostType,
 } from '../model/Post.ts'
 import { FullScreenContext } from '../model/FullScreen.ts'
+import { ReplacedMediaContext } from '../model/ReplacedMedia.ts'
 import { uploadFailureText } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
 import { usePostDraft } from '../model/usePostDraft.ts'
@@ -175,17 +176,19 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
           onEdit={draft.editSlug}
           note={<SlugNote slug={draft.slug} savedSlug={draft.savedSlug} />}
         />
-        <MDXEditor
-          className="post-editor-body mdxeditor-full-height"
-          contentEditableClassName="post-editor-content"
-          markdown={draft.content}
-          onChange={(value) => {
-            draft.editContent(value)
-            updateImageNote(null)
-          }}
-          placeholder="본문"
-          plugins={plugins}
-        />
+        <ReplacedMediaContext value={draft.replaceMedia}>
+          <MDXEditor
+            className="post-editor-body mdxeditor-full-height"
+            contentEditableClassName="post-editor-content"
+            markdown={draft.content}
+            onChange={(value) => {
+              draft.editContent(value)
+              updateImageNote(null)
+            }}
+            placeholder="본문"
+            plugins={plugins}
+          />
+        </ReplacedMediaContext>
         {imageNote !== null && <FieldHint note={imageNote} />}
         {draft.sessionExpired && <SessionExpiredNote />}
         <PostEditorField

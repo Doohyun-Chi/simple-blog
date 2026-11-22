@@ -58,6 +58,13 @@ public interface PostRepository extends Repository<Post, Long> {
 	@Query("select count(p) > 0 from Post p where p.slug = :slug and p.id <> :id")
 	boolean slugInUseExcept(String slug, Long id);
 
+	/**
+	 * The content of every post and page, of any status, whose content matches the LIKE pattern, lowercased and escaped
+	 * with {@code \}; see LikePattern.
+	 */
+	@Query("select p.content from Post p where lower(p.content) like :pattern escape '\\'")
+	List<String> listOfContentsContaining(String pattern);
+
 	/** The post or page with this slug, of any status. SLUG is unique across all of them, so there is at most one. */
 	@Query("select p from Post p where p.slug = :slug")
 	Optional<Post> post(String slug);

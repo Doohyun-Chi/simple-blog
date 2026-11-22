@@ -12,9 +12,10 @@ import {
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { IconVectorBezier2 } from '@tabler/icons-react'
 import { $getNodeByKey } from 'lexical'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { drawioPngOf } from '../model/drawio.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
+import { ReplacedMediaContext } from '../model/ReplacedMedia.ts'
 import { useRemote } from '../model/useRemote.ts'
 import { DrawioDialog } from './DrawioDialog.tsx'
 import './DrawioImageToolbar.css'
@@ -66,10 +67,12 @@ function ImageSettingsButton({ disabled, ...image }: ImageToolbarProps & { disab
 
 /**
  * Reopens a draw.io diagram in draw.io. Shown only for an image of this blog that carries one; saving uploads the new
- * PNG and points the image at it, so the post shows the new version.
+ * PNG and points the image at it, so the post shows the new version. Both versions are reported as replaced, so the
+ * next post save deletes whichever of them nothing shows any more.
  */
 function EditDrawioButton({ nodeKey, imageSource, disabled }: { nodeKey: string; imageSource: string; disabled: boolean }) {
   const [editor] = useLexicalComposerContext()
+  const replaceMedia = useContext(ReplacedMediaContext)
   const png = useRemote(imageSource, (signal) => drawioPngOf(imageSource, signal))
   const [open, updateOpen] = useState(false)
   if (png.state !== 'loaded' || png.value === null) {
@@ -84,6 +87,7 @@ function EditDrawioButton({ nodeKey, imageSource, disabled }: { nodeKey: string;
           node.setSrc(source)
         }
       })
+      replaceMedia([imageSource, source])
       return true
     } catch (error: unknown) {
       console.error(error)

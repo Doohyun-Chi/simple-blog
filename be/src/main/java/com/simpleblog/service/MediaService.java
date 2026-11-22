@@ -3,11 +3,13 @@ package com.simpleblog.service;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 
 import com.simpleblog.component.ImageType;
 import com.simpleblog.component.MediaSlug;
 import com.simpleblog.component.MediaStorage;
+import com.simpleblog.component.MediaUsage;
 import com.simpleblog.component.YouTubeLink;
 import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
@@ -32,14 +34,18 @@ public class MediaService {
 
 	private final MediaSlug mediaSlug;
 
+	private final MediaUsage mediaUsage;
+
 	private final YouTubeLink youTube;
 
 	private final Clock clock;
 
-	public MediaService(MediaRepository mediaRepository, MediaStorage storage, MediaSlug mediaSlug, YouTubeLink youTube, Clock clock) {
+	public MediaService(MediaRepository mediaRepository, MediaStorage storage, MediaSlug mediaSlug, MediaUsage mediaUsage,
+			YouTubeLink youTube, Clock clock) {
 		this.mediaRepository = mediaRepository;
 		this.storage = storage;
 		this.mediaSlug = mediaSlug;
+		this.mediaUsage = mediaUsage;
 		this.youTube = youTube;
 		this.clock = clock;
 	}
@@ -83,6 +89,26 @@ public class MediaService {
 		Media media = this.mediaRepository.findBySlug(slug).filter(Media::isInternal)
 			.orElseThrow(() -> new MediaNotFoundException("No image with slug: " + slug));
 		return new MediaFile(this.storage.load(media.location()), media.mimeType());
+	}
+
+	/**
+	 * Deletes each of these images that the owner uploaded and no post or page refers to any more: the row now, the file
+	 * once the transaction commits. Unknown slugs, videos, someone else's images and images still in use are left alone.
+	 * Run it after the post that replaced them is saved, so its new content is what gets checked.
+	 */
+	@Transactional
+	public void discardUnused(long ownerId, List<String> slugs) {
+		slugs.stream()
+			.distinct()
+			.map(this.mediaRepository::findBySlug)
+			.flatMap(Optional::stream)
+			.filter((media) -> media.isInternal() && media.ownedBy(ownerId) && !this.mediaUsage.inUse(media.slug()))
+			.forEach(this::discard);
+	}
+
+	private void discard(Media media) {
+		this.mediaRepository.delete(media);
+		this.storage.removeAfterCommit(media.location());
 	}
 
 	private Registration saveVideo(long ownerId, String slug, String videoId) {

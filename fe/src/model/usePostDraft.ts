@@ -7,9 +7,11 @@ import {
   isUnsaved,
   type PostInput,
   PostStatus,
+  REPLACED_MEDIA_MAX,
   type SettablePostStatus,
   typedHashTags,
 } from './Post.ts'
+import { mediaSlugOf } from './mediaApi.ts'
 import { LIST_PATH } from './route.ts'
 import { useLeaveGuard } from './useLeaveGuard.ts'
 import type { RemoveResult, SaveState } from './useSavePost.ts'
@@ -54,6 +56,27 @@ function useSavedPost(initial: PostInput) {
   return { saved, published, exists, markSaved }
 }
 
+/**
+ * The slugs of the images replaced since the last save, at most REPLACED_MEDIA_MAX of them to send with the next one;
+ * once a save went through, the ones it sent are forgotten, as the backend has dealt with them.
+ */
+function useReplacedMedia() {
+  const [slugs, updateSlugs] = useState<string[]>([])
+  function replace(sources: string[]) {
+    const replaced = sources.map(mediaSlugOf).filter((slug) => slug !== null)
+    updateSlugs((known) => [...new Set([...known, ...replaced])])
+  }
+  function forget(sent: string[]) {
+    updateSlugs((known) => known.filter((slug) => !sent.includes(slug)))
+  }
+  return { toSend: slugs.slice(0, REPLACED_MEDIA_MAX), replace, forget }
+}
+
+/** What a save sends: the fields, the status when one is chosen, and the replaced images when there are any. */
+function inputToSend(input: PostInput, status: SettablePostStatus | undefined, replacedMedia: string[]): PostInput {
+  return { ...input, ...(status === undefined ? {} : { status }), ...(replacedMedia.length === 0 ? {} : { replacedMedia }) }
+}
+
 /** Deletes the post once `confirmed` says yes; once it is gone the page leaves for the list of all posts. */
 function useRemoval(onRemove: () => Promise<RemoveResult>) {
   const [removed, updateRemoved] = useState(false)
@@ -93,20 +116,24 @@ function sessionExpiredOf(keepAliveExpired: boolean, saveState: SaveState): bool
 /**
  * The post being written in the editor: its fields, what the buttons may do, and the actions behind them. Leaving the
  * page with unsaved changes asks first, unless the post was deleted. 공개 saves with status publish; a plain save sends
- * no status, so an updated post keeps its own.
+ * no status, so an updated post keeps its own. Images replaced in the editor go with the next save, which has the
+ * backend delete those nothing shows any more.
  */
 export function usePostDraft({ initial, saveState, onSave, onRemove }: PostDraftOptions) {
   const keepAlive = useSessionKeepAlive()
   const fields = useDraftFields(initial, keepAlive.touch)
   const record = useSavedPost(initial)
   const removal = useRemoval(onRemove)
+  const replacedMedia = useReplacedMedia()
   const input = { title: fields.title, slug: fields.slug, content: fields.content, hashTags: hashTagsText(fields.typedTags) }
   const saving = saveState.status === 'saving'
   const unsaved = isUnsaved(input, record.saved)
   useLeaveGuard(unsaved && !removal.removed)
   async function saveWith(status?: SettablePostStatus) {
-    if (await onSave(status === undefined ? input : { ...input, status })) {
+    const sent = replacedMedia.toSend
+    if (await onSave(inputToSend(input, status, sent))) {
       record.markSaved(input, status === PostStatus.PUBLISH)
+      replacedMedia.forget(sent)
     }
   }
   return {
@@ -121,5 +148,6 @@ export function usePostDraft({ initial, saveState, onSave, onRemove }: PostDraft
     save: () => saveWith(),
     publish: () => saveWith(PostStatus.PUBLISH),
     remove: removal.remove,
+    replaceMedia: replacedMedia.replace,
   }
 }

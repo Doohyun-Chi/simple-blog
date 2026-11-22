@@ -1,4 +1,4 @@
-import { apiUrl } from './apiClient.ts'
+import { mediaSlugOf } from './mediaApi.ts'
 
 /** Where draw.io's editor is served for embedding. Only messages from this origin are listened to. */
 export const DRAWIO_ORIGIN = 'https://embed.diagrams.net'
@@ -33,7 +33,7 @@ export function drawioEventOf(data: unknown): Record<string, unknown> | null {
 export function nextDrawioStep(event: Record<string, unknown> | null, initialPng: string | null): DrawioStep {
   switch (event?.event) {
     case 'init':
-      return { kind: 'send', message: initialPng === null ? { action: 'load', autosave: 0, xml: '' } : { action: 'load', autosave: 0, xmlpng: initialPng } }
+      return { kind: 'send', message: { action: 'load', autosave: 0, ...(initialPng === null ? { xml: '' } : { xmlpng: initialPng }) } }
     case 'save':
       return { kind: 'send', message: { action: 'export', format: 'xmlpng', spinKey: 'saving' } }
     case 'export':
@@ -80,14 +80,12 @@ function dataUriOf(blob: Blob): Promise<string> {
   })
 }
 
-/** Whether the image is a file of this blog's media store; only those are read to look for a diagram. */
-function isOwnMediaFile(source: string): boolean {
-  return source.startsWith(apiUrl('/public/api/v1/media/'))
-}
-
-/** The image as a PNG data URI for draw.io to reopen, or null when it is not a draw.io PNG of this blog. */
+/**
+ * The image as a PNG data URI for draw.io to reopen, or null when it is not a draw.io PNG of this blog. Only images of
+ * this blog's media store are read to look for a diagram.
+ */
 export async function drawioPngOf(source: string, signal?: AbortSignal): Promise<string | null> {
-  if (!isOwnMediaFile(source)) {
+  if (mediaSlugOf(source) === null) {
     return null
   }
   const response = await fetch(source, { signal })
