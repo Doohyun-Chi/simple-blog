@@ -15,6 +15,7 @@ import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
 import com.simpleblog.dto.MediaList;
 import com.simpleblog.entity.Media;
+import com.simpleblog.entity.MediaProvider;
 import com.simpleblog.exception.InvalidMediaException;
 import com.simpleblog.exception.MediaNotFoundException;
 import com.simpleblog.exception.UnsupportedMediaFileException;
@@ -50,8 +51,12 @@ public class MediaService {
 		this.clock = clock;
 	}
 
-	/** Stores an image on the server. The type comes from the content; the file name only seeds the slug. */
-	public MediaInfo uploadImage(long ownerId, String fileName, byte[] content) {
+	/**
+	 * Stores an image on the server, internal or, when {@code providerCode} says so, content. The type comes from the
+	 * content; the file name only seeds the slug.
+	 */
+	public MediaInfo uploadImage(long ownerId, String fileName, byte[] content, String providerCode) {
+		MediaProvider provider = uploadProviderOf(providerCode);
 		if (content.length == 0) {
 			throw new InvalidMediaException("The file is empty");
 		}
@@ -59,7 +64,7 @@ public class MediaService {
 		String stored = this.storage.save(content, type.extension());
 		try {
 			return MediaInfo.from(this.mediaRepository.save(
-					Media.internalImage(this.mediaSlug.of(fileName), type.mimeType(), stored, now(), ownerId)));
+					Media.storedImage(this.mediaSlug.of(fileName), provider, type.mimeType(), stored, now(), ownerId)));
 		}
 		catch (RuntimeException ex) {
 			this.storage.remove(stored);
@@ -92,8 +97,9 @@ public class MediaService {
 	}
 
 	/**
-	 * Deletes each of these images that the owner uploaded and no post or page refers to any more: the row now, the file
-	 * once the transaction commits. Unknown slugs, videos, someone else's images and images still in use are left alone.
+	 * Deletes each of these content images that the owner uploaded and no post or page refers to any more: the row now,
+	 * the file once the transaction commits. Unknown slugs, the library's internal images, videos, someone else's images
+	 * and images still in use are left alone.
 	 * Run it after the post that replaced them is saved, so its new content is what gets checked.
 	 */
 	@Transactional
@@ -102,8 +108,18 @@ public class MediaService {
 			.distinct()
 			.map(this.mediaRepository::findBySlug)
 			.flatMap(Optional::stream)
-			.filter((media) -> media.storesFile() && media.ownedBy(ownerId) && !this.mediaUsage.inUse(media.slug()))
+			.filter((media) -> media.discardable() && media.ownedBy(ownerId) && !this.mediaUsage.inUse(media.slug()))
 			.forEach(this::discard);
+	}
+
+	/** The provider an upload asks for: internal when it names none, otherwise one that stores a file. */
+	private MediaProvider uploadProviderOf(String code) {
+		if (code == null) {
+			return MediaProvider.INTERNAL;
+		}
+		return MediaProvider.find(code)
+			.filter(MediaProvider::storesFile)
+			.orElseThrow(() -> new InvalidMediaException("provider must be internal or content"));
 	}
 
 	private void discard(Media media) {

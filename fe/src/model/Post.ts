@@ -113,7 +113,7 @@ export interface PostInput {
   status?: SettablePostStatus
   /** Optional: comma separated, without the # prefix; an empty string removes the tags, left out keeps them. See hashTagsText. */
   hashTags?: string
-  /** Optional: slugs of images the edit replaced; once the post is saved, those nothing shows any more are deleted. */
+  /** Optional: slugs of images the edit replaced; once the post is saved, the content ones nothing shows any more are deleted. */
   replacedMedia?: string[]
 }
 

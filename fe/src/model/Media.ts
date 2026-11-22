@@ -1,8 +1,14 @@
 import { ApiError } from './apiClient.ts'
 
-/** Values of `Media.provider` in be/apispec.yaml: an image file on the server, or a reference such as a YouTube URL. */
-export const MediaProvider = { INTERNAL: 'internal', EXTERNAL: 'external' } as const
+/**
+ * Values of `Media.provider` in be/apispec.yaml: an image file of the media library, a reference such as a YouTube URL,
+ * or an image file made for the content of a post, such as a draw.io diagram, which a post save deletes once unused.
+ */
+export const MediaProvider = { INTERNAL: 'internal', EXTERNAL: 'external', CONTENT: 'content' } as const
 export type MediaProvider = (typeof MediaProvider)[keyof typeof MediaProvider]
+
+/** The providers an uploaded file may ask for: `MediaUpload.provider` in be/apispec.yaml. */
+export type UploadProvider = typeof MediaProvider.INTERNAL | typeof MediaProvider.CONTENT
 
 /** Mirrors `Media` in be/apispec.yaml. `url` of an image is a server-relative path; see mediaFileUrl. */
 export interface Media {

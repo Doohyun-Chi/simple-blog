@@ -14,6 +14,7 @@ import { IconVectorBezier2 } from '@tabler/icons-react'
 import { $getNodeByKey } from 'lexical'
 import { useContext, useState } from 'react'
 import { drawioPngOf } from '../model/drawio.ts'
+import { MediaProvider } from '../model/Media.ts'
 import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
 import { ReplacedMediaContext } from '../model/ReplacedMedia.ts'
 import { useRemote } from '../model/useRemote.ts'
@@ -67,8 +68,9 @@ function ImageSettingsButton({ disabled, ...image }: ImageToolbarProps & { disab
 
 /**
  * Reopens a draw.io diagram in draw.io. Shown only for an image of this blog that carries one; saving uploads the new
- * PNG and points the image at it, so the post shows the new version. Both versions are reported as replaced, so the
- * next post save deletes whichever of them nothing shows any more.
+ * PNG as content and points the image at it, so the post shows the new version. Both versions are reported as
+ * replaced, so the next post save deletes whichever of them is content and nothing shows any more; a diagram that came
+ * from the media library stays there.
  */
 function EditDrawioButton({ nodeKey, imageSource, disabled }: { nodeKey: string; imageSource: string; disabled: boolean }) {
   const [editor] = useLexicalComposerContext()
@@ -80,7 +82,7 @@ function EditDrawioButton({ nodeKey, imageSource, disabled }: { nodeKey: string;
   }
   async function keep(file: File): Promise<boolean> {
     try {
-      const source = mediaFileUrl(await uploadImage(file))
+      const source = mediaFileUrl(await uploadImage(file, MediaProvider.CONTENT))
       editor.update(() => {
         const node = $getNodeByKey(nodeKey)
         if ($isImageNode(node)) {

@@ -10,8 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * The {@code TB_MEDIA} table of DBSCHEMA.md. An internal row is an image file kept on the server ({@code MIME_TYPE} is
- * its mime type, {@code LOCATION} its stored file name); an external row is a reference ({@code MIME_TYPE} and
+ * The {@code TB_MEDIA} table of DBSCHEMA.md. An internal or content row is an image file kept on the server ({@code MIME_TYPE}
+ * is its mime type, {@code LOCATION} its stored file name; see MediaProvider); an external row is a reference ({@code MIME_TYPE} and
  * {@code LOCATION} are the URL, {@code THUMBNAIL} the YouTube thumbnail). {@code DATE} is UTC.
  */
 @Entity
@@ -58,8 +58,10 @@ public class Media {
 		this.ownerId = ownerId;
 	}
 
-	public static Media internalImage(String slug, String mimeType, String storedName, LocalDateTime date, long ownerId) {
-		return new Media(slug, MediaProvider.INTERNAL, mimeType, storedName, null, date, ownerId);
+	/** An image file kept on the server: an internal one of the library or a content one of a post. */
+	public static Media storedImage(String slug, MediaProvider provider, String mimeType, String storedName, LocalDateTime date,
+			long ownerId) {
+		return new Media(slug, provider, mimeType, storedName, null, date, ownerId);
 	}
 
 	public static Media externalVideo(String slug, String url, String thumbnail, LocalDateTime date, long ownerId) {
@@ -72,6 +74,10 @@ public class Media {
 
 	public boolean storesFile() {
 		return this.provider.storesFile();
+	}
+
+	public boolean discardable() {
+		return this.provider.discardable();
 	}
 
 	public String slug() {

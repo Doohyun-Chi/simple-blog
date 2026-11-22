@@ -1,14 +1,18 @@
 import { apiUrl, requestJson } from './apiClient.ts'
 import { csrfHeaders } from './csrfToken.ts'
-import { type Media, type MediaList, MediaProvider } from './Media.ts'
+import { type Media, type MediaList, MediaProvider, type UploadProvider } from './Media.ts'
 
 const MEDIA_PATH = '/public/api/v1/media'
 const MEDIAS_PATH = '/public/api/v1/medias'
 
-/** Calls `POST /public/api/v1/media` with a file (operationId: createMedia). The type is decided by the backend. */
-export function uploadImage(file: File, signal?: AbortSignal): Promise<Media> {
+/**
+ * Calls `POST /public/api/v1/media` with a file (operationId: createMedia). The type is decided by the backend. An image
+ * of the library is internal; one made for the post, such as a draw.io diagram, is content.
+ */
+export function uploadImage(file: File, provider: UploadProvider = MediaProvider.INTERNAL, signal?: AbortSignal): Promise<Media> {
   const body = new FormData()
   body.append('file', file)
+  body.append('provider', provider)
   return requestJson<Media>(MEDIA_PATH, { method: 'POST', headers: csrfHeaders(), body, credentials: 'include', signal })
 }
 

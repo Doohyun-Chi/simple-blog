@@ -565,7 +565,7 @@ paths:
       summary: Register a media item
       description: >
         Registers a media item in tb_media, owned (owner_id) by the signed-in user's id in tb_user, and returns it. With multipart/form-data the part `file` is an image stored
-        on the server (provider internal); with application/json the body names a YouTube video, which is only
+        on the server, provider internal unless the part `provider` says content; with application/json the body names a YouTube video, which is only
         registered by reference and never fetched or embedded (provider external). The image type is decided from the
         file content, not from the client's Content-Type or file name; only PNG, JPEG, GIF and WebP are accepted, up to
         10 MB. Registering the same YouTube video again returns the existing item with 200.
@@ -614,7 +614,9 @@ paths:
                     thumbnail: https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg
                     date: '2026-11-18T01:30:00Z'
         '400':
-          description: The file is missing or empty, or the url is not a YouTube video link. The response body is not part of the contract.
+          description: >
+            The file is missing or empty, `provider` is neither internal nor content, or the url is not a YouTube video
+            link. The response body is not part of the contract.
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
@@ -627,7 +629,7 @@ paths:
     get:
       summary: Get the file of an image
       description: >
-        Returns the stored bytes of an internal media item with its mime type, for use as an image source. External
+        Returns the stored bytes of an internal or content media item with its mime type, for use as an image source. External
         items have no file here. The bytes are exactly the ones uploaded: nothing is re-encoded, resized or stripped, so
         data carried inside the file survives, such as the diagram in a PNG exported from draw.io with "Include a copy
         of my diagram", which the editor reads to reopen the diagram. An image the post save deleted as replaced (see
@@ -662,7 +664,7 @@ paths:
                 type: string
                 format: binary
         '404':
-          description: No internal media item has this slug. The response body is not part of the contract.
+          description: No internal or content media item has this slug. The response body is not part of the contract.
 components:
   securitySchemes:
     sessionCookie:
@@ -696,6 +698,14 @@ components:
           type: string
           format: binary
           description: The image file
+        provider:
+          type: string
+          enum: [internal, content]
+          default: internal
+          description: >
+            Optional. internal, the default, is an image of the media library, kept until removed by hand. content is an
+            image made for the content of one post, such as a draw.io diagram drawn in the editor: a post save may delete it
+            once nothing shows it any more (see `PostInput.replacedMedia`).
     ExternalMediaInput:
       type: object
       required:
@@ -725,15 +735,18 @@ components:
             suffix; a YouTube video gets youtube- plus its video ID.
         provider:
           type: string
-          enum: [internal, external]
-          description: tb_media.provider. internal is a file on the server, external a reference such as a YouTube URL.
+          enum: [internal, external, content]
+          description: >
+            tb_media.provider. internal is a file on the server, external a reference such as a YouTube URL, content a
+            file on the server made for the content of a post, such as a draw.io diagram, which a post save may delete
+            once nothing shows it (see `MediaUpload.provider`).
         mimeType:
           type: string
-          description: tb_media.mime_type. The image's mime type for internal, otherwise the URL.
+          description: tb_media.mime_type. The image's mime type for internal and content, otherwise the URL.
         url:
           type: string
           description: >
-            Where to load the item. For internal a server-relative path (/public/api/v1/media/{slug}) to be resolved
+            Where to load the item. For internal and content a server-relative path (/public/api/v1/media/{slug}) to be resolved
             against the backend; for external the canonical https://youtu.be/ID link.
         thumbnail:
           type:
@@ -793,11 +806,12 @@ components:
             type: string
           description: >
             Optional. Slugs of images the writer replaced while editing, such as a draw.io diagram saved again from the
-            editor, together with the versions uploaded along the way. Once the post is saved, each of them that is an
-            internal image uploaded by the writer and that the content of no post or page, of any status, refers to by its
-            file URL (`/public/api/v1/media/{slug}`) is deleted, row and file, for good. Any other slug, unknown, a video,
-            someone else's or still in use, is left as it is. If the save is refused, nothing is deleted. More than 100
-            slugs are rejected with 400. Left out or empty, nothing is deleted.
+            editor, together with the versions uploaded along the way. Once the post is saved, each of them that is a
+            content image (provider content) uploaded by the writer and that the content of no post or page, of any status,
+            refers to by its file URL (`/public/api/v1/media/{slug}`) is deleted, row and file, for good. Any other slug,
+            unknown, an internal image of the library, a video, someone else's or still in use, is left as it is. If the
+            save is refused, nothing is deleted. More than 100 slugs are rejected with 400. Left out or empty, nothing is
+            deleted.
     PostList:
       type: object
       required:

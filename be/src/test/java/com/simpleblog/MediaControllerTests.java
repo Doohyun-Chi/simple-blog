@@ -17,6 +17,8 @@ import java.util.zip.CRC32;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,6 +56,12 @@ class MediaControllerTests {
 
 	private RequestBuilder upload(String name, String declaredType, byte[] bytes) {
 		return multipart(MEDIA).file(new MockMultipartFile("file", name, declaredType, bytes)).with(TestUsers.signedIn()).with(csrf());
+	}
+
+	/** An upload as the editor sends a draw.io diagram, or another provider to see it refused. */
+	private RequestBuilder upload(String name, byte[] bytes, String provider) {
+		return multipart(MEDIA).file(new MockMultipartFile("file", name, "image/png", bytes)).param("provider", provider)
+			.with(TestUsers.signedIn()).with(csrf());
 	}
 
 	private RequestBuilder link(String url) {
@@ -98,15 +106,22 @@ class MediaControllerTests {
 	}
 
 	@Test
-	void servesAnEditableDrawioPngByteForByteSoTheDiagramInsideSurvives() throws Exception {
+	void storesADrawioPngAsContentAndServesItByteForByteSoTheDiagramInsideSurvives() throws Exception {
 		byte[] drawio = drawioPng();
-		String body = this.mockMvc.perform(upload("flow.drawio.png", "image/png", drawio))
+		String body = this.mockMvc.perform(upload("flow.drawio.png", drawio, "content"))
 			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.provider").value("content"))
 			.andExpect(jsonPath("$.mimeType").value("image/png"))
 			.andReturn().getResponse().getContentAsString();
 		this.mockMvc.perform(get(JsonPath.<String>read(body, "$.url")))
 			.andExpect(status().isOk())
 			.andExpect(content().bytes(drawio));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "external", "Content", "library" })
+	void refusesAnUploadAsAProviderThatKeepsNoFileOrIsUnknown(String provider) throws Exception {
+		this.mockMvc.perform(upload("flow.png", PNG, provider)).andExpect(status().isBadRequest());
 	}
 
 	@Test

@@ -27,9 +27,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /**
- * PostInput.replacedMedia: the images a post save replaced are deleted, row and file, once nothing refers to them. A
+ * PostInput.replacedMedia: the content images a post save replaced are deleted, row and file, once nothing refers to them. A
  * file is removed only when the transaction commits, so unlike the other tests these commit, and every row is removed
  * after each test. The post kpi shows flow-old; the draft elsewhere shows shared and a slug that merely begins with gone.
+ * library is an internal image of the media library that nothing shows.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -43,12 +44,13 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 		(1002, 'Elsewhere', '<img src="/public/api/v1/media/shared-33333333"> /public/api/v1/media/gone-55555555-v2', 'elsewhere',
 		 'post', 'draft', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 		insert into tb_media (ID, SLUG, PROVIDER, MIME_TYPE, LOCATION, THUMBNAIL, "date", OWNER_ID) values
-		(9001, 'flow-old11111', 'internal', 'image/png', 'flow-old.png', null, now(), 1),
-		(9002, 'flow-new22222', 'internal', 'image/png', 'flow-new.png', null, now(), 1),
-		(9003, 'shared-33333333', 'internal', 'image/png', 'shared.png', null, now(), 1),
-		(9004, 'theirs-44444444', 'internal', 'image/png', 'theirs.png', null, now(), 2),
+		(9001, 'flow-old11111', 'content', 'image/png', 'flow-old.png', null, now(), 1),
+		(9002, 'flow-new22222', 'content', 'image/png', 'flow-new.png', null, now(), 1),
+		(9003, 'shared-33333333', 'content', 'image/png', 'shared.png', null, now(), 1),
+		(9004, 'theirs-44444444', 'content', 'image/png', 'theirs.png', null, now(), 2),
 		(9005, 'youtube-abc', 'external', 'https://www.youtube.com/watch?v=abc', 'https://www.youtube.com/watch?v=abc', null, now(), 1),
-		(9006, 'gone-55555555', 'internal', 'image/png', 'gone.png', null, now(), 1);
+		(9006, 'gone-55555555', 'content', 'image/png', 'gone.png', null, now(), 1),
+		(9007, 'library-77777777', 'internal', 'image/png', 'library.png', null, now(), 1);
 		""")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = """
 		delete from tb_media;
@@ -57,10 +59,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 		""")
 class PostMediaCleanupTests {
 
-	private static final List<String> FILES = List.of("flow-old.png", "flow-new.png", "shared.png", "theirs.png", "gone.png");
+	private static final List<String> FILES = List.of("flow-old.png", "flow-new.png", "shared.png", "theirs.png", "gone.png", "library.png");
 
 	private static final String ALL = "\"flow-old11111\", \"flow-new22222\", \"shared-33333333\", \"theirs-44444444\", \"youtube-abc\", "
-			+ "\"gone-55555555\", \"no-such-media\"";
+			+ "\"gone-55555555\", \"library-77777777\", \"no-such-media\"";
 
 	@TempDir
 	static Path directory;
@@ -103,20 +105,20 @@ class PostMediaCleanupTests {
 	}
 
 	@Test
-	void deletesTheReplacedImagesOfTheWriterThatNothingShowsAnyMore() throws Exception {
+	void deletesTheReplacedContentImagesOfTheWriterThatNothingShowsAnyMoreButNotTheLibrarys() throws Exception {
 		String content = "![d](http://localhost:8080/public/api/v1/media/flow-new22222 \\\"diagram\\\")";
 		this.mockMvc.perform(json(put("/public/api/v1/post/kpi").with(TestUsers.signedIn()), body("kpi", content, ALL)))
 			.andExpect(status().isOk());
-		assertThat(slugs()).containsExactly("flow-new22222", "shared-33333333", "theirs-44444444", "youtube-abc");
-		assertThat(files()).containsExactly("flow-new.png", "shared.png", "theirs.png");
+		assertThat(slugs()).containsExactly("flow-new22222", "shared-33333333", "theirs-44444444", "youtube-abc", "library-77777777");
+		assertThat(files()).containsExactly("flow-new.png", "library.png", "shared.png", "theirs.png");
 	}
 
 	@Test
 	void checksEveryPostSoACreatedPostDoesNotTakeAnImageAnotherPostShows() throws Exception {
 		this.mockMvc.perform(json(post("/public/api/v1/post").with(TestUsers.signedIn()), body("fresh", "none", ALL)))
 			.andExpect(status().isCreated());
-		assertThat(slugs()).containsExactly("flow-old11111", "shared-33333333", "theirs-44444444", "youtube-abc");
-		assertThat(files()).containsExactly("flow-old.png", "shared.png", "theirs.png");
+		assertThat(slugs()).containsExactly("flow-old11111", "shared-33333333", "theirs-44444444", "youtube-abc", "library-77777777");
+		assertThat(files()).containsExactly("flow-old.png", "library.png", "shared.png", "theirs.png");
 	}
 
 	@Test
@@ -126,7 +128,7 @@ class PostMediaCleanupTests {
 		String tooMany = String.join(", ", Collections.nCopies(101, "\"gone-55555555\""));
 		this.mockMvc.perform(json(put("/public/api/v1/post/kpi").with(TestUsers.signedIn()), body("kpi", "x", tooMany)))
 			.andExpect(status().isBadRequest());
-		assertThat(slugs()).hasSize(6);
+		assertThat(slugs()).hasSize(7);
 		assertThat(files()).hasSameElementsAs(FILES);
 	}
 

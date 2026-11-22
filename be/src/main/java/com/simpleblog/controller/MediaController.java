@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,10 +45,11 @@ public class MediaController {
 	}
 
 	@PostMapping(path = "/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<MediaInfo> createImage(@AuthenticationPrincipal OidcUser user, @RequestPart("file") MultipartFile file)
-			throws IOException {
+	public ResponseEntity<MediaInfo> createImage(@AuthenticationPrincipal OidcUser user, @RequestPart("file") MultipartFile file,
+			@RequestParam(name = "provider", required = false) String provider) throws IOException {
 		long ownerId = this.userService.idOf(user);
-		return ResponseEntity.status(HttpStatus.CREATED).body(this.mediaService.uploadImage(ownerId, file.getOriginalFilename(), file.getBytes()));
+		MediaInfo media = this.mediaService.uploadImage(ownerId, file.getOriginalFilename(), file.getBytes(), provider);
+		return ResponseEntity.status(HttpStatus.CREATED).body(media);
 	}
 
 	@PostMapping(path = "/media", consumes = MediaType.APPLICATION_JSON_VALUE)
