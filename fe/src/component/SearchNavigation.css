@@ -66,6 +66,15 @@
   }
 }
 
+/* The link to the bookshelf, after the pages. */
+.search-nav-books {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  flex: 0 0 auto;
+  font-size: 0.75em;
+}
+
 /* The right-most item of the area: the sign-in link, or the signed-in email. */
 .search-nav-identity {
   display: inline-flex;

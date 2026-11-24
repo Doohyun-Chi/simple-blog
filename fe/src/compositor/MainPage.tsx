@@ -6,10 +6,11 @@ import { SearchNavigation } from '../component/SearchNavigation.tsx'
 import { StatusMessage } from '../component/StatusMessage.tsx'
 import type { SessionState } from '../model/Identity.ts'
 import type { PostSummary } from '../model/Post.ts'
-import { currentPageSlug, currentQuery, isEditorRoute, type Route, routeOf, showsAsideAd } from '../model/route.ts'
+import { currentPageSlug, currentQuery, hasAside, type Route, routeOf, showsAsideAd } from '../model/route.ts'
 import { useListOfPages } from '../model/useListOfPages.ts'
 import { useListOfRecentPosts } from '../model/useListOfPosts.ts'
 import { useSession } from '../model/useSession.ts'
+import { BookShelf } from './BookShelf.tsx'
 import { HomePost } from './HomePost.tsx'
 import { PostList } from './PostList.tsx'
 import { PostReader } from './PostReader.tsx'
@@ -33,7 +34,8 @@ type RouteView<K extends Route['kind']> = (route: Extract<Route, { kind: K }>, c
 const ROUTE_VIEWS: { [K in Route['kind']]: RouteView<K> } = {
   home: (_route, { recent }) => <HomePost recent={recent} />,
   list: () => <PostList />,
-  write: (_route, { session }) => <WriteGate session={session}><PostWriter /></WriteGate>,
+  write: (route, { session }) => <WriteGate session={session}><PostWriter starter={route.starter ?? undefined} /></WriteGate>,
+  books: (_route, { session }) => <BookShelf canWrite={session.status === 'signedIn'} />,
   edit: (route, { session }) => <WriteGate session={session}><PostReviser key={route.slug} slug={route.slug} /></WriteGate>,
   notFound: (route) => <StatusMessage>Not found: <code>{route.path}</code></StatusMessage>,
   search: (route) => <PostSearch key={`${route.queryType}:${route.query}`} queryType={route.queryType} query={route.query} />,
@@ -48,7 +50,7 @@ function RouteContent({ route, ...context }: { route: Route } & RouteContext) {
 
 /** The info area beside the content: none for the editor, which takes the whole width. */
 function asideOf(route: Route, { recent, session }: RouteContext): ReactNode {
-  if (isEditorRoute(route)) {
+  if (!hasAside(route)) {
     return undefined
   }
   return <RecentPostsAside recent={recent} canWrite={session.status === 'signedIn'} showAd={showsAsideAd(route)} />
@@ -66,6 +68,7 @@ export function MainPage() {
         pages={pages}
         currentPageSlug={currentPageSlug(route)}
         currentQuery={currentQuery(route)}
+        booksShown={route.kind === 'books'}
         session={context.session}
       />
       <Contents aside={asideOf(route, context)}>

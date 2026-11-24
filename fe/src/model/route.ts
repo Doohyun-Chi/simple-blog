@@ -1,10 +1,11 @@
-import { DEFAULT_POST_QUERY_TYPE, type PostQueryType, postQueryTypeOf, PostType } from './Post.ts'
+import { DEFAULT_POST_QUERY_TYPE, type PostQueryType, postQueryTypeOf, type PostStarter, PostType } from './Post.ts'
 
 export type Route =
   | { kind: 'home' }
   | { kind: 'content'; type: PostType; slug: string }
   | { kind: 'list' }
-  | { kind: 'write' }
+  | { kind: 'write'; starter: PostStarter | null }
+  | { kind: 'books' }
   | { kind: 'edit'; slug: string }
   | { kind: 'search'; queryType: PostQueryType; query: string }
   | { kind: 'notFound'; path: string }
@@ -14,6 +15,9 @@ export const LIST_PATH = '/posts'
 
 /** The area for writing a new post, linked as `새로운 생각` from the info area. */
 export const WRITE_PATH = '/write'
+
+/** The bookshelf, linked as `서재` from the navigation. */
+export const BOOKS_PATH = '/books'
 
 /** Matches /edit/{slug}: the area for revising an existing post, linked as `편집하기` from the post. */
 const EDIT_PATH = /^\/edit\/([^/]+)\/?$/
@@ -39,8 +43,19 @@ function homeRoute(pathname: string): Route | null {
 }
 
 /** A route at a fixed path, with or without a trailing slash. */
-function fixedRoute(path: string, kind: 'list' | 'write'): RouteMatcher {
+function fixedRoute(path: string, kind: 'list' | 'books'): RouteMatcher {
   return (pathname) => (trimmedPath(pathname) === path ? { kind } : null)
+}
+
+/** /write, optionally with ?title=...&slug=... for a post written for something else; both are needed to start from them. */
+function writeRoute(pathname: string, search: string): Route | null {
+  if (trimmedPath(pathname) !== WRITE_PATH) {
+    return null
+  }
+  const params = new URLSearchParams(search)
+  const title = params.get('title')
+  const slug = params.get('slug')
+  return { kind: 'write', starter: title !== null && slug !== null ? { title, slug } : null }
 }
 
 function searchRoute(pathname: string, search: string): Route | null {
@@ -66,7 +81,8 @@ function slugRoute(pattern: RegExp, slugIndex: number, toRoute: (match: RegExpEx
 const ROUTE_MATCHERS: RouteMatcher[] = [
   homeRoute,
   fixedRoute(LIST_PATH, 'list'),
-  fixedRoute(WRITE_PATH, 'write'),
+  writeRoute,
+  fixedRoute(BOOKS_PATH, 'books'),
   searchRoute,
   slugRoute(EDIT_PATH, 1, (_match, slug) => ({ kind: 'edit', slug })),
   slugRoute(CONTENT_PATH, SLUG_INDEX, (match, slug) => ({ kind: 'content', type: match[TYPE_INDEX] as PostType, slug })),
@@ -86,6 +102,16 @@ export function routeOf(pathname: string, search: string = ''): Route {
 /** Whether the route is the editor, writing a new post or revising one: it takes the whole content area, with no info area. */
 export function isEditorRoute(route: Route): boolean {
   return route.kind === 'write' || route.kind === 'edit'
+}
+
+/** Whether the info area is shown beside the content: not for the editor and the bookshelf, which take the whole width. */
+export function hasAside(route: Route): boolean {
+  return !isEditorRoute(route) && route.kind !== 'books'
+}
+
+/** Builds the URL path for writing a new post, starting from a title and slug when given. */
+export function writePath(starter?: PostStarter): string {
+  return starter === undefined ? WRITE_PATH : `${WRITE_PATH}?${new URLSearchParams({ title: starter.title, slug: starter.slug })}`
 }
 
 /** Whether the info area shows its ad: only beside the home post and a post or page being read. */

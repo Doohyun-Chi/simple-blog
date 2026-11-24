@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   cleanSlug,
-  EMPTY_POST,
   hashTagsText,
   isSavable,
   isUnsaved,
@@ -42,10 +41,10 @@ function useDraftFields(initial: PostInput, touch: () => void) {
 }
 
 /** What was last saved, whether the post is published, and whether it exists on the backend yet. */
-function useSavedPost(initial: PostInput) {
+function useSavedPost(initial: PostInput, existing: boolean) {
   const [saved, updateSaved] = useState<PostInput>(initial)
   const [published, updatePublished] = useState(initial.status === PostStatus.PUBLISH)
-  const [exists, updateExists] = useState(initial !== EMPTY_POST)
+  const [exists, updateExists] = useState(existing)
   function markSaved(input: PostInput, publishedNow: boolean) {
     updateSaved(input)
     updateExists(true)
@@ -103,6 +102,8 @@ function useRemoval(onRemove: () => Promise<RemoveResult>) {
 
 interface PostDraftOptions {
   initial: PostInput
+  /** Whether `initial` is a post the backend already has, as opposed to the start of a new one. */
+  existing: boolean
   saveState: SaveState
   onSave: (input: PostInput) => Promise<boolean>
   onRemove: () => Promise<RemoveResult>
@@ -119,10 +120,10 @@ function sessionExpiredOf(keepAliveExpired: boolean, saveState: SaveState): bool
  * no status, so an updated post keeps its own. Images replaced in the editor go with the next save, which has the
  * backend delete those nothing shows any more.
  */
-export function usePostDraft({ initial, saveState, onSave, onRemove }: PostDraftOptions) {
+export function usePostDraft({ initial, existing, saveState, onSave, onRemove }: PostDraftOptions) {
   const keepAlive = useSessionKeepAlive()
   const fields = useDraftFields(initial, keepAlive.touch)
-  const record = useSavedPost(initial)
+  const record = useSavedPost(initial, existing)
   const removal = useRemoval(onRemove)
   const replacedMedia = useReplacedMedia()
   const input = { title: fields.title, slug: fields.slug, content: fields.content, hashTags: hashTagsText(fields.typedTags) }

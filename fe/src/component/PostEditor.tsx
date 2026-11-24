@@ -29,6 +29,7 @@ import {
   POST_SLUG_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
   type PostInput,
+  type PostStarter,
   PostType,
 } from '../model/Post.ts'
 import { FullScreenContext } from '../model/FullScreen.ts'
@@ -145,6 +146,8 @@ interface PostEditorProps {
   initial?: PostInput
   /** Where the post is read, for the 보기 link. Defaults to a post. */
   contentType?: PostType
+  /** For a new post: the title and slug it starts with, as for the review of a book. Ignored when `initial` is given. */
+  starter?: PostStarter
 }
 
 /**
@@ -154,8 +157,8 @@ interface PostEditorProps {
  * the post as published and 삭제 deletes it, after asking. The hashtags are typed with or without # and sent as the
  * comma separated stored text. What the post holds and what the buttons do lives in usePostDraft.
  */
-export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, contentType = PostType.POST }: PostEditorProps) {
-  const draft = usePostDraft({ initial, saveState, onSave, onRemove })
+export function PostEditor({ saveState, onSave, onRemove, initial, contentType = PostType.POST, starter }: PostEditorProps) {
+  const draft = usePostDraft({ initial: initial ?? { ...EMPTY_POST, ...starter }, existing: initial !== undefined, saveState, onSave, onRemove })
   const [fullScreen, updateFullScreen] = useState(false)
   const [imageNote, updateImageNote] = useState<string | null>(null)
   const slugPrompt = useImageSlugPrompt()

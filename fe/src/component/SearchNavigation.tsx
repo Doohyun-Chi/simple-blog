@@ -1,9 +1,9 @@
-import { IconLogin } from '@tabler/icons-react'
+import { IconBooks, IconLogin } from '@tabler/icons-react'
 import { googleLoginUrl } from '../model/identityApi.ts'
 import type { LoginFailure, SessionState } from '../model/Identity.ts'
 import type { PageSummary } from '../model/Page.ts'
 import { PostType } from '../model/Post.ts'
-import { contentPath, searchPath } from '../model/route.ts'
+import { BOOKS_PATH, contentPath, searchPath } from '../model/route.ts'
 import type { FormEvent } from 'react'
 import './SearchNavigation.css'
 
@@ -13,6 +13,8 @@ interface SearchNavigationProps {
   currentPageSlug: string | null
   /** The query of the search being shown, kept in the input; empty when not on a search. */
   currentQuery: string
+  /** Whether the bookshelf is the content shown; its link is marked as the current page. */
+  booksShown: boolean
   /** Who is signed in; shown at the right end of the area. */
   session: SessionState
 }
@@ -50,7 +52,7 @@ function submitSearch(event: FormEvent<HTMLFormElement>) {
   }
 }
 
-export function SearchNavigation({ pages, currentPageSlug, currentQuery, session }: SearchNavigationProps) {
+export function SearchNavigation({ pages, currentPageSlug, currentQuery, booksShown, session }: SearchNavigationProps) {
   return (
     <nav className="search-nav" aria-label="Site">
       <form className="search-nav-form" role="search" onSubmit={submitSearch}>
@@ -76,6 +78,9 @@ export function SearchNavigation({ pages, currentPageSlug, currentQuery, session
           </li>
         ))}
       </ul>
+      <a className="search-nav-link search-nav-books" href={BOOKS_PATH} page-current={booksShown ? 'selected' : undefined}>
+        <IconBooks size="1.1em" aria-hidden="true" />서재
+      </a>
       <Identity session={session} />
     </nav>
   )

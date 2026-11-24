@@ -1,0 +1,54 @@
+.book-shelf {
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 1rem;
+}
+
+/* The year filter, then 2rem of space, then 새로운 책. */
+.book-shelf-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em 2rem;
+  margin-bottom: 1.5em;
+}
+
+.book-shelf-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+/* Two columns, one on a narrow screen. */
+.book-shelf-books {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2em 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 45em) {
+  .book-shelf {
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .book-shelf-books {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

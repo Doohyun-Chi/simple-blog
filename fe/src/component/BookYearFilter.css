@@ -1,0 +1,10 @@
+/* A combo box in the look of the search input. */
+.book-year-filter {
+  padding: 0.2em 0.5em;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+}

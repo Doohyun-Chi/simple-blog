@@ -1,0 +1,58 @@
+/* The start date, the finished mark and the completion date share one line. */
+.book-check-in-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  & .modal-dialog-input {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+  }
+}
+
+.book-check-in-save {
+  flex: 0 0 auto;
+  padding: 0.2em 0.8em;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
+
+/* The address of a thumbnail the book lacks, and the button that saves it. */
+.book-check-in-thumbnail {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  & .modal-dialog-input {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+  }
+}
+
+/* At least 50em wide (less only where the screen is narrower) and 15em tall. */
+.book-check-in-insight {
+  min-width: min(50em, 100%);
+  min-height: 15em;
+}
+
+.book-check-in-completed {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* 삭제 sits at the left end of the buttons, away from the others. */
+.modal-dialog-actions .book-check-in-remove {
+  margin-right: auto;
+  color: #b3261e;
+}

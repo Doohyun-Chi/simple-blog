@@ -156,4 +156,10 @@ export function isUnsaved(input: PostInput, saved: PostInput): boolean {
 }
 
 /** The post before anything is written or saved. */
+/** What a new post starts with when it is written for something else, such as the review of a book: its title and slug. */
+export interface PostStarter {
+  title: string
+  slug: string
+}
+
 export const EMPTY_POST: PostInput = { title: '', slug: '', content: '', hashTags: '' }
