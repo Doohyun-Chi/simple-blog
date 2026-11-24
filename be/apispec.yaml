@@ -569,6 +569,12 @@ paths:
         registered by reference and never fetched or embedded (provider external). The image type is decided from the
         file content, not from the client's Content-Type or file name; only PNG, JPEG, GIF and WebP are accepted, up to
         10 MB. Registering the same YouTube video again returns the existing item with 200.
+
+        An image without the part `slug` gets its slug from the file name (see `Media.slug`). With `slug` the image has
+        exactly that slug, with nothing appended. When an image of the signed-in user already has it, nothing is
+        changed and the answer is 409, unless `replace` is true: then the file of that item is replaced by the new one,
+        keeping its slug and provider, and the item is answered with 200. A slug held by anything else, such as another
+        user's image or a video, is 422 whatever `replace` says.
       operationId: createMedia
       tags:
         - Media
@@ -585,7 +591,7 @@ paths:
               $ref: '#/components/schemas/ExternalMediaInput'
       responses:
         '200':
-          description: The YouTube video was already registered; the existing item
+          description: The YouTube video was already registered, or the image with the given `slug` was replaced; the item
           content:
             application/json:
               schema:
@@ -615,16 +621,21 @@ paths:
                     date: '2026-11-18T01:30:00Z'
         '400':
           description: >
-            The file is missing or empty, `provider` is neither internal nor content, or the url is not a YouTube video
-            link. The response body is not part of the contract.
+            The file is missing or empty, `provider` is neither internal nor content, `slug` is empty, longer than 100
+            characters or has a character other than lower case English letters, digits and '-' (or starts or ends with
+            '-'), or the url is not a YouTube video link. The response body is not part of the contract.
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
           description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+        '409':
+          description: An image of the signed-in user already has the given `slug` and `replace` is not true. The response body is not part of the contract.
         '413':
           description: The file is larger than 10 MB. The response body is not part of the contract.
         '415':
           description: The file is not a PNG, JPEG, GIF or WebP image. The response body is not part of the contract.
+        '422':
+          description: The given `slug` is held by an item the signed-in user cannot replace, such as another user's image or a video. The response body is not part of the contract.
   /public/api/v1/media/{slug}:
     get:
       summary: Get the file of an image
@@ -705,7 +716,20 @@ components:
           description: >
             Optional. internal, the default, is an image of the media library, kept until removed by hand. content is an
             image made for the content of one post, such as a draw.io diagram drawn in the editor: a post save may delete it
-            once nothing shows it any more (see `PostInput.replacedMedia`).
+            once nothing shows it any more (see `PostInput.replacedMedia`). Ignored when an existing image is replaced.
+        slug:
+          type: string
+          maxLength: 100
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          description: >
+            Optional. The exact slug of the image, with no suffix appended. Without it the slug is made of the file name
+            plus a random suffix.
+        replace:
+          type: boolean
+          default: false
+          description: >
+            Optional, used with `slug`. true replaces the file of the signed-in user's image that already has the slug;
+            false refuses with 409. Nothing is replaced when no image has the slug: it is created.
     ExternalMediaInput:
       type: object
       required:
@@ -731,8 +755,8 @@ components:
         slug:
           type: string
           description: >
-            tb_media.slug, unique. An image gets its file name reduced to English letters, digits and '-' plus a random
-            suffix; a YouTube video gets youtube- plus its video ID.
+            tb_media.slug, unique. An image gets the `MediaUpload.slug` it was uploaded with, or else its file name reduced
+            to English letters, digits and '-' plus a random suffix; a YouTube video gets youtube- plus its video ID.
         provider:
           type: string
           enum: [internal, external, content]

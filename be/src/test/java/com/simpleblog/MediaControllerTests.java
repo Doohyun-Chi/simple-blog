@@ -29,6 +29,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
 /** POST /public/api/v1/media (image upload and YouTube registration) and GET /public/api/v1/media/{slug} against H2. */
@@ -62,6 +63,12 @@ class MediaControllerTests {
 	private RequestBuilder upload(String name, byte[] bytes, String provider) {
 		return multipart(MEDIA).file(new MockMultipartFile("file", name, "image/png", bytes)).param("provider", provider)
 			.with(TestUsers.signedIn()).with(csrf());
+	}
+
+	/** An upload under the slug the writer typed, as the editor sends a pasted or dropped image. */
+	private RequestBuilder uploadAs(String slug, byte[] bytes, boolean replace, RequestPostProcessor user) {
+		return multipart(MEDIA).file(new MockMultipartFile("file", "image.png", "image/png", bytes)).param("slug", slug)
+			.param("replace", String.valueOf(replace)).with(user).with(csrf());
 	}
 
 	private RequestBuilder link(String url) {
@@ -214,6 +221,54 @@ class MediaControllerTests {
 	void answersNotFoundForAnUnknownSlug() throws Exception {
 		this.mockMvc.perform(get(MEDIA + "/nothing-here")).andExpect(status().isNotFound());
 		this.mockMvc.perform(get(MEDIA + "/..%2F..%2Fetc%2Fpasswd")).andExpect(status().is4xxClientError());
+	}
+
+	@Test
+	void keepsTheSlugTheWriterGaveWithoutASuffix() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn()))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.slug").value("team-photo"))
+			.andExpect(jsonPath("$.url").value(MEDIA + "/team-photo"));
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(status().isOk()).andExpect(content().bytes(PNG));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "", "Team-Photo", "team photo", "-team", "team-", "team--photo", "사진" })
+	void refusesASlugOutsideTheRule(String slug) throws Exception {
+		this.mockMvc.perform(uploadAs(slug, PNG, false, TestUsers.signedIn())).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void refusesToReuseASlugOfTheWritersImageUnlessAskedToReplaceIt() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn())).andExpect(status().isCreated());
+		this.mockMvc.perform(uploadAs("team-photo", WEBP, false, TestUsers.signedIn())).andExpect(status().isConflict());
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(content().bytes(PNG));
+	}
+
+	@Test
+	void replacesTheFileOfTheWritersImageKeepingItsSlugAndProvider() throws Exception {
+		this.mockMvc.perform(upload("flow.png", PNG, "content")).andExpect(status().isCreated());
+		String first = this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn()))
+			.andReturn().getResponse().getContentAsString();
+		this.mockMvc.perform(uploadAs("team-photo", WEBP, true, TestUsers.signedIn()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.slug").value("team-photo"))
+			.andExpect(jsonPath("$.provider").value(JsonPath.<String>read(first, "$.provider")))
+			.andExpect(jsonPath("$.mimeType").value("image/webp"));
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(status().isOk()).andExpect(content().bytes(WEBP));
+	}
+
+	@Test
+	void createsTheImageWhenReplacingASlugNobodyHas() throws Exception {
+		this.mockMvc.perform(uploadAs("brand-new", PNG, true, TestUsers.signedIn())).andExpect(status().isCreated());
+	}
+
+	@Test
+	void neverReplacesAnotherUsersImage() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedInWithId("a@example.com", 101))).andExpect(status().isCreated());
+		this.mockMvc.perform(uploadAs("team-photo", WEBP, true, TestUsers.signedInWithId("b@example.com", 102)))
+			.andExpect(status().isUnprocessableContent());
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(content().bytes(PNG));
 	}
 
 }

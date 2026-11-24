@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
 /**
- * Saving, looking up and deleting one row: a media row is never changed, and only MediaService#discardUnused deletes one,
- * an image a post save replaced.
+ * Saving, looking up and deleting one row: only an image upload under a slug the writer already has changes a row (it swaps the file),
+ * and only MediaService#discardUnused deletes one, an image a post save replaced.
  */
 public interface MediaRepository extends Repository<Media, Long> {
 

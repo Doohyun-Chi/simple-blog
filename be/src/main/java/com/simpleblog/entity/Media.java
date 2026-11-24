@@ -68,6 +68,13 @@ public class Media {
 		return new Media(slug, MediaProvider.EXTERNAL, url, url, thumbnail, date, ownerId);
 	}
 
+	/** Puts another image file under the same slug and provider. The caller removes the file it replaced. */
+	public void replaceFile(String mimeType, String storedName, LocalDateTime date) {
+		this.mimeType = mimeType;
+		this.location = storedName;
+		this.date = date;
+	}
+
 	public boolean ownedBy(long userId) {
 		return this.ownerId != null && this.ownerId == userId;
 	}

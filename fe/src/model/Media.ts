@@ -48,6 +48,8 @@ export function uploadFailureText(error: unknown): string {
     case 401:
     case 403:
       return '이미지를 올릴 권한이 없습니다. 다시 로그인해 주세요.'
+    case 422:
+      return '이 slug는 교체할 수 없는 항목이 쓰고 있습니다. 다른 slug를 써 주세요.'
     case 413:
       return '이미지는 10MB 이하여야 합니다.'
     case 415:

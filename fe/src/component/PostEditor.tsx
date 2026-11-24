@@ -34,9 +34,12 @@ import {
 import { FullScreenContext } from '../model/FullScreen.ts'
 import { ReplacedMediaContext } from '../model/ReplacedMedia.ts'
 import { uploadFailureText } from '../model/Media.ts'
-import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
+import { ImageUploadCancelled, suggestedSlugOf } from '../model/imageUploadName.ts'
+import { mediaFileUrl, uploadImageAs } from '../model/mediaApi.ts'
+import { useImageSlugPrompt } from '../model/useImageSlugPrompt.ts'
 import { usePostDraft } from '../model/usePostDraft.ts'
 import type { RemoveResult, SaveState } from '../model/useSavePost.ts'
+import { ImageSlugDialog } from './ImageSlugDialog.tsx'
 import { FullScreenToggle } from './FullScreenToggle.tsx'
 import { HintedField, PostEditorField } from './PostEditorField.tsx'
 import { PostEditorActions } from './PostEditorActions.tsx'
@@ -70,15 +73,22 @@ const MERMAID_CODE_BLOCK: CodeBlockEditorDescriptor = {
 
 /**
  * Plugins for the body editor: Markdown formatting, links, images and code blocks, and a toolbar for them. An image
- * picked in the toolbar, dropped on the editor or pasted is sent to the backend; `onImageFailed` hears why one was not.
+ * picked in the toolbar, dropped on the editor or pasted is sent to the backend under the slug the writer gives
+ * (`askSlug`; giving it up cancels the upload); `onImageFailed` hears why one was not sent.
  */
-function editorPlugins(onImageFailed: (error: unknown) => void) {
+function editorPlugins(askSlug: (suggested: string) => Promise<string | null>, onImageFailed: (error: unknown) => void) {
   async function uploadedImageUrl(file: File): Promise<string> {
+    const slug = await askSlug(suggestedSlugOf(file))
+    if (slug === null) {
+      throw new ImageUploadCancelled()
+    }
     try {
-      return mediaFileUrl(await uploadImage(file))
+      return mediaFileUrl(await uploadImageAs(file, slug, (taken) => window.confirm(replaceQuestion(taken))))
     } catch (error: unknown) {
-      console.error(error)
-      onImageFailed(error)
+      if (!(error instanceof ImageUploadCancelled)) {
+        console.error(error)
+        onImageFailed(error)
+      }
       throw error
     }
   }
@@ -119,6 +129,9 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
   ]
 }
 
+/** Asked when the slug the writer chose is already one of their images: yes replaces that image's file. */
+const replaceQuestion = (slug: string) => `같은 slug(${slug})의 이미지가 이미 있습니다. 새 이미지로 교체할까요? 이 slug를 쓰는 곳은 모두 새 이미지로 바뀝니다.`
+
 const REMOVE_QUESTION = '이 글을 삭제할까요? 삭제한 글은 되돌릴 수 없습니다.'
 
 interface PostEditorProps {
@@ -145,7 +158,9 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
   const draft = usePostDraft({ initial, saveState, onSave, onRemove })
   const [fullScreen, updateFullScreen] = useState(false)
   const [imageNote, updateImageNote] = useState<string | null>(null)
-  const plugins = useMemo(() => editorPlugins((error) => updateImageNote(uploadFailureText(error))), [])
+  const slugPrompt = useImageSlugPrompt()
+  const { ask } = slugPrompt
+  const plugins = useMemo(() => editorPlugins(ask, (error) => updateImageNote(uploadFailureText(error))), [ask])
   return (
     <FullScreenContext value={{ on: fullScreen, toggle: () => updateFullScreen((on) => !on) }}>
       <form className={fullScreen ? 'post-editor post-editor-full-screen' : 'post-editor'} aria-label="글 작성" onSubmit={(event) => event.preventDefault()}>
@@ -199,6 +214,7 @@ export function PostEditor({ saveState, onSave, onRemove, initial = EMPTY_POST, 
           onEdit={draft.editTags}
         />
       </form>
+      <ImageSlugDialog question={slugPrompt.question} onAnswer={slugPrompt.answer} />
     </FullScreenContext>
   )
 }

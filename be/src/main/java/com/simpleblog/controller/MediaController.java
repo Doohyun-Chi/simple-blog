@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.Duration;
 
 import com.simpleblog.dto.ExternalMediaInput;
+import com.simpleblog.dto.ImageUpload;
 import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
 import com.simpleblog.dto.MediaList;
@@ -46,15 +47,18 @@ public class MediaController {
 
 	@PostMapping(path = "/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<MediaInfo> createImage(@AuthenticationPrincipal OidcUser user, @RequestPart("file") MultipartFile file,
-			@RequestParam(name = "provider", required = false) String provider) throws IOException {
-		long ownerId = this.userService.idOf(user);
-		MediaInfo media = this.mediaService.uploadImage(ownerId, file.getOriginalFilename(), file.getBytes(), provider);
-		return ResponseEntity.status(HttpStatus.CREATED).body(media);
+			@RequestParam(name = "provider", required = false) String provider, @RequestParam(name = "slug", required = false) String slug,
+			@RequestParam(name = "replace", defaultValue = "false") boolean replace) throws IOException {
+		ImageUpload upload = new ImageUpload(file.getOriginalFilename(), file.getBytes(), provider, slug, replace);
+		return responseOf(this.mediaService.uploadImage(this.userService.idOf(user), upload));
 	}
 
 	@PostMapping(path = "/media", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<MediaInfo> createVideo(@AuthenticationPrincipal OidcUser user, @RequestBody ExternalMediaInput input) {
-		MediaService.Registration registration = this.mediaService.registerVideo(this.userService.idOf(user), input.url());
+		return responseOf(this.mediaService.registerVideo(this.userService.idOf(user), input.url()));
+	}
+
+	private ResponseEntity<MediaInfo> responseOf(MediaService.Registration registration) {
 		return ResponseEntity.status(registration.created() ? HttpStatus.CREATED : HttpStatus.OK).body(registration.media());
 	}
 

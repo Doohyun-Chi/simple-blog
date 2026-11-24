@@ -11,6 +11,7 @@ import com.simpleblog.component.MediaSlug;
 import com.simpleblog.component.MediaStorage;
 import com.simpleblog.component.MediaUsage;
 import com.simpleblog.component.YouTubeLink;
+import com.simpleblog.dto.ImageUpload;
 import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
 import com.simpleblog.dto.MediaList;
@@ -18,6 +19,8 @@ import com.simpleblog.entity.Media;
 import com.simpleblog.entity.MediaProvider;
 import com.simpleblog.exception.InvalidMediaException;
 import com.simpleblog.exception.MediaNotFoundException;
+import com.simpleblog.exception.MediaSlugTakenException;
+import com.simpleblog.exception.MediaSlugUnavailableException;
 import com.simpleblog.exception.UnsupportedMediaFileException;
 import com.simpleblog.repository.MediaRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -52,24 +55,26 @@ public class MediaService {
 	}
 
 	/**
-	 * Stores an image on the server, internal or, when {@code providerCode} says so, content. The type comes from the
-	 * content; the file name only seeds the slug.
+	 * Stores an image on the server, internal or, when the upload says so, content. The type comes from the content. The
+	 * slug is the one the upload asks for, or is made of the file name. Under a slug the writer already has, the file is
+	 * replaced when the upload says so; the second element of the answer then tells it was not newly created.
 	 */
-	public MediaInfo uploadImage(long ownerId, String fileName, byte[] content, String providerCode) {
-		MediaProvider provider = uploadProviderOf(providerCode);
-		if (content.length == 0) {
+	@Transactional
+	public Registration uploadImage(long ownerId, ImageUpload upload) {
+		MediaProvider provider = uploadProviderOf(upload.provider());
+		if (upload.content().length == 0) {
 			throw new InvalidMediaException("The file is empty");
 		}
-		ImageType type = ImageType.of(content).orElseThrow(() -> new UnsupportedMediaFileException("Not a PNG, JPEG, GIF or WebP image"));
-		String stored = this.storage.save(content, type.extension());
-		try {
-			return MediaInfo.from(this.mediaRepository.save(
-					Media.storedImage(this.mediaSlug.of(fileName), provider, type.mimeType(), stored, now(), ownerId)));
+		ImageType type = ImageType.of(upload.content()).orElseThrow(() -> new UnsupportedMediaFileException("Not a PNG, JPEG, GIF or WebP image"));
+		if (upload.slug() == null) {
+			return new Registration(storeImage(ownerId, this.mediaSlug.of(upload.fileName()), provider, type, upload.content()), true);
 		}
-		catch (RuntimeException ex) {
-			this.storage.remove(stored);
-			throw ex;
+		String slug = this.mediaSlug.chosen(upload.slug());
+		Optional<Media> existing = this.mediaRepository.findBySlug(slug);
+		if (existing.isEmpty()) {
+			return new Registration(storeImage(ownerId, slug, provider, type, upload.content()), true);
 		}
+		return new Registration(replaceImage(ownerId, existing.get(), upload.replace(), type, upload.content()), false);
 	}
 
 	/** Registers a YouTube video by reference. The second element tells whether it was newly registered. */
@@ -110,6 +115,35 @@ public class MediaService {
 			.flatMap(Optional::stream)
 			.filter((media) -> media.discardable() && media.ownedBy(ownerId) && !this.mediaUsage.inUse(media.slug()))
 			.forEach(this::discard);
+	}
+
+	private MediaInfo storeImage(long ownerId, String slug, MediaProvider provider, ImageType type, byte[] content) {
+		String stored = this.storage.save(content, type.extension());
+		try {
+			return MediaInfo.from(this.mediaRepository.save(Media.storedImage(slug, provider, type.mimeType(), stored, now(), ownerId)));
+		}
+		catch (DataIntegrityViolationException ex) {
+			this.storage.remove(stored);
+			throw new MediaSlugTakenException(slug);
+		}
+		catch (RuntimeException ex) {
+			this.storage.remove(stored);
+			throw ex;
+		}
+	}
+
+	/** Swaps the file of the writer's own image for this one; the old file goes once the swap is committed. */
+	private MediaInfo replaceImage(long ownerId, Media existing, boolean replace, ImageType type, byte[] content) {
+		if (!existing.storesFile() || !existing.ownedBy(ownerId)) {
+			throw new MediaSlugUnavailableException(existing.slug());
+		}
+		if (!replace) {
+			throw new MediaSlugTakenException(existing.slug());
+		}
+		String old = existing.location();
+		existing.replaceFile(type.mimeType(), this.storage.save(content, type.extension()), now());
+		this.storage.removeAfterCommit(old);
+		return MediaInfo.from(existing);
 	}
 
 	/** The provider an upload asks for: internal when it names none, otherwise one that stores a file. */

@@ -1,5 +1,6 @@
-import { apiUrl, requestJson } from './apiClient.ts'
+import { ApiError, apiUrl, requestJson } from './apiClient.ts'
 import { csrfHeaders } from './csrfToken.ts'
+import { ImageUploadCancelled } from './imageUploadName.ts'
 import { type Media, type MediaList, MediaProvider, type UploadProvider } from './Media.ts'
 
 const MEDIA_PATH = '/public/api/v1/media'
@@ -14,6 +15,34 @@ export function uploadImage(file: File, provider: UploadProvider = MediaProvider
   body.append('file', file)
   body.append('provider', provider)
   return requestJson<Media>(MEDIA_PATH, { method: 'POST', headers: csrfHeaders(), body, credentials: 'include', signal })
+}
+
+function slugUpload(file: File, slug: string, replace: boolean): Promise<Media> {
+  const body = new FormData()
+  body.append('file', file)
+  body.append('provider', MediaProvider.INTERNAL)
+  body.append('slug', slug)
+  body.append('replace', String(replace))
+  return requestJson<Media>(MEDIA_PATH, { method: 'POST', headers: csrfHeaders(), body, credentials: 'include' })
+}
+
+/**
+ * Calls `POST /public/api/v1/media` with the file under exactly this slug (operationId: createMedia). When the writer's own
+ * image already has the slug (409), `confirmReplace` is asked, and the file is sent again as a replacement if it says yes;
+ * if it says no the upload is cancelled with ImageUploadCancelled.
+ */
+export async function uploadImageAs(file: File, slug: string, confirmReplace: (slug: string) => boolean): Promise<Media> {
+  try {
+    return await slugUpload(file, slug, false)
+  } catch (error: unknown) {
+    if (!(error instanceof ApiError && error.status === 409)) {
+      throw error
+    }
+    if (!confirmReplace(slug)) {
+      throw new ImageUploadCancelled()
+    }
+    return slugUpload(file, slug, true)
+  }
 }
 
 /** Calls `POST /public/api/v1/media` with a YouTube link (operationId: createMedia). Nothing is embedded or fetched. */
