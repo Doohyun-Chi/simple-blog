@@ -62,3 +62,23 @@ indexes
 - created_datetime for descending query
 - clustered index for type for query
 - clustered index for status for query
+
+## Bookshelf scheme
+table name: tb_book
+columns
+- id: unique identifier
+- title: book name
+- author: author and translator if it is translated book.
+- bookstore_url: amazon or yes24 or others
+- thumbnail_url: url for the book's thumbnail image
+- description: short description from author/seller in text type
+- insight: insight from the book by the reader in text type
+- trackback_slug: review post about it
+- registered_date: only date.
+- reading_start_date: only date
+- reading_complete_date: only date
+- reader_id: user_id
+
+indexes
+- unique index for id
+- index for registered_date with desc order

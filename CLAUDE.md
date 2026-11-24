@@ -8,7 +8,8 @@
 | --- | --- | --- |
 | `be/` | 백엔드 | Spring Boot 4.1, Java 25, Gradle Wrapper |
 | `fe/` | 프론트엔드 | React 19, TypeScript, Vite, npm |
-| `be/apispec.yaml` | API contract | OpenAPI 3.1 |
+| `be/apispec.yaml` | Post and related API contract | OpenAPI 3.1 |
+| `be/bookapispec.yaml` | Book API contract | OpenAPI 3.1 |
 
 이 루트 디렉토리가 단일 git 저장소이고, `be/`와 `fe/`는 그 안의 일반 디렉토리다.
 
@@ -70,7 +71,7 @@ FE
 
 ## API contract
 
-`be/apispec.yaml`이 BE와 FE 사이의 유일한 기준이다.
+API Contract이 BE와 FE 사이의 유일한 기준이다. 글, 페이지, 미디어 등은 `be/apispec.yaml`, 서재(book)는 `be/bookapispec.yaml`이 기준이다.
 
 API는 HTTP Method에 따른 용도를 준용한다.
 - GET: 목록을 포함한 조회
@@ -85,7 +86,7 @@ API의 endpoint는 다음의 분류에 따라 sub URI를 갖는다.
 
 API를 추가하거나 변경할 때는 다음 순서를 따른다.
 
-1. `be/apispec.yaml`을 먼저 수정한다.
+1. 해당 영역의 API Spec(`be/apispec.yaml` 또는 `be/bookapispec.yaml`)을 먼저 수정한다.
 2. 스펙에 맞춰 BE를 구현하고 테스트한다.
 3. 스펙에 맞춰 FE를 구현하고 테스트한다.
 
@@ -115,4 +116,4 @@ FE에는 아직 테스트 러너가 없다.
 
 ## 완료 기준
 
-변경 범위에 해당하는 빌드와 테스트가 통과해야 완료로 본다. API를 변경했다면 `be/apispec.yaml`, BE, FE가 서로 일치하는지도 확인한다.
+변경 범위에 해당하는 빌드와 테스트가 통과해야 완료로 본다. API를 변경했다면 해당 API Spec(`be/apispec.yaml` 또는 `be/bookapispec.yaml`), BE, FE가 서로 일치하는지도 확인한다.

@@ -1,0 +1,464 @@
+openapi: 3.1.0
+info:
+  title: simple-blog bookshelf API (draft for review)
+  version: 0.1.0
+  description: >
+    The API of the bookshelf (서재 공간, fe/DESIGN.md) over tb_book (be/DBSCHEMA.md). Draft for review: it follows the
+    conventions of apispec.yaml (the plural path lists, the singular path writes, sessionCookie plus the CSRF header)
+    and is meant to be merged into apispec.yaml, the only contract, once approved.
+servers:
+  - url: http://localhost:8080
+    description: Local
+paths:
+  /public/api/v1/books:
+    get:
+      summary: List the books of the shelf
+      description: >
+        Returns the books newest first (tb_book.registered_date descending, then id descending), as the shelf shows them.
+        Visitors see all books; the shelf has no per-reader view. year keeps the books of one year: a book belongs to the
+        year of its registered_date. Without year every book is returned. The response also lists the years that have books,
+        newest first, which are the choices of the year filter beside All; the list does not shrink when year is given.
+      operationId: listOfBooks
+      tags:
+        - Books
+      parameters:
+        - name: year
+          in: query
+          required: false
+          description: The year to keep. A value that is not a four digit year is rejected with 400.
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 9999
+          example: 2026
+      responses:
+        '200':
+          description: The books of the year, or all of them; an empty list when there are none
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookList'
+              example:
+                years: [2026, 2025]
+                books:
+                  - id: 12
+                    title: 클린 코드
+                    author: Robert C. Martin
+                    bookstoreUrl: https://www.yes24.com/Product/Goods/11681152
+                    thumbnailUrl: https://image.yes24.com/goods/11681152/XL
+                    description: 애자일 소프트웨어 장인 정신
+                    insight: 이름 짓기가 설계의 절반이다.
+                    trackbackSlug: review-about-clean-code
+                    registeredDate: '2026-10-01'
+                    readingStartDate: '2026-10-03'
+                    readingCompleteDate: null
+        '400':
+          description: year is not a four digit year. The response body is not part of the contract.
+  /public/api/v1/book-preview:
+    get:
+      summary: Read the details of a book from its store page
+      description: >
+        The first step of 새로운 책: the server fetches the page of bookstoreUrl (Amazon, Yes24 or others) and answers the
+        thumbnail, title, author and description it finds. Nothing is stored. The fetch is done by the server, since a
+        browser cannot read another site's page. Only http and https URLs of public hosts are fetched; addresses of the
+        server's own network (localhost, private ranges) are refused. A page without a thumbnail answers thumbnailUrl null,
+        which the shelf shows as the large no-thumbnail icon; any other field the page does not give is null as well, and
+        the writer fills it in before registering. Only the signed-in writer can call it.
+      operationId: previewBook
+      tags:
+        - Books
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: The URL of the details page of the book at the store, as the writer pasted it.
+          schema:
+            type: string
+            format: uri
+            maxLength: 2000
+          example: https://www.yes24.com/Product/Goods/11681152
+      responses:
+        '200':
+          description: What the page gives
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookPreview'
+              example:
+                title: 클린 코드
+                author: Robert C. Martin
+                description: 애자일 소프트웨어 장인 정신
+                thumbnailUrl: https://image.yes24.com/goods/11681152/XL
+        '400':
+          description: url is missing, is not an http or https URL, or points to the server's own network. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '502':
+          description: The store page could not be fetched (unreachable, timed out or not a page). The writer can still register the book by typing the fields. The response body is not part of the contract.
+  /public/api/v1/book:
+    post:
+      summary: Register a book
+      description: >
+        The second step of 새로운 책, on 확인: stores the book as it was previewed and edited. registered_date is today
+        (server time) and the reader (tb_book.reader_id) is the signed-in user's id in tb_user. The book is not read yet,
+        so both reading dates are null. The created book is returned with its stored values.
+      operationId: createBook
+      tags:
+        - Books
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: A required field is missing or blank, a text is longer than its limit, or a URL is not an http or https URL. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+        '500':
+          description: Failed to create. The response body is not part of the contract.
+  /public/api/v1/book/{id}:
+    get:
+      summary: Read a book
+      description: Returns the book with the id, so the check-in and the review writing can start from its current values.
+      operationId: book
+      tags:
+        - Books
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      responses:
+        '200':
+          description: The book
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          description: No row in tb_book has this id. The response body is not part of the contract.
+    put:
+      summary: Edit the details of a book
+      description: >
+        Replaces what the writer can edit at registration: title, author, description, bookstoreUrl and thumbnailUrl. The
+        reading dates, the insight, the review slug and registered_date are not touched; they have operations of their own
+        below. Only the reader of the row (tb_book.reader_id) can edit it.
+      operationId: updateBook
+      tags:
+        - Books
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: A required field is missing or blank, a text is longer than its limit, or a URL is not an http or https URL. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token, or the book belongs to another reader. The response body is not part of the contract.
+        '404':
+          description: No row in tb_book has this id. The response body is not part of the contract.
+        '500':
+          description: Failed to update. The response body is not part of the contract.
+    delete:
+      summary: Remove a book from the shelf
+      description: >
+        Deletes the tb_book row for good. The review post it points to is not touched. Only the reader of the row can delete it.
+      operationId: deleteBook
+      tags:
+        - Books
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      responses:
+        '204':
+          description: Deleted. There is no response body.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token, or the book belongs to another reader. The response body is not part of the contract.
+        '404':
+          description: No row in tb_book has this id. The response body is not part of the contract.
+        '500':
+          description: Failed to delete. The response body is not part of the contract.
+  /public/api/v1/book/{id}/reading:
+    put:
+      summary: Check in to a book
+      description: >
+        Sets the reading dates, which is what 체크인하기 does: sending only readingStartDate starts the book, and sending a
+        readingCompleteDate as well marks it done. Both are replaced as sent, so null clears a date (un-checking the
+        completion sends the start date with a null complete date). A complete date needs a start date and cannot be
+        before it; neither can be in the future. Only the reader of the row can check in.
+      operationId: checkInBook
+      tags:
+        - Books
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reading'
+            example:
+              readingStartDate: '2026-10-03'
+              readingCompleteDate: '2026-11-20'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: A date is malformed or in the future, the complete date has no start date or is before it. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token, or the book belongs to another reader. The response body is not part of the contract.
+        '404':
+          description: No row in tb_book has this id. The response body is not part of the contract.
+  /public/api/v1/book/{id}/insight:
+    put:
+      summary: Save the insight of a book
+      description: >
+        Replaces tb_book.insight, which is what 인사이트 등록 does. An empty text clears it. The shelf shows the first 200
+        characters and cuts the rest with an ellipsis, but the full text is stored and returned. Only the reader of the row can save it.
+      operationId: saveBookInsight
+      tags:
+        - Books
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Insight'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: insight is missing or longer than 5000 characters. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token, or the book belongs to another reader. The response body is not part of the contract.
+        '404':
+          description: No row in tb_book has this id. The response body is not part of the contract.
+  /public/api/v1/book/{id}/review:
+    put:
+      summary: Link a review post to a book
+      description: >
+        Sets tb_book.trackback_slug, which is what 리뷰 적기 does after the writer accepted or edited the slug the shelf
+        suggested (`review-about-` plus the title). The post need not exist yet: the writer writes it next, in the
+        editor, under this slug, and 리뷰 보기 shows once the slug is set. The slug follows the slug rule of PostInput in apispec.yaml.
+        A null slug unlinks the review. The post itself is never created, changed or deleted here. Only the reader of the row can link it.
+      operationId: linkBookReview
+      tags:
+        - Books
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Review'
+            example:
+              trackbackSlug: review-about-clean-code
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: The slug is longer than 200 characters or has a character other than English letters, digits and '-'. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token, or the book belongs to another reader. The response body is not part of the contract.
+        '404':
+          description: No row in tb_book has this id. The response body is not part of the contract.
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+  parameters:
+    BookId:
+      name: id
+      in: path
+      required: true
+      description: tb_book.id
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    BookList:
+      type: object
+      required:
+        - years
+        - books
+      properties:
+        years:
+          type: array
+          description: The years that have books, newest first.
+          items:
+            type: integer
+        books:
+          type: array
+          items:
+            $ref: '#/components/schemas/Book'
+    Book:
+      type: object
+      required:
+        - id
+        - title
+        - bookstoreUrl
+        - registeredDate
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+          description: tb_book.title
+        author:
+          type: [string, 'null']
+          description: tb_book.author, the author and, for a translated book, the translator. Null when the page gave none and the writer left it empty.
+        bookstoreUrl:
+          type: string
+          format: uri
+          description: tb_book.bookstore_url, the store page the book was registered from. The thumbnail links to it, in a new tab.
+        thumbnailUrl:
+          type: [string, 'null']
+          format: uri
+          description: tb_book.thumbnail_url. Null shows the no-thumbnail icon.
+        description:
+          type: [string, 'null']
+          description: tb_book.description, the short text of the author or seller.
+        insight:
+          type: [string, 'null']
+          description: tb_book.insight, the reader's own words, whole. The shelf cuts it at 200 characters.
+        trackbackSlug:
+          type: [string, 'null']
+          description: tb_book.trackback_slug. Set means 리뷰 보기 (link to the post), null means 리뷰 적기.
+        registeredDate:
+          type: string
+          format: date
+        readingStartDate:
+          type: [string, 'null']
+          format: date
+          description: Null while the book is not read yet, which is when the shelf offers 체크인하기.
+        readingCompleteDate:
+          type: [string, 'null']
+          format: date
+          description: Null while the book is being read. The period (N 개월 or N 주) is worked out by the client from the two dates.
+    BookInput:
+      type: object
+      required:
+        - title
+        - bookstoreUrl
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        author:
+          type: [string, 'null']
+          maxLength: 200
+        bookstoreUrl:
+          type: string
+          format: uri
+          maxLength: 2000
+        thumbnailUrl:
+          type: [string, 'null']
+          format: uri
+          maxLength: 2000
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+    BookPreview:
+      type: object
+      required:
+        - title
+        - author
+        - description
+        - thumbnailUrl
+      properties:
+        title:
+          type: [string, 'null']
+        author:
+          type: [string, 'null']
+        description:
+          type: [string, 'null']
+        thumbnailUrl:
+          type: [string, 'null']
+          format: uri
+    Reading:
+      type: object
+      required:
+        - readingStartDate
+      properties:
+        readingStartDate:
+          type: [string, 'null']
+          format: date
+        readingCompleteDate:
+          type: [string, 'null']
+          format: date
+    Insight:
+      type: object
+      required:
+        - insight
+      properties:
+        insight:
+          type: string
+          maxLength: 5000
+    Review:
+      type: object
+      required:
+        - trackbackSlug
+      properties:
+        trackbackSlug:
+          type: [string, 'null']
+          maxLength: 200
+          pattern: '^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$'
