@@ -8,8 +8,11 @@ import { defineConfig } from 'vite'
 const VENDOR_GROUPS = [
   // Vite's helper that loads a lazy chunk: the page starts with it, so it must not end up in a chunk of the editor.
   { name: 'vendor-react', test: /vite[\\/]preload-helper/, priority: 100 },
-  // The writer's editor, which only the writer opens, cut to chunks of at most 450 kB.
-  { name: 'vendor-editor', test: /node_modules[\\/](@mdxeditor|@lexical|lexical)[\\/]/, priority: 30, maxSize: 450_000 },
+  // The writer's editor core, which only the writer opens. It stays one chunk: cutting a group by size makes chunks that
+  // import each other in a circle, and a class of one extends a class of another that has not run yet.
+  { name: 'vendor-lexical', test: /node_modules[\\/](@lexical|lexical)[\\/]/, priority: 30 },
+  // The code editor of the code blocks, without its language packs, which load when a code block uses their language.
+  { name: 'vendor-codemirror', test: /node_modules[\\/]@codemirror[\\/](view|state|commands|autocomplete|language|lint|search)[\\/]/, priority: 30 },
   // React itself, loaded by every page.
   { name: 'vendor-react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/, priority: 50 },
   // The Markdown pipeline, which the reader and the editor share.
