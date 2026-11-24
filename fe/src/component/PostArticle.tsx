@@ -1,3 +1,4 @@
+import { IconEdit } from '@tabler/icons-react'
 import type { ComponentProps } from 'react'
 import Markdown, { type ExtraProps } from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
@@ -40,7 +41,7 @@ export function PostArticle({ post, editHref, shareHref }: PostArticleProps) {
       <div className="post-article-meta">
         <time className="post-article-date" dateTime={post.date}>{dayOf(post.date)}</time>
         {shareHref !== undefined && <ShareLinks url={shareHref} />}
-        {editHref !== undefined && <a className="post-article-edit" href={editHref}>편집하기</a>}
+        {editHref !== undefined && <a className="post-article-edit" href={editHref}><IconEdit size="1.1em" aria-hidden="true" />편집하기</a>}
       </div>
       <div
         className={isClassicContent(post.content) ? 'post-article-content post-article-content-classic' : 'post-article-content'}

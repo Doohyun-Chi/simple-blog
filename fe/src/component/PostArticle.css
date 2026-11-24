@@ -19,7 +19,7 @@
 /* The date and, for a signed-in visitor, the edit link beside it. */
 .post-article-meta {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.75em;
   margin-bottom: 2em;
   font-size: 0.8em;
@@ -30,7 +30,11 @@
   color: var(--text-muted);
 }
 
+/* Icon and text share one centred line, like the share button beside it. */
 .post-article-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
   color: var(--accent);
 }
 

@@ -1,4 +1,4 @@
-import { IconFilePlus } from '@tabler/icons-react'
+import { IconFilePlus, IconList } from '@tabler/icons-react'
 import { PostStatus, type PostSummary, PostType, readerSlug } from '../model/Post.ts'
 import { contentPath, LIST_PATH, WRITE_PATH } from '../model/route.ts'
 import { AdSlot } from './AdSlot.tsx'
@@ -35,7 +35,9 @@ export function RecentPostList({ posts, canWrite, showAd }: RecentPostListProps)
           </li>
         ))}
         <li className="recent-post-list-all-row">
-          <a className="recent-post-list-link recent-post-list-all" href={LIST_PATH}>전체 목록</a>
+          <a className="recent-post-list-link recent-post-list-all" href={LIST_PATH}>
+            <IconList className="recent-post-list-icon" size="1em" aria-hidden="true" /> 전체 목록
+          </a>
           <FeedLink />
         </li>
         {canWrite && (

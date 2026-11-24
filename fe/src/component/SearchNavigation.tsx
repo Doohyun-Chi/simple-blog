@@ -1,3 +1,4 @@
+import { IconLogin } from '@tabler/icons-react'
 import { googleLoginUrl } from '../model/identityApi.ts'
 import type { LoginFailure, SessionState } from '../model/Identity.ts'
 import type { PageSummary } from '../model/Page.ts'
@@ -30,7 +31,9 @@ function Identity({ session }: { session: SessionState }) {
       return (
         <>
           {session.failure && <span className="search-nav-notice" role="alert">{LOGIN_FAILURE_MESSAGES[session.failure]}</span>}
-          <a className="search-nav-link search-nav-identity" href={googleLoginUrl()}>로그인</a>
+          <a className="search-nav-link search-nav-identity" href={googleLoginUrl()}>
+            <IconLogin size="1.1em" aria-hidden="true" />로그인
+          </a>
         </>
       )
     case 'signedIn':

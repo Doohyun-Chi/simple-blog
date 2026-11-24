@@ -68,6 +68,9 @@
 
 /* The right-most item of the area: the sign-in link, or the signed-in email. */
 .search-nav-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
   flex: 0 0 auto;
   margin-left: auto;
   font-size: 0.75em;
