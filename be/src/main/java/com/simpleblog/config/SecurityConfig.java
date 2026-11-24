@@ -52,9 +52,12 @@ public class SecurityConfig {
 				.authenticated()
 				.requestMatchers("/public/api/v1/medias")
 				.authenticated()
+				.requestMatchers("/public/api/v1/book-preview")
+				.authenticated()
 				.requestMatchers(HttpMethod.GET, "/public/api/**")
 				.permitAll()
-				.requestMatchers("/public/api/v1/post", "/public/api/v1/post/**", "/public/api/v1/media", "/public/api/v1/media/**")
+				.requestMatchers("/public/api/v1/post", "/public/api/v1/post/**", "/public/api/v1/book", "/public/api/v1/book/**",
+					"/public/api/v1/media", "/public/api/v1/media/**")
 				.authenticated()
 				.anyRequest()
 				.permitAll())
