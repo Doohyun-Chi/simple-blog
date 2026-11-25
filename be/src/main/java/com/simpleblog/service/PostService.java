@@ -7,7 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.simpleblog.component.FeedRefresh;
+import com.simpleblog.component.CacheRefresh;
 import com.simpleblog.component.LikePattern;
 import com.simpleblog.component.SlugEncoder;
 import com.simpleblog.dto.PostBody;
@@ -48,7 +48,7 @@ public class PostService {
 
 	private final UserService userService;
 
-	private final FeedRefresh feedRefresh;
+	private final CacheRefresh cacheRefresh;
 
 	private final MediaService mediaService;
 
@@ -65,13 +65,13 @@ public class PostService {
 	private final int slugMaxLength;
 
 	public PostService(PostRepository postRepository, SlugEncoder slugEncoder, LikePattern likePattern, UserService userService,
-			FeedRefresh feedRefresh, MediaService mediaService, Clock clock, @Value("${simpleblog.post.title.max-length}") int titleMaxLength,
+			CacheRefresh cacheRefresh, MediaService mediaService, Clock clock, @Value("${simpleblog.post.title.max-length}") int titleMaxLength,
 			@Value("${simpleblog.post.slug.max-length}") int slugMaxLength) {
 		this.postRepository = postRepository;
 		this.slugEncoder = slugEncoder;
 		this.likePattern = likePattern;
 		this.userService = userService;
-		this.feedRefresh = feedRefresh;
+		this.cacheRefresh = cacheRefresh;
 		this.mediaService = mediaService;
 		this.clock = clock;
 		this.titleMaxLength = titleMaxLength;
@@ -124,7 +124,7 @@ public class PostService {
 		applyStatus(post, input);
 		Post saved = this.postRepository.save(post);
 		this.mediaService.discardUnused(authorId, replacedMediaOf(input));
-		this.feedRefresh.afterPostChange();
+		this.cacheRefresh.afterPostChange();
 		return PostBody.from(saved, this.clock.getZone(), authorId);
 	}
 
@@ -147,7 +147,7 @@ public class PostService {
 		post.revise(input.title(), newSlug, input.content(), input.hashTags(), utcNow());
 		applyStatus(post, input);
 		this.mediaService.discardUnused(viewerId, replacedMediaOf(input));
-		this.feedRefresh.afterPostChange();
+		this.cacheRefresh.afterPostChange();
 		return PostBody.from(post, this.clock.getZone(), viewerId);
 	}
 
@@ -162,7 +162,7 @@ public class PostService {
 			throw new NotPostAuthorException(slug);
 		}
 		this.postRepository.delete(post);
-		this.feedRefresh.afterPostChange();
+		this.cacheRefresh.afterPostChange();
 	}
 
 	/** The images the input names as replaced, none when it names none. Checked with the other fields; see requireValidFields. */

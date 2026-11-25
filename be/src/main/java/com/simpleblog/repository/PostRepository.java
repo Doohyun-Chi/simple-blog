@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.simpleblog.dto.FeedRow;
+import com.simpleblog.dto.SitemapRow;
 import com.simpleblog.dto.PageSummary;
 import com.simpleblog.dto.PostSummary;
 import com.simpleblog.entity.Post;
@@ -44,6 +45,13 @@ public interface PostRepository extends Repository<Post, Long> {
 			where p.type = com.simpleblog.entity.PostType.POST and p.status = com.simpleblog.entity.PostStatus.PUBLISH
 			order by p.createdAt desc, p.id desc""")
 	List<FeedRow> listOfFeedRows(Pageable pageable);
+
+	/** Every published post for the sitemap, whoever asks: never a draft, a private post or a page. Newest modification first. */
+	@Query("""
+			select new com.simpleblog.dto.SitemapRow(p.slug, p.modifiedAt) from Post p
+			where p.type = com.simpleblog.entity.PostType.POST and p.status = com.simpleblog.entity.PostStatus.PUBLISH
+			order by p.modifiedAt desc, p.id desc""")
+	List<SitemapRow> listOfSitemapRows();
 
 	Post save(Post post);
 

@@ -1,0 +1,9 @@
+# All posts are open to crawlers. The writing and search screens are not worth indexing.
+User-agent: *
+Allow: /post/
+Disallow: /write
+Disallow: /edit/
+Disallow: /search
+
+# The sitemap is served by the backend (be/apispec.yaml: GET /public/sitemap.xml).
+Sitemap: https://blog.chidoo.me/public/sitemap.xml

@@ -32,17 +32,17 @@ public class FeedDocument {
 	public String render(Feed feed, String origin, String selfUrl) {
 		StringBuilder entries = new StringBuilder();
 		feed.entries().forEach((entry) -> entries.append(renderEntry(entry, origin)));
-		return fill(this.feedTemplate, Map.of("name", escape(BLOG_NAME), 
-		                                      "origin", escape(origin),
-											  "selfUrl", escape(selfUrl),
+		return fill(this.feedTemplate, Map.of("name", XmlText.escape(BLOG_NAME), 
+		                                      "origin", XmlText.escape(origin),
+											  "selfUrl", XmlText.escape(selfUrl),
 											  "updated", time(feed.updated()), 
 											  "entries", entries.toString()));
 	}
 
 	private String renderEntry(FeedEntry entry, String origin) {
-		return fill(this.entryTemplate, Map.of("name", escape(BLOG_NAME), 
-		                                       "url", escape(origin + entry.path()),
-											   "title", escape(entry.title()),
+		return fill(this.entryTemplate, Map.of("name", XmlText.escape(BLOG_NAME), 
+		                                       "url", XmlText.escape(origin + entry.path()),
+											   "title", XmlText.escape(entry.title()),
 											   "published", time(entry.published()),
 											   "updated", time(entry.updated())));
 	}
@@ -63,30 +63,6 @@ public class FeedDocument {
 
 	private static String time(OffsetDateTime time) {
 		return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(time.withNano(0));
-	}
-
-	/** Only the five characters XML predefines; HtmlUtils would write HTML-only entities such as &eacute; that XML parsers reject. */
-	private static String escape(String text) {
-		StringBuilder escaped = new StringBuilder(text.length());
-		text.codePoints().filter(FeedDocument::isXmlChar).forEach((point) -> escaped.append(escaped(point)));
-		return escaped.toString();
-	}
-
-	private static String escaped(int point) {
-		return switch (point) {
-			case '&' -> "&amp;";
-			case '<' -> "&lt;";
-			case '>' -> "&gt;";
-			case '"' -> "&quot;";
-			case '\'' -> "&apos;";
-			default -> Character.toString(point);
-		};
-	}
-
-	/** The characters XML 1.0 allows; the others (most control characters) would make the whole feed unparsable. */
-	private static boolean isXmlChar(int point) {
-		return point == 0x9 || point == 0xA || point == 0xD || (point >= 0x20 && point <= 0xD7FF)
-				|| (point >= 0xE000 && point <= 0xFFFD) || (point >= 0x10000 && point <= 0x10FFFF);
 	}
 
 }

@@ -3,6 +3,7 @@ import { StatusMessage } from '../component/StatusMessage.tsx'
 import { PostStatus } from '../model/Post.ts'
 import { editPath } from '../model/route.ts'
 import { shareUrl } from '../model/share.ts'
+import { useDocumentTitle } from '../model/useDocumentTitle.ts'
 import { usePostBody } from '../model/usePostBody.ts'
 
 interface PostReaderProps {
@@ -11,10 +12,11 @@ interface PostReaderProps {
 
 /**
  * The content area for /post/{slug} and /page/{slug}: loads the body and shows it. The 편집하기 link follows its `canEdit`; the
- * share buttons show for a published post only, as a draft has no share page.
+ * share buttons show for a published post only, as a draft has no share page. The web page title is `{post title} | {site name}`.
  */
 export function PostReader({ slug }: PostReaderProps) {
   const post = usePostBody(slug)
+  useDocumentTitle(post.state === 'loaded' ? post.value.title : null)
   switch (post.state) {
     case 'loading':
       return <StatusMessage>불러오는 중…</StatusMessage>

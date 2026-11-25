@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.simpleblog.component.FeedRefresh;
+import com.simpleblog.component.CacheRefresh;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** The feed is dropped when a post is created, updated or deleted, and only once that change is committed. */
+/** The feed and the sitemap are dropped when a post is created, updated or deleted, and only once that change is committed. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Sql(statements = """
@@ -35,7 +35,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 		insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
 		(1, 'KPI', 'old', 'kpi', 'post', 'publish', 1, '2026-11-05 00:45:11', '2026-11-06 01:00:00');
 		""")
-class FeedRefreshTests {
+class CacheRefreshTests {
 
 	private static final String BODY = "{\"title\": \"T\", \"slug\": \"%s\", \"content\": \"c\"}";
 
@@ -52,7 +52,7 @@ class FeedRefreshTests {
 	private JdbcTemplate jdbcTemplate;
 
 	@MockitoSpyBean
-	private FeedRefresh feedRefresh;
+	private CacheRefresh cacheRefresh;
 
 	/** These tests commit, so they leave no rows behind for the tests that roll back. */
 	@AfterEach
@@ -61,44 +61,54 @@ class FeedRefreshTests {
 		this.jdbcTemplate.update("delete from tb_user");
 	}
 
-	private Cache feedCache() {
-		return this.cacheManager.getCache("feed");
+	private void putInBoth() {
+		this.cacheManager.getCache("feed").put("key", "cached");
+		this.cacheManager.getCache("sitemap").put("key", "cached");
+	}
+
+	/** Whether both the feed and the sitemap are still cached; false when either is gone (they are dropped together). */
+	private boolean kept() {
+		Cache feed = this.cacheManager.getCache("feed");
+		Cache sitemap = this.cacheManager.getCache("sitemap");
+		boolean feedKept = feed.get("key") != null;
+		assertThat(sitemap.get("key") != null).isEqualTo(feedKept);
+		return feedKept;
 	}
 
 	@Test
 	void dropsTheFeedOnlyWhenTheTransactionCommits() {
 		TransactionTemplate template = new TransactionTemplate(this.transactions);
-		feedCache().put("key", "cached");
+		putInBoth();
 		template.executeWithoutResult((status) -> {
-			this.feedRefresh.afterPostChange();
-			assertThat(feedCache().get("key")).isNotNull();
+			this.cacheRefresh.afterPostChange();
+			assertThat(kept()).isTrue();
 		});
-		assertThat(feedCache().get("key")).isNull();
-		feedCache().put("key", "cached");
+		assertThat(kept()).isFalse();
+		putInBoth();
 		template.executeWithoutResult((status) -> {
-			this.feedRefresh.afterPostChange();
+			this.cacheRefresh.afterPostChange();
 			status.setRollbackOnly();
 		});
-		assertThat(feedCache().get("key")).isNotNull();
+		assertThat(kept()).isTrue();
 	}
 
 	@Test
 	void dropsTheFeedWhenAPostIsCreatedUpdatedAndDeleted() throws Exception {
-		feedCache().put("key", "cached");
+		putInBoth();
 		this.mockMvc.perform(post("/public/api/v1/post").with(TestUsers.signedIn()).with(csrf())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content(BODY.formatted("fresh"))).andExpect(status().isCreated());
-		assertThat(feedCache().get("key")).isNull();
-		feedCache().put("key", "cached");
+		assertThat(kept()).isFalse();
+		putInBoth();
 		this.mockMvc.perform(put("/public/api/v1/post/{slug}", "fresh").with(TestUsers.signedIn()).with(csrf())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content(BODY.formatted("fresh"))).andExpect(status().isOk());
-		assertThat(feedCache().get("key")).isNull();
-		feedCache().put("key", "cached");
+		assertThat(kept()).isFalse();
+		putInBoth();
 		this.mockMvc.perform(delete("/public/api/v1/post/{slug}", "fresh").with(TestUsers.signedIn()).with(csrf()))
 			.andExpect(status().is2xxSuccessful());
-		assertThat(feedCache().get("key")).isNull();
-		verify(this.feedRefresh, times(3)).afterPostChange();
+		assertThat(kept()).isFalse();
+		verify(this.cacheRefresh, times(3)).afterPostChange();
 	}
 
 }

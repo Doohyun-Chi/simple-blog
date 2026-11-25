@@ -7,21 +7,21 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Drops the cached feed so the next request reads the posts again. Called when a post is created, changed or deleted.
+ * Drops the cached feed and sitemap so the next request reads the posts again. Called when a post is created, changed or deleted.
  * Inside a transaction it waits for the commit: dropping it earlier could let a request in between cache the old posts
  * again. A rolled back transaction changed nothing, so it leaves the cache alone.
  */
 @Component
-public class FeedRefresh {
+public class CacheRefresh {
 
 	private final CacheManager cacheManager;
 
-	public FeedRefresh(CacheManager cacheManager) {
+	public CacheRefresh(CacheManager cacheManager) {
 		this.cacheManager = cacheManager;
 	}
 
 	public void afterPostChange() {
-		runAfterCommit(this::dropFeed);
+		runAfterCommit(this::dropCaches);
 	}
 
 	/** Runs the action once the transaction commits, or right away when there is no transaction. */
@@ -38,8 +38,9 @@ public class FeedRefresh {
 		});
 	}
 
-	private void dropFeed() {
+	private void dropCaches() {
 		this.cacheManager.getCache(CacheConfig.FEED_CACHE).clear();
+		this.cacheManager.getCache(CacheConfig.SITEMAP_CACHE).clear();
 	}
 
 }

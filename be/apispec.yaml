@@ -256,6 +256,43 @@ paths:
                     <author><name>Dreaming for the Future</name></author>
                   </entry>
                 </feed>
+  /public/sitemap.xml:
+    get:
+      summary: Sitemap of the published posts
+      description: >
+        A sitemap (https://www.sitemaps.org/protocol.html) for search engines, listing the frontend's home page and every
+        published post (type post, status publish; pages, drafts and private rows are never listed, whoever asks), newest
+        modification first. The response is `application/xml; charset=utf-8`, and every value is XML-escaped.
+
+        The list is kept in the same local cache as the feed. It expires 24 hours after it was loaded, and is dropped as soon as a post is created, updated or deleted; the next request then reads it from the database again.
+
+        - `loc` is the frontend's origin (`simpleblog.auth.frontend-url`) with `/` for the home page, and with the post view path
+        `/post/{slug}` for a post (the slug as readers see it, URL-encoded once).
+
+        - `lastmod` of a post is its modification date as a UTC W3C datetime (for example `2026-11-06T01:00:00Z`); the home page has none.
+
+        `robots.txt` of the frontend points search engines to this URL.
+      operationId: sitemap
+      tags:
+        - SEO
+      responses:
+        '200':
+          description: The sitemap; a `urlset` with only the home page when there is no published post
+          content:
+            application/xml:
+              schema:
+                type: string
+              example: |
+                <?xml version="1.0" encoding="utf-8"?>
+                <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                  <url>
+                    <loc>https://www.chidoo.me/</loc>
+                  </url>
+                  <url>
+                    <loc>https://www.chidoo.me/post/kpi-power-in-big-company</loc>
+                    <lastmod>2026-11-06T01:00:00Z</lastmod>
+                  </url>
+                </urlset>
   /public/api/v1/me:
     get:
       summary: The signed-in user
