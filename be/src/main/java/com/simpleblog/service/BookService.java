@@ -177,7 +177,7 @@ public class BookService {
 
 	private void requireWebUrl(String field, String url, boolean required) {
 		boolean absent = url == null || url.isBlank();
-		if (absent ? required : (url.length() > BookStoreUrl.MAX_LENGTH || !this.storeUrl.isWebUrl(url.trim()))) {
+		if (absent ? required : (url.length() > BookStoreUrl.MAX_LENGTH || !BookStoreUrl.isWebUrl(url.trim()))) {
 			throw new InvalidBookException(field + " must be an http or https URL of at most " + BookStoreUrl.MAX_LENGTH + " characters");
 		}
 	}

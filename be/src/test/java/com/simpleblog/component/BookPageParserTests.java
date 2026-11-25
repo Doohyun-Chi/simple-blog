@@ -39,6 +39,12 @@ class BookPageParserTests {
 	}
 
 	@Test
+	void dropsAnImageWhoseUrlIsTooLongToBeStored() {
+		String tooLong = "https://img.example/" + "a".repeat(BookStoreUrl.MAX_LENGTH);
+		assertThat(this.parser.preview("<meta property=\"og:image\" content=\"" + tooLong + "\">", PAGE).thumbnailUrl()).isNull();
+	}
+
+	@Test
 	void cutsValuesToTheLimitsOfTheirFieldsAndSurvivesBadEntities() {
 		String html = "<meta property=\"og:title\" content=\"" + "가".repeat(400) + "&#99999999999;\">";
 		assertThat(this.parser.preview(html, PAGE).title()).hasSize(300);

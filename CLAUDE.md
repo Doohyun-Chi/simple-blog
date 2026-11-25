@@ -55,6 +55,7 @@ BE
 - 값에 따라 달라지는 규칙은 enum의 필드나 메소드로 둔다 (예: `PostStatus.settable()`). 서비스에 `Set<String>` 같은 허용 목록을 두지 않는다.
 - JPQL에서는 enum 상수를 fully-qualified name으로 쓴다 (예: `com.simpleblog.entity.PostStatus.PUBLISH`).
 - DB에 CHECK 제약을 두지 않는다. 테스트의 H2도 `NoColumnCheckH2Dialect`로 Hibernate가 enum 컬럼에 CHECK를 만들지 못하게 한다.
+- Escape 문자열 처리 혹은 URL encoding에 관련된 처리는 공통 라이브러리를 우선 적용하고, 별도 Custom 로직을 만들 필요가 있는 경우에는 승인을 받는다.
 
 FE
 - `erasableSyntaxOnly`이므로 TS `enum` 대신 `as const` 객체와 같은 이름의 union type을 쓴다 (예: `model/Post.ts`의 `PostType`, `PostStatus`).

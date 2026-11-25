@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import com.simpleblog.dto.BookPreview;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
 
 /**
  * Reads what a store page says about a book from its {@code <meta>} tags: Open Graph ({@code og:title}, {@code og:description},
@@ -24,8 +25,6 @@ public class BookPageParser {
 
 	private static final Pattern TITLE = Pattern.compile("<title[^>]*>(.*?)</title>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-	private static final Pattern ENTITY = Pattern.compile("&(#x[0-9a-fA-F]+|#\\d+|amp|lt|gt|quot|apos);");
-
 	private static final String YES24_SUFFIX = " - 예스24";
 
 	static final int TITLE_MAX = 300;
@@ -36,15 +35,15 @@ public class BookPageParser {
 
 	public BookPreview preview(String html, URI pageUrl) {
 		Map<String, String> metas = metasOf(html);
-		String title = first(metas, "og:title");
+		String title = first(metas, Meta.OG_TITLE);
 		if (title == null) {
 			Matcher matcher = TITLE.matcher(html);
 			title = matcher.find() ? text(matcher.group(1)) : null;
 		}
-		String author = first(metas, "author", "book:author", "og:book:author");
+		String author = first(metas, Meta.AUTHOR, Meta.BOOK_AUTHOR, Meta.OG_BOOK_AUTHOR);
 		BookPreview general = new BookPreview(cut(cleanTitle(title, pageUrl), TITLE_MAX),
 				cut(author != null && author.startsWith("http") ? null : author, AUTHOR_MAX),
-				cut(first(metas, "og:description", "description"), DESCRIPTION_MAX), thumbnailOf(first(metas, "og:image"), pageUrl));
+				cut(first(metas, Meta.OG_DESCRIPTION, Meta.DESCRIPTION), DESCRIPTION_MAX), thumbnailOf(first(metas, Meta.OG_IMAGE), pageUrl));
 		return AmazonBookPage.isAmazon(pageUrl) ? AmazonBookPage.refine(html, pageUrl, general) : general;
 	}
 
@@ -92,14 +91,14 @@ public class BookPageParser {
 		return null;
 	}
 
-	/** The image URL resolved against the page, when it is an http or https one; the page may give a relative path. */
+	/** The image URL resolved against the page, when it is an http or https one that fits the field it is stored in; the page may give a relative path. */
 	static String thumbnailOf(String image, URI pageUrl) {
 		if (image == null || image.isBlank()) {
 			return null;
 		}
 		try {
-			URI resolved = pageUrl.resolve(text(image));
-			return "http".equalsIgnoreCase(resolved.getScheme()) || "https".equalsIgnoreCase(resolved.getScheme()) ? resolved.toString() : null;
+			String resolved = pageUrl.resolve(text(image)).toString();
+			return resolved.length() <= BookStoreUrl.MAX_LENGTH && BookStoreUrl.isWebUrl(resolved) ? resolved : null;
 		}
 		catch (IllegalArgumentException ex) {
 			return null;
@@ -116,35 +115,29 @@ public class BookPageParser {
 
 	/** The text with its HTML entities decoded, and with the white space trimmed and collapsed. */
 	static String text(String raw) {
-		Matcher matcher = ENTITY.matcher(raw);
-		StringBuilder decoded = new StringBuilder();
-		while (matcher.find()) {
-			matcher.appendReplacement(decoded, Matcher.quoteReplacement(entity(matcher.group(1))));
-		}
-		matcher.appendTail(decoded);
-		return decoded.toString().replaceAll("\\s+", " ").trim();
+		return HtmlUtils.htmlUnescape(raw).replaceAll("\\s+", " ").trim();
 	}
 
-	private static String entity(String name) {
-		return switch (name) {
-			case "amp" -> "&";
-			case "lt" -> "<";
-			case "gt" -> ">";
-			case "quot" -> "\"";
-			case "apos" -> "'";
-			default -> numeric(name);
-		};
-	}
+	/** The names of the metas that are read; a meta's name is its {@code property} (Open Graph) or {@code name} attribute. */
+	private static final class Meta {
 
-	/** The character of {@code #123} or {@code #x7B}; nothing for a number that is no character. */
-	private static String numeric(String name) {
-		try {
-			int codePoint = name.startsWith("#x") ? Integer.parseInt(name.substring(2), 16) : Integer.parseInt(name.substring(1));
-			return new String(Character.toChars(codePoint));
+		static final String OG_TITLE = "og:title";
+
+		static final String OG_DESCRIPTION = "og:description";
+
+		static final String OG_IMAGE = "og:image";
+
+		static final String OG_BOOK_AUTHOR = "og:book:author";
+
+		static final String BOOK_AUTHOR = "book:author";
+
+		static final String AUTHOR = "author";
+
+		static final String DESCRIPTION = "description";
+
+		private Meta() {
 		}
-		catch (IllegalArgumentException ex) {
-			return "";
-		}
+
 	}
 
 }

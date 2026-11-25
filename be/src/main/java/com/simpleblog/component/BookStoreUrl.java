@@ -31,7 +31,7 @@ public class BookStoreUrl {
 	}
 
 	/** Whether the text is an http or https URL; the host is not looked at. */
-	public boolean isWebUrl(String url) {
+	public static boolean isWebUrl(String url) {
 		try {
 			URI uri = new URI(url);
 			return uri.getHost() != null && ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()));
