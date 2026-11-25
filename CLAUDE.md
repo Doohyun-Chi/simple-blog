@@ -110,6 +110,10 @@ npm install
 npm run dev
 npm run lint
 npm run build
+
+# 코드 건강 리포트 (루트에서 실행): BE 커버리지/복잡도(JaCoCo)와 FE 복잡도(oxlint)를 HTML로 ~/Downloads에 만든다
+./code-health.py                 # BE 테스트를 돌린 뒤 리포트 생성. 가장 최근 리포트와 비교한다
+./code-health.py --skip-tests    # 마지막 JaCoCo 결과를 재사용
 ```
 
 FE에는 아직 테스트 러너가 없다.
