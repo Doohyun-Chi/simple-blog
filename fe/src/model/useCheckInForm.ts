@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { type Book, bookInputWithThumbnail, isUnread, isWebUrl, todayText } from './Book.ts'
-import { checkInBook, deleteBook, saveBookInsight, updateBook } from './bookApi.ts'
+import { checkInBook, saveBookInsight, updateBook } from './bookApi.ts'
 import { type BookSubmit, useBookSubmit } from './useBookSubmit.ts'
 
 export interface CheckInForm extends BookSubmit {
@@ -27,8 +27,6 @@ export interface CheckInForm extends BookSubmit {
   canSaveThumbnail: boolean
   /** Saves the thumbnail URL with `PUT /book/{id}`. */
   saveThumbnail: () => Promise<void>
-  /** 삭제: removes the book from the shelf, once `confirmed` says yes. */
-  remove: (confirmed: () => boolean) => Promise<void>
 }
 
 /** The reading dates and insight of a book being checked in. A book not started yet offers today as its start. */
@@ -51,11 +49,6 @@ export function useCheckInForm(book: Book, onSaved: () => void): CheckInForm {
     lacksThumbnail: book.thumbnailUrl === null,
     canSaveThumbnail: isWebUrl(thumbnailUrl) && !submitter.busy,
     saveThumbnail: () => submitter.submit(() => updateBook(book.id, bookInputWithThumbnail(book, thumbnailUrl))),
-    remove: async (confirmed) => {
-      if (confirmed()) {
-        await submitter.submit(() => deleteBook(book.id))
-      }
-    },
   }
 }
 

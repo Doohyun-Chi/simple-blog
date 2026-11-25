@@ -77,3 +77,9 @@ textarea.modal-dialog-input {
     }
   }
 }
+
+/* A button that deletes sits at the left end of the buttons, away from the others. */
+.modal-dialog-actions .modal-dialog-remove {
+  margin-right: auto;
+  color: #b3261e;
+}

@@ -1,0 +1,11 @@
+/* 5em tall, as wide as the cover is in proportion. */
+.book-thumbnail {
+  display: block;
+  color: var(--text-muted);
+}
+
+.book-thumbnail-image {
+  display: block;
+  height: 9em;
+  width: auto;
+}

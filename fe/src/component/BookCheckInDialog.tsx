@@ -3,9 +3,6 @@ import { saveDatesLabelOf, useCheckInForm } from '../model/useCheckInForm.ts'
 import { ModalDialog } from './ModalDialog.tsx'
 import './BookCheckInDialog.css'
 
-/** Asked before a book is deleted. */
-const REMOVE_QUESTION = '이 책을 서재에서 삭제할까요? 삭제한 책은 되돌릴 수 없습니다.'
-
 interface BookCheckInDialogProps {
   book: Book
   onSaved: () => void
@@ -48,8 +45,6 @@ export function BookCheckInDialog({ book, onSaved, onClose }: BookCheckInDialogP
         </label>
         {form.failure !== null && <p className="modal-dialog-failure" role="alert">{form.failure}</p>}
         <div className="modal-dialog-actions">
-          <button type="button" className="book-check-in-remove" disabled={form.busy}
-            onClick={() => void form.remove(() => window.confirm(REMOVE_QUESTION))}>삭제</button>
           <button type="button" disabled={form.busy} onClick={() => void form.saveInsight()}>인사이트 등록</button>
           <button type="button" onClick={onClose}>닫기</button>
         </div>

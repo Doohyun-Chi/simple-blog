@@ -1,26 +1,17 @@
-import { IconArticle, IconBookOff, IconCalendarCheck, IconPencilPlus } from '@tabler/icons-react'
+import { IconArticle, IconCalendarCheck, IconPencil, IconPencilPlus } from '@tabler/icons-react'
 import { type Book, insightExcerptOf, isUnread, readingPeriodOf, todayText } from '../model/Book.ts'
 import { PostType } from '../model/Post.ts'
 import { contentPath } from '../model/route.ts'
+import { BookThumbnail } from './BookThumbnail.tsx'
 import './BookCard.css'
 
 interface BookCardProps {
   book: Book
   /** Whether the visitor is signed in: only then are the check-in and the review writing offered. */
   canWrite: boolean
+  onEdit: (book: Book) => void
   onCheckIn: (book: Book) => void
   onWriteReview: (book: Book) => void
-}
-
-/** The thumbnail, linking to the store page it was registered from in another tab; a large icon stands in when there is none. */
-function Thumbnail({ book }: { book: Book }) {
-  return (
-    <a className="book-card-thumbnail" href={book.bookstoreUrl} target="_blank" rel="noopener noreferrer" title={`${book.title} (판매처)`}>
-      {book.thumbnailUrl === null
-        ? <IconBookOff className="book-card-no-thumbnail" size="5em" stroke={1} aria-label="썸네일 없음" />
-        : <img className="book-card-image" src={book.thumbnailUrl} alt={book.title} referrerPolicy="no-referrer" />}
-    </a>
-  )
 }
 
 /** When the book was started and finished, and how long it took; nothing before it is started. */
@@ -46,16 +37,23 @@ function ReviewLink({ book, canWrite, onWriteReview }: Pick<BookCardProps, 'book
     : null
 }
 
-/** One book: its thumbnail with the reading dates under it, and beside it the name, description, date, insight and the links. */
-export function BookCard({ book, canWrite, onCheckIn, onWriteReview }: BookCardProps) {
+/** One book: its thumbnail with the reading dates under it, and beside it the name (a link to the store page, with the edit icon), description, date, insight and the links. */
+export function BookCard({ book, canWrite, onEdit, onCheckIn, onWriteReview }: BookCardProps) {
   return (
     <li className="book-card">
       <div className="book-card-cover">
-        <Thumbnail book={book} />
+        <BookThumbnail title={book.title} thumbnailUrl={book.thumbnailUrl} storeUrl={book.bookstoreUrl} />
         <ReadingDates book={book} />
       </div>
       <div className="book-card-body">
-        <h3 className="book-card-title">{book.title}</h3>
+        <h3 className="book-card-title">
+          <a className="book-card-title-link" href={book.bookstoreUrl} target="_blank" rel="noopener noreferrer">{book.title}</a>
+          {canWrite && (
+            <button type="button" className="book-card-edit" aria-label="책 수정" title="책 수정" onClick={() => onEdit(book)}>
+              <IconPencil size="0.9em" aria-hidden="true" />
+            </button>
+          )}
+        </h3>
         {book.author !== null && <p className="book-card-author">{book.author}</p>}
         <p className="book-card-description">{[book.description, book.registeredDate].filter((text) => text !== null).join(' · ')}</p>
         {book.insight !== null && <p className="book-card-insight">{insightExcerptOf(book.insight)}</p>}

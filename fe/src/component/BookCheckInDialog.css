@@ -50,9 +50,3 @@
   flex: 0 0 auto;
   white-space: nowrap;
 }
-
-/* 삭제 sits at the left end of the buttons, away from the others. */
-.modal-dialog-actions .book-check-in-remove {
-  margin-right: auto;
-  color: #b3261e;
-}

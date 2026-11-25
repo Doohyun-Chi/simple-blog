@@ -2,7 +2,7 @@ import { IconPlus } from '@tabler/icons-react'
 import { useState } from 'react'
 import { BookCard } from '../component/BookCard.tsx'
 import { BookCheckInDialog } from '../component/BookCheckInDialog.tsx'
-import { BookNewDialog } from '../component/BookNewDialog.tsx'
+import { BookFormDialog } from '../component/BookFormDialog.tsx'
 import { BookReviewDialog } from '../component/BookReviewDialog.tsx'
 import { BookYearFilter } from '../component/BookYearFilter.tsx'
 import { StatusMessage } from '../component/StatusMessage.tsx'
@@ -12,7 +12,7 @@ import { useBookShelf } from '../model/useBookShelf.ts'
 import './BookShelf.css'
 
 /** The dialog open over the shelf, if any. */
-type ShelfDialog = { kind: 'new' } | { kind: 'checkIn'; book: Book } | { kind: 'review'; book: Book } | null
+type ShelfDialog = { kind: 'new' } | { kind: 'edit'; book: Book } | { kind: 'checkIn'; book: Book } | { kind: 'review'; book: Book } | null
 
 interface BookShelfProps {
   /** Whether the visitor is signed in: only then can a book be registered, checked in or given a review. */
@@ -21,7 +21,7 @@ interface BookShelfProps {
 
 /**
  * The content area for /books (fe/DESIGN.md): the year filter with 새로운 책 beside it, and the books newest first in two
- * columns. Registering, checking in and linking a review reload the shelf.
+ * columns. Registering, editing, deleting, checking in and linking a review reload the shelf.
  */
 export function BookShelf({ canWrite }: BookShelfProps) {
   const { year, selectYear, shelf, refresh } = useBookShelf()
@@ -40,7 +40,7 @@ export function BookShelf({ canWrite }: BookShelfProps) {
           </button>
         )}
       </div>
-      <Books shelf={shelf} canWrite={canWrite} onCheckIn={(book) => openDialog({ kind: 'checkIn', book })}
+      <Books shelf={shelf} canWrite={canWrite} onEdit={(book) => openDialog({ kind: 'edit', book })} onCheckIn={(book) => openDialog({ kind: 'checkIn', book })}
         onWriteReview={(book) => openDialog({ kind: 'review', book })} />
       <ShelfDialogs dialog={dialog} onSaved={saved} onClose={() => openDialog(null)} />
     </section>
@@ -49,9 +49,10 @@ export function BookShelf({ canWrite }: BookShelfProps) {
 
 type Shelf = ReturnType<typeof useBookShelf>['shelf']
 
-function Books({ shelf, canWrite, onCheckIn, onWriteReview }: {
+function Books({ shelf, canWrite, onEdit, onCheckIn, onWriteReview }: {
   shelf: Shelf
   canWrite: boolean
+  onEdit: (book: Book) => void
   onCheckIn: (book: Book) => void
   onWriteReview: (book: Book) => void
 }) {
@@ -65,7 +66,9 @@ function Books({ shelf, canWrite, onCheckIn, onWriteReview }: {
         ? <StatusMessage>아직 등록한 책이 없습니다.</StatusMessage>
         : (
           <ul className="book-shelf-books">
-            {shelf.value.books.map((book) => <BookCard key={book.id} book={book} canWrite={canWrite} onCheckIn={onCheckIn} onWriteReview={onWriteReview} />)}
+            {shelf.value.books.map((book) => (
+              <BookCard key={book.id} book={book} canWrite={canWrite} onEdit={onEdit} onCheckIn={onCheckIn} onWriteReview={onWriteReview} />
+            ))}
           </ul>
         )
   }
@@ -75,7 +78,9 @@ function Books({ shelf, canWrite, onCheckIn, onWriteReview }: {
 function ShelfDialogs({ dialog, onSaved, onClose }: { dialog: ShelfDialog; onSaved: () => void; onClose: () => void }) {
   switch (dialog?.kind) {
     case 'new':
-      return <BookNewDialog onRegistered={onSaved} onClose={onClose} />
+      return <BookFormDialog book={null} onSaved={onSaved} onClose={onClose} />
+    case 'edit':
+      return <BookFormDialog book={dialog.book} onSaved={onSaved} onClose={onClose} />
     case 'checkIn':
       return <BookCheckInDialog book={dialog.book} onSaved={onSaved} onClose={onClose} />
     case 'review':
