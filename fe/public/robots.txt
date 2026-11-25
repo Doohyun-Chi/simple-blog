@@ -5,5 +5,5 @@ Disallow: /write
 Disallow: /edit/
 Disallow: /search
 
-# The sitemap is served by the backend (be/apispec.yaml: GET /public/sitemap.xml).
-Sitemap: https://blog.chidoo.me/public/sitemap.xml
+# The sitemap is built by the backend (be/apispec.yaml: GET /public/sitemap.xml); nginx serves it on this host as /sitemap.xml.
+Sitemap: https://www.chidoo.me/sitemap.xml
