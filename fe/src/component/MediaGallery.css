@@ -7,6 +7,10 @@
   list-style: none;
 }
 
+.media-gallery-item {
+  position: relative;
+}
+
 .media-gallery-tile {
   position: relative;
   display: block;
@@ -20,7 +24,8 @@
   cursor: pointer;
 
   &:hover,
-  &:focus-visible {
+  &:focus-visible,
+  &[aria-pressed='true'] {
     border-color: var(--accent);
     outline: 2px solid var(--accent);
     outline-offset: -2px;
@@ -31,6 +36,35 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+}
+
+/* The insert and delete icons over the selected tile. */
+.media-gallery-actions {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  display: flex;
+  gap: 0.25rem;
+
+  & button {
+    display: flex;
+    padding: 0.3em;
+    color: #fff;
+    background: rgb(0 0 0 / 0.65);
+    border: 0;
+    border-radius: 3px;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--accent);
+    }
+  }
+
+  & .media-gallery-remove:hover,
+  & .media-gallery-remove:focus-visible {
+    background: #b3261e;
   }
 }
 

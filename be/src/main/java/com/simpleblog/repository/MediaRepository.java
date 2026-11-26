@@ -9,7 +9,7 @@ import org.springframework.data.repository.Repository;
 
 /**
  * Saving, looking up and deleting one row: only an image upload under a slug the writer already has changes a row (it swaps the file),
- * and only MediaService#discardUnused deletes one, an image a post save replaced.
+ * and MediaService deletes one: #discardUnused for an image a post save replaced, #delete for the owner's own request.
  */
 public interface MediaRepository extends Repository<Media, Long> {
 

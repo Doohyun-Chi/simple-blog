@@ -713,6 +713,33 @@ paths:
                 format: binary
         '404':
           description: No internal or content media item has this slug. The response body is not part of the contract.
+    delete:
+      summary: Delete a media item
+      description: >
+        Deletes the media item identified by the path slug: its tb_media row is removed for good and, for an image, its
+        file on the server too, whatever the provider. Only the user who registered the item (tb_media.owner_id) can
+        delete it. A post or page whose content refers to the item is not changed and then shows a broken image or link,
+        so the caller is expected to warn the writer first. A YouTube video has no file; only its row is removed.
+      operationId: deleteMedia
+      tags:
+        - Media
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted. There is no response body.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie), or the item was registered by another user. The response body is not part of the contract.
+        '404':
+          description: No media item has the path slug. The response body is not part of the contract.
 components:
   securitySchemes:
     sessionCookie:

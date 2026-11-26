@@ -68,3 +68,16 @@ export function imageMarkdown(alt: string, url: string): string {
 export function isVideo(media: Media): boolean {
   return media.provider === MediaProvider.EXTERNAL
 }
+
+/** What to tell the writer when a media item could not be deleted, by what the backend answered. */
+export function deleteFailureText(error: unknown): string {
+  switch (error instanceof ApiError ? error.status : 0) {
+    case 401:
+    case 403:
+      return '삭제할 권한이 없습니다. 올린 사람만 삭제할 수 있습니다.'
+    case 404:
+      return '이미 삭제된 항목입니다.'
+    default:
+      return '삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  }
+}

@@ -67,3 +67,14 @@ export async function listOfMedias(signal?: AbortSignal): Promise<Media[]> {
   const body = await requestJson<MediaList>(MEDIAS_PATH, { signal, credentials: 'include' })
   return body.medias
 }
+
+/**
+ * Calls `DELETE /public/api/v1/media/{slug}` (operationId: deleteMedia): the item and, for an image, its file are gone for good.
+ * Only its owner may; posts that show it are not changed. The response has no body.
+ */
+export async function deleteMedia(slug: string, signal?: AbortSignal): Promise<void> {
+  const response = await fetch(apiUrl(`${MEDIA_PATH}/${slug}`), { method: 'DELETE', headers: csrfHeaders(), credentials: 'include', signal })
+  if (!response.ok) {
+    throw new ApiError(`DELETE ${MEDIA_PATH}/${slug} failed with ${response.status}`, response.status)
+  }
+}

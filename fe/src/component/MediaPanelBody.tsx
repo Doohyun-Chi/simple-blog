@@ -1,12 +1,17 @@
 import { type ChangeEvent, type DragEvent, useState } from 'react'
-import { type Media, uploadFailureText } from '../model/Media.ts'
-import { listOfMedias, registerVideo, uploadImage } from '../model/mediaApi.ts'
+import { deleteFailureText, type Media, uploadFailureText } from '../model/Media.ts'
+import { deleteMedia, listOfMedias, registerVideo, uploadImage } from '../model/mediaApi.ts'
 import { markdownOfMedia } from '../model/mediaMarkdown.ts'
 import { useRemote } from '../model/useRemote.ts'
 import { MediaGallery } from './MediaGallery.tsx'
 import './MediaPanelBody.css'
 
 const VIDEO_FAILURE = 'YouTube 영상 주소를 확인해 주세요.'
+
+/** Asked before a delete: posts that show the media are not changed, so they lose it. */
+function removeQuestionOf(media: Media): string {
+  return `'${media.slug}'을(를) 삭제할까요?\n\n이 이미지·영상을 사용하는 기존 글에서는 더 이상 보이지 않고 깨져 보일 수 있습니다. 삭제한 파일은 되돌릴 수 없습니다.`
+}
 
 interface MediaPanelBodyProps {
   /** Receives the Markdown of the media the writer picked, uploaded or added. */
@@ -15,11 +20,13 @@ interface MediaPanelBodyProps {
 
 /**
  * What the media panel shows while it is open: the title that becomes the alt text, an upload of a new image (picked
- * or dropped) or a YouTube link, and the gallery of what is already registered. Whatever is chosen is inserted at
- * once. The gallery is loaded when the panel opens, so it is current every time.
+ * or dropped) or a YouTube link, and the gallery of what is already registered. An upload or a link is inserted at
+ * once; a tile of the gallery is selected first, then inserted (icon or double click) or deleted (icon, after a warning). The gallery is loaded when the panel opens, so it is current every time.
  */
 export function MediaPanelBody({ onInsert }: MediaPanelBodyProps) {
-  const medias = useRemote('gallery', (signal) => listOfMedias(signal))
+  const [version, updateVersion] = useState(0)
+  const medias = useRemote(`gallery-${version}`, (signal) => listOfMedias(signal))
+  const [selected, updateSelected] = useState<string | null>(null)
   const [title, updateTitle] = useState('')
   const [failure, updateFailure] = useState<string | null>(null)
   const [busy, updateBusy] = useState(false)
@@ -32,6 +39,21 @@ export function MediaPanelBody({ onInsert }: MediaPanelBodyProps) {
       console.error(error)
       updateFailure(failureText(error))
       updateBusy(false)
+    }
+  }
+
+  async function remove(media: Media) {
+    if (!window.confirm(removeQuestionOf(media))) {
+      return
+    }
+    try {
+      await deleteMedia(media.slug)
+      updateFailure(null)
+      updateSelected(null)
+      updateVersion((current) => current + 1)
+    } catch (error: unknown) {
+      console.error(error)
+      updateFailure(deleteFailureText(error))
     }
   }
 
@@ -48,7 +70,8 @@ export function MediaPanelBody({ onInsert }: MediaPanelBodyProps) {
       <ImageUpload busy={busy} onFile={(file) => void insertFrom(() => uploadImage(file), uploadFailureText)} />
       <VideoLink busy={busy} onLink={(url) => void insertFrom(() => registerVideo(url), () => VIDEO_FAILURE)} />
       {failure !== null && <p className="media-panel-failure" role="alert">{failure}</p>}
-      <MediaGallery medias={medias} onPick={(media) => onInsert(markdownOfMedia(media, title))} />
+      <MediaGallery medias={medias} selected={selected} onSelect={updateSelected}
+        onInsert={(media) => onInsert(markdownOfMedia(media, title))} onRemove={(media) => void remove(media)} />
     </div>
   )
 }

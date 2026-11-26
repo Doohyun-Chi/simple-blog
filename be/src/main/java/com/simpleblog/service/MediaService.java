@@ -19,6 +19,7 @@ import com.simpleblog.entity.Media;
 import com.simpleblog.entity.MediaProvider;
 import com.simpleblog.exception.InvalidMediaException;
 import com.simpleblog.exception.MediaNotFoundException;
+import com.simpleblog.exception.NotMediaOwnerException;
 import com.simpleblog.exception.MediaSlugTakenException;
 import com.simpleblog.exception.MediaSlugUnavailableException;
 import com.simpleblog.exception.UnsupportedMediaFileException;
@@ -102,6 +103,19 @@ public class MediaService {
 	}
 
 	/**
+	 * Deletes the writer's own media item whatever its provider or use: the row now and, for an image, its file once the
+	 * transaction commits. Posts that still refer to it are not touched.
+	 */
+	@Transactional
+	public void delete(long ownerId, String slug) {
+		Media media = this.mediaRepository.findBySlug(slug).orElseThrow(() -> new MediaNotFoundException("No media with slug: " + slug));
+		if (!media.ownedBy(ownerId)) {
+			throw new NotMediaOwnerException(slug);
+		}
+		discard(media);
+	}
+
+	/**
 	 * Deletes each of these content images that the owner uploaded and no post or page refers to any more: the row now,
 	 * the file once the transaction commits. Unknown slugs, the library's internal images, videos, someone else's images
 	 * and images still in use are left alone.
@@ -158,7 +172,9 @@ public class MediaService {
 
 	private void discard(Media media) {
 		this.mediaRepository.delete(media);
-		this.storage.removeAfterCommit(media.location());
+		if (media.storesFile()) {
+			this.storage.removeAfterCommit(media.location());
+		}
 	}
 
 	private Registration saveVideo(long ownerId, String slug, String videoId) {

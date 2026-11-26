@@ -2,6 +2,7 @@ package com.simpleblog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -268,6 +269,38 @@ class MediaControllerTests {
 		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedInWithId("a@example.com", 101))).andExpect(status().isCreated());
 		this.mockMvc.perform(uploadAs("team-photo", WEBP, true, TestUsers.signedInWithId("b@example.com", 102)))
 			.andExpect(status().isUnprocessableContent());
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(content().bytes(PNG));
+	}
+
+	@Test
+	void deletesTheOwnersImageWithItsFile() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn())).andExpect(status().isCreated());
+		this.mockMvc.perform(delete(MEDIA + "/team-photo").with(TestUsers.signedIn()).with(csrf())).andExpect(status().isNoContent());
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(status().isNotFound());
+		this.mockMvc.perform(get("/public/api/v1/medias").with(TestUsers.signedIn())).andExpect(jsonPath("$.medias.length()").value(0));
+	}
+
+	@Test
+	void deletesTheOwnersVideoRow() throws Exception {
+		this.mockMvc.perform(link("https://youtu.be/dQw4w9WgXcQ")).andExpect(status().isCreated());
+		this.mockMvc.perform(delete(MEDIA + "/youtube-dQw4w9WgXcQ").with(TestUsers.signedIn()).with(csrf())).andExpect(status().isNoContent());
+		this.mockMvc.perform(get("/public/api/v1/medias").with(TestUsers.signedIn())).andExpect(jsonPath("$.medias.length()").value(0));
+	}
+
+	@Test
+	void keepsAnotherUsersImage() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedInWithId("a@example.com", 101))).andExpect(status().isCreated());
+		this.mockMvc.perform(delete(MEDIA + "/team-photo").with(TestUsers.signedInWithId("b@example.com", 102)).with(csrf()))
+			.andExpect(status().isForbidden());
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(content().bytes(PNG));
+	}
+
+	@Test
+	void answers404ForAnUnknownSlugAndRefusesTheUnauthenticatedOrTokenless() throws Exception {
+		this.mockMvc.perform(delete(MEDIA + "/nothing").with(TestUsers.signedIn()).with(csrf())).andExpect(status().isNotFound());
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn())).andExpect(status().isCreated());
+		this.mockMvc.perform(delete(MEDIA + "/team-photo").with(csrf())).andExpect(status().isUnauthorized());
+		this.mockMvc.perform(delete(MEDIA + "/team-photo").with(TestUsers.signedIn())).andExpect(status().isForbidden());
 		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(content().bytes(PNG));
 	}
 
