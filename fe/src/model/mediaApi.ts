@@ -1,6 +1,5 @@
 import { ApiError, apiUrl, requestJson } from './apiClient.ts'
 import { csrfHeaders } from './csrfToken.ts'
-import { ImageUploadCancelled } from './imageUploadName.ts'
 import { type Media, type MediaList, MediaProvider, type UploadProvider } from './Media.ts'
 
 const MEDIA_PATH = '/public/api/v1/media'
@@ -17,32 +16,23 @@ export function uploadImage(file: File, provider: UploadProvider = MediaProvider
   return requestJson<Media>(MEDIA_PATH, { method: 'POST', headers: csrfHeaders(), body, credentials: 'include', signal })
 }
 
-function slugUpload(file: File, slug: string, replace: boolean): Promise<Media> {
+/**
+ * Calls `POST /public/api/v1/media` with the file under exactly this slug and `replace` true (operationId: createMedia): the
+ * file of the writer's own image with that slug is swapped, and the slug and the URL stay. The image is created when no image has the slug.
+ */
+export function replaceImage(file: File, slug: string): Promise<Media> {
   const body = new FormData()
   body.append('file', file)
   body.append('provider', MediaProvider.INTERNAL)
   body.append('slug', slug)
-  body.append('replace', String(replace))
+  body.append('replace', 'true')
   return requestJson<Media>(MEDIA_PATH, { method: 'POST', headers: csrfHeaders(), body, credentials: 'include' })
 }
 
-/**
- * Calls `POST /public/api/v1/media` with the file under exactly this slug (operationId: createMedia). When the writer's own
- * image already has the slug (409), `confirmReplace` is asked, and the file is sent again as a replacement if it says yes;
- * if it says no the upload is cancelled with ImageUploadCancelled.
- */
-export async function uploadImageAs(file: File, slug: string, confirmReplace: (slug: string) => boolean): Promise<Media> {
-  try {
-    return await slugUpload(file, slug, false)
-  } catch (error: unknown) {
-    if (!(error instanceof ApiError && error.status === 409)) {
-      throw error
-    }
-    if (!confirmReplace(slug)) {
-      throw new ImageUploadCancelled()
-    }
-    return slugUpload(file, slug, true)
-  }
+/** Calls `PUT /public/api/v1/media/{slug}` (operationId: renameMedia): the image gets a new slug; posts that show it by the old one are not changed. */
+export function renameMedia(slug: string, newSlug: string, signal?: AbortSignal): Promise<Media> {
+  const headers = { 'Content-Type': 'application/json', ...csrfHeaders() }
+  return requestJson<Media>(`${MEDIA_PATH}/${slug}`, { method: 'PUT', headers, body: JSON.stringify({ slug: newSlug }), credentials: 'include', signal })
 }
 
 /** Calls `POST /public/api/v1/media` with a YouTube link (operationId: createMedia). Nothing is embedded or fetched. */

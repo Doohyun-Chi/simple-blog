@@ -15,10 +15,11 @@ import { $getNodeByKey } from 'lexical'
 import { useContext, useState } from 'react'
 import { drawioPngOf } from '../model/drawio.ts'
 import { MediaProvider } from '../model/Media.ts'
-import { mediaFileUrl, uploadImage } from '../model/mediaApi.ts'
+import { mediaFileUrl, mediaSlugOf, uploadImage } from '../model/mediaApi.ts'
 import { ReplacedMediaContext } from '../model/ReplacedMedia.ts'
 import { useRemote } from '../model/useRemote.ts'
 import { DrawioDialog } from './DrawioDialog.tsx'
+import { ImageFileButtons } from './ImageFileButtons.tsx'
 import './DrawioImageToolbar.css'
 
 /** What MDXEditor passes to the toolbar over an image in the editor. */
@@ -107,13 +108,18 @@ function EditDrawioButton({ nodeKey, imageSource, disabled }: { nodeKey: string;
   )
 }
 
-/** The toolbar over an image in the editor: MDXEditor's delete and settings buttons, plus draw.io editing for a diagram. */
+/**
+ * The toolbar over an image in the editor: MDXEditor's delete and settings buttons, the slug and file of an image of this blog,
+ * plus draw.io editing for a diagram.
+ */
 export function DrawioImageToolbar(props: ImageToolbarProps) {
   const [disableSettings, readOnly] = useCellValues(disableImageSettingsButton$, readOnly$)
+  const slug = mediaSlugOf(props.imageSource)
   return (
     <div className="drawio-image-toolbar">
       <RemoveImageButton nodeKey={props.nodeKey} disabled={readOnly} />
       {!disableSettings && <ImageSettingsButton {...props} disabled={readOnly} />}
+      {slug !== null && <ImageFileButtons nodeKey={props.nodeKey} slug={slug} disabled={readOnly} />}
       <EditDrawioButton nodeKey={props.nodeKey} imageSource={props.imageSource} disabled={readOnly} />
     </div>
   )

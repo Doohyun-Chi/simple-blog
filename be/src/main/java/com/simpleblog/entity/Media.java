@@ -75,6 +75,10 @@ public class Media {
 		this.date = date;
 	}
 
+	public void renameTo(String slug) {
+		this.slug = slug;
+	}
+
 	public boolean ownedBy(long userId) {
 		return this.ownerId != null && this.ownerId == userId;
 	}

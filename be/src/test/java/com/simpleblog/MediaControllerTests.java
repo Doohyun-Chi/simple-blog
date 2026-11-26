@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -302,6 +303,48 @@ class MediaControllerTests {
 		this.mockMvc.perform(delete(MEDIA + "/team-photo").with(csrf())).andExpect(status().isUnauthorized());
 		this.mockMvc.perform(delete(MEDIA + "/team-photo").with(TestUsers.signedIn())).andExpect(status().isForbidden());
 		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(content().bytes(PNG));
+	}
+
+	private RequestBuilder rename(String slug, String newSlug, RequestPostProcessor user) {
+		return put(MEDIA + "/" + slug).with(user).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"slug\": \"%s\"}".formatted(newSlug));
+	}
+
+	@Test
+	void renamesTheOwnersImageKeepingItsFile() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn())).andExpect(status().isCreated());
+		this.mockMvc.perform(rename("team-photo", "crew-photo", TestUsers.signedIn()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.slug").value("crew-photo"))
+			.andExpect(jsonPath("$.url").value(MEDIA + "/crew-photo"));
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(status().isNotFound());
+		this.mockMvc.perform(get(MEDIA + "/crew-photo")).andExpect(content().bytes(PNG));
+	}
+
+	@Test
+	void refusesToRenameWhatIsNotTheOwnersFreeImage() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedInWithId("a@example.com", 101))).andExpect(status().isCreated());
+		this.mockMvc.perform(uploadAs("other-photo", PNG, false, TestUsers.signedInWithId("a@example.com", 101))).andExpect(status().isCreated());
+		this.mockMvc.perform(link("https://youtu.be/dQw4w9WgXcQ")).andExpect(status().isCreated());
+		RequestPostProcessor owner = TestUsers.signedInWithId("a@example.com", 101);
+		this.mockMvc.perform(rename("team-photo", "x-photo", TestUsers.signedInWithId("b@example.com", 102))).andExpect(status().isForbidden());
+		this.mockMvc.perform(rename("team-photo", "other-photo", owner)).andExpect(status().isConflict());
+		this.mockMvc.perform(rename("team-photo", "Bad Slug", owner)).andExpect(status().isBadRequest());
+		this.mockMvc.perform(rename("nothing", "x-photo", owner)).andExpect(status().isNotFound());
+		this.mockMvc.perform(rename("youtube-dQw4w9WgXcQ", "x-video", TestUsers.signedIn())).andExpect(status().isUnprocessableContent());
+		this.mockMvc.perform(rename("team-photo", "team-photo", owner)).andExpect(status().isOk());
+		this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(content().bytes(PNG));
+	}
+
+	@Test
+	void revalidatesTheFileAndAnswers304WhenItIsUnchanged() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn())).andExpect(status().isCreated());
+		String etag = this.mockMvc.perform(get(MEDIA + "/team-photo")).andExpect(status().isOk())
+			.andReturn().getResponse().getHeader("ETag");
+		assertThat(etag).isNotBlank();
+		this.mockMvc.perform(get(MEDIA + "/team-photo").header("If-None-Match", etag)).andExpect(status().isNotModified());
+		this.mockMvc.perform(uploadAs("team-photo", WEBP, true, TestUsers.signedIn())).andExpect(status().isOk());
+		this.mockMvc.perform(get(MEDIA + "/team-photo").header("If-None-Match", etag)).andExpect(status().isOk())
+			.andExpect(content().bytes(WEBP));
 	}
 
 }

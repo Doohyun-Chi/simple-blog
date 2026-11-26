@@ -1,13 +1,13 @@
 package com.simpleblog.controller;
 
 import java.io.IOException;
-import java.time.Duration;
 
 import com.simpleblog.dto.ExternalMediaInput;
 import com.simpleblog.dto.ImageUpload;
 import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
 import com.simpleblog.dto.MediaList;
+import com.simpleblog.dto.MediaRename;
 import com.simpleblog.service.MediaService;
 import com.simpleblog.service.UserService;
 import org.springframework.core.io.Resource;
@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -69,8 +70,14 @@ public class MediaController {
 		MediaFile file = this.mediaService.file(slug);
 		return ResponseEntity.ok()
 			.contentType(MediaType.parseMediaType(file.mimeType()))
-			.cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePublic())
+			.cacheControl(CacheControl.noCache().cachePublic())
+			.eTag("\"" + file.stored() + "\"")
 			.body(file.resource());
+	}
+
+	@PutMapping("/media/{slug}")
+	public MediaInfo rename(@AuthenticationPrincipal OidcUser user, @PathVariable String slug, @RequestBody MediaRename input) {
+		return this.mediaService.rename(this.userService.idOf(user), slug, input.slug());
 	}
 
 	@DeleteMapping("/media/{slug}")

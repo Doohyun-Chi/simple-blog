@@ -681,7 +681,8 @@ paths:
         items have no file here. The bytes are exactly the ones uploaded: nothing is re-encoded, resized or stripped, so
         data carried inside the file survives, such as the diagram in a PNG exported from draw.io with "Include a copy
         of my diagram", which the editor reads to reopen the diagram. An image the post save deleted as replaced (see
-        `PostInput.replacedMedia`) answers 404.
+        `PostInput.replacedMedia`) answers 404. The answer carries an ETag and must be revalidated on every use
+        (Cache-Control no-cache), so a replaced file shows at once while an unchanged one answers 304.
       operationId: getMediaFile
       tags:
         - Media
@@ -713,6 +714,51 @@ paths:
                 format: binary
         '404':
           description: No internal or content media item has this slug. The response body is not part of the contract.
+    put:
+      summary: Rename the slug of an image
+      description: >
+        Gives the internal or content image identified by the path slug a new slug, so its file URL becomes
+        `/public/api/v1/media/{new slug}`. The file and everything else stay. The old URL stops working, and posts and
+        pages whose content refers to it are not changed, so they show a broken image until they use the new URL;
+        the caller is expected to say so. Only the user who
+        registered the item (tb_media.owner_id) can rename it. Asking for the slug it already has changes nothing and
+        answers 200. A YouTube video cannot be renamed: its slug follows its video id.
+      operationId: renameMedia
+      tags:
+        - Media
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaRename'
+      responses:
+        '200':
+          description: The renamed item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '400':
+          description: The new slug is missing, longer than 100 characters, or has a character other than lower case English letters, digits and '-' (or starts or ends with '-'). The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie), or the item was registered by another user. The response body is not part of the contract.
+        '404':
+          description: No media item has the path slug. The response body is not part of the contract.
+        '409':
+          description: Another media item already has the new slug. The response body is not part of the contract.
+        '422':
+          description: The item is a YouTube video, which cannot be renamed. The response body is not part of the contract.
     delete:
       summary: Delete a media item
       description: >
@@ -794,6 +840,15 @@ components:
           description: >
             Optional, used with `slug`. true replaces the file of the signed-in user's image that already has the slug;
             false refuses with 409. Nothing is replaced when no image has the slug: it is created.
+    MediaRename:
+      type: object
+      required:
+        - slug
+      properties:
+        slug:
+          type: string
+          maxLength: 100
+          description: The new tb_media.slug, by the rule of `MediaUpload.slug`.
     ExternalMediaInput:
       type: object
       required:

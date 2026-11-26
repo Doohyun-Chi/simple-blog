@@ -99,7 +99,31 @@ public class MediaService {
 	public MediaFile file(String slug) {
 		Media media = this.mediaRepository.findBySlug(slug).filter(Media::storesFile)
 			.orElseThrow(() -> new MediaNotFoundException("No image with slug: " + slug));
-		return new MediaFile(this.storage.load(media.location()), media.mimeType());
+		return new MediaFile(this.storage.load(media.location()), media.mimeType(), media.location());
+	}
+
+	/**
+	 * Gives the writer's own image a new slug. Posts that show it by the old file URL are not changed. A video cannot be
+	 * renamed, and the slug must be free.
+	 */
+	@Transactional
+	public MediaInfo rename(long ownerId, String slug, String newSlug) {
+		Media media = this.mediaRepository.findBySlug(slug).orElseThrow(() -> new MediaNotFoundException("No media with slug: " + slug));
+		if (!media.ownedBy(ownerId)) {
+			throw new NotMediaOwnerException(slug);
+		}
+		if (!media.storesFile()) {
+			throw new MediaSlugUnavailableException(slug);
+		}
+		String chosen = this.mediaSlug.chosen(newSlug == null ? "" : newSlug);
+		if (chosen.equals(slug)) {
+			return MediaInfo.from(media);
+		}
+		if (this.mediaRepository.findBySlug(chosen).isPresent()) {
+			throw new MediaSlugTakenException(chosen);
+		}
+		media.renameTo(chosen);
+		return MediaInfo.from(media);
 	}
 
 	/**

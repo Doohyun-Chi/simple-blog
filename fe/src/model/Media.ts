@@ -69,6 +69,27 @@ export function isVideo(media: Media): boolean {
   return media.provider === MediaProvider.EXTERNAL
 }
 
+/** What to tell the writer when an image could not be renamed or its file replaced, by what the backend answered. */
+export function changeFailureText(error: unknown): string {
+  switch (error instanceof ApiError ? error.status : 0) {
+    case 400:
+      return 'slug는 영문 소문자, 숫자, -만 쓸 수 있고 100자까지입니다.'
+    case 401:
+    case 403:
+      return '바꿀 권한이 없습니다. 올린 사람만 바꿀 수 있습니다.'
+    case 404:
+      return '이미 삭제된 이미지입니다.'
+    case 409:
+      return '이미 쓰고 있는 slug입니다. 다른 slug를 써 주세요.'
+    case 413:
+      return '이미지는 10MB 이하여야 합니다.'
+    case 415:
+      return 'PNG, JPEG, GIF, WebP 이미지만 올릴 수 있습니다.'
+    default:
+      return '바꾸지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  }
+}
+
 /** What to tell the writer when a media item could not be deleted, by what the backend answered. */
 export function deleteFailureText(error: unknown): string {
   switch (error instanceof ApiError ? error.status : 0) {
