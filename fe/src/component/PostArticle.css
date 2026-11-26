@@ -64,6 +64,13 @@
     color: var(--accent);
   }
 
+  & blockquote {
+    margin: 1em 0;
+    padding: 0.2em 1em;
+    border-left: 4px solid var(--text-quote);
+    color: var(--text-quote);
+  }
+
   & table {
     display: block;
     max-width: 100%;
