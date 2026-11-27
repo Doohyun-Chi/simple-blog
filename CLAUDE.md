@@ -10,6 +10,7 @@
 | `fe/` | 프론트엔드 | React 19, TypeScript, Vite, npm |
 | `be/apispec.yaml` | Post and related API contract | OpenAPI 3.1 |
 | `be/bookapispec.yaml` | Book API contract | OpenAPI 3.1 |
+| `be/mcpapispec.yaml` | MCP server contract (`/mcp/v1`) | OpenAPI 3.1 |
 
 이 루트 디렉토리가 단일 git 저장소이고, `be/`와 `fe/`는 그 안의 일반 디렉토리다.
 
@@ -72,7 +73,7 @@ FE
 
 ## API contract
 
-API Contract이 BE와 FE 사이의 유일한 기준이다. 글, 페이지, 미디어 등은 `be/apispec.yaml`, 서재(book)는 `be/bookapispec.yaml`이 기준이다.
+API Contract이 BE와 FE 사이의 유일한 기준이다. 글, 페이지, 미디어 등은 `be/apispec.yaml`, 서재(book)는 `be/bookapispec.yaml`, MCP는 `be/mcpapispec.yaml`이 기준이다.
 
 API는 HTTP Method에 따른 용도를 준용한다.
 - GET: 목록을 포함한 조회
