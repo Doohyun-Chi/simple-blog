@@ -30,6 +30,15 @@ public interface PostRepository extends Repository<Post, Long> {
 			order by p.createdAt desc, p.id desc""")
 	List<PostSummary> listOfPostsContaining(String pattern, long viewerId, Pageable pageable);
 
+	/** The same posts as {@link #listOfPostsContaining} whole, content included, for the card view that reads a thumbnail and an excerpt from it. */
+	@Query("""
+			select p from Post p
+			where p.type = com.simpleblog.entity.PostType.POST
+			  and (p.status = com.simpleblog.entity.PostStatus.PUBLISH or p.authorId = :viewerId)
+			  and (lower(p.title) like :pattern escape '\\' or lower(p.content) like :pattern escape '\\')
+			order by p.createdAt desc, p.id desc""")
+	List<Post> listOfPostCardsContaining(String pattern, long viewerId, Pageable pageable);
+
 	/** The newest published posts for the feed, whoever asks: never a draft, a private post or a page. The pageable only limits the count. */
 	@Query("""
 			select new com.simpleblog.dto.FeedRow(p.title, p.slug, p.createdAt, p.modifiedAt) from Post p

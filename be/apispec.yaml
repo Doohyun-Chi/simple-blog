@@ -1229,10 +1229,10 @@ components:
           examples:
             - '2026-11-05T09:45:11'
         thumbnail:
-          type: [string, 'null']
+          type: string
           description: >
-            Only with view=card. The absolute URL of the first image in the content, or null when there is none.
-            Absent with view=list.
+            Only with view=card. The absolute URL of the first image in the content. Absent when the content has no
+            image, and with view=list.
         excerpt:
           type: string
           description: >

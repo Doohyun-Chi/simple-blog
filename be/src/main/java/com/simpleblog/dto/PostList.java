@@ -2,5 +2,6 @@ package com.simpleblog.dto;
 
 import java.util.List;
 
-public record PostList(List<PostSummary> posts) {
+/** {@code hasNext}: a match follows the last post of the list. */
+public record PostList(List<PostSummary> posts, boolean hasNext) {
 }

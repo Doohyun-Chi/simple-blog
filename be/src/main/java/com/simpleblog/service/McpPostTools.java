@@ -5,7 +5,7 @@ import com.simpleblog.dto.McpPostContent;
 import com.simpleblog.dto.McpPostSummaries;
 import com.simpleblog.dto.PostBody;
 import com.simpleblog.dto.PostInput;
-import com.simpleblog.dto.PostQueryType;
+import com.simpleblog.dto.PostListRequest;
 import com.simpleblog.entity.PostStatus;
 import com.simpleblog.entity.PostType;
 import com.simpleblog.exception.DuplicatePostSlugException;
@@ -30,12 +30,15 @@ public class McpPostTools {
 
 	private final PostService postService;
 
+	private final PostListService postListService;
+
 	private final UserService userService;
 
 	private final ObjectMapper mapper;
 
-	public McpPostTools(PostService postService, UserService userService, ObjectMapper mapper) {
+	public McpPostTools(PostService postService, PostListService postListService, UserService userService, ObjectMapper mapper) {
 		this.postService = postService;
+		this.postListService = postListService;
 		this.userService = userService;
 		this.mapper = mapper;
 	}
@@ -65,7 +68,7 @@ public class McpPostTools {
 
 	private McpPostSummaries summaries(String query, McpArguments args) {
 		long viewerId = this.userService.currentViewerId();
-		return McpPostSummaries.from(this.postService.listOfPosts(viewerId, PostQueryType.KEYWORD, query, args.limit()));
+		return McpPostSummaries.from(this.postListService.listOfPosts(viewerId, PostListRequest.keyword(query, args.limit())));
 	}
 
 	/** The post when the user may see it: it is published, or the user wrote it. Otherwise it is as if it did not exist. */

@@ -146,6 +146,65 @@ class PostListControllerTests {
 		this.mockMvc.perform(get(POSTS).param("limit", limit)).andExpect(status().isBadRequest());
 	}
 
+	@Test
+	void tellsWhetherAnotherPostFollowsTheLimitedList() throws Exception {
+		this.mockMvc.perform(get(POSTS).param("limit", "2"))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		this.mockMvc.perform(get(POSTS).param("limit", "3"))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		this.mockMvc.perform(get(POSTS)).andExpect(jsonPath("$.hasNext").value(false));
+	}
+
+	@Test
+	void skipsTheNewestPostsByTheOffset() throws Exception {
+		this.mockMvc.perform(get(POSTS).param("limit", "1").param("offset", "1"))
+			.andExpect(jsonPath("$.posts.length()").value(1))
+			.andExpect(jsonPath("$.posts[0].id").value(3))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		this.mockMvc.perform(get(POSTS).param("limit", "2").param("offset", "2"))
+			.andExpect(jsonPath("$.posts.length()").value(1))
+			.andExpect(jsonPath("$.posts[0].id").value(1))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		this.mockMvc.perform(get(POSTS).param("offset", "1"))
+			.andExpect(jsonPath("$.posts.length()").value(2));
+	}
+
+	@Test
+	void listsNoCardDataByDefault() throws Exception {
+		this.mockMvc.perform(get(POSTS).param("limit", "1"))
+			.andExpect(jsonPath("$.posts[0].thumbnail").doesNotExist())
+			.andExpect(jsonPath("$.posts[0].excerpt").doesNotExist());
+	}
+
+	@Test
+	void addsAThumbnailAndAnExcerptInTheCardView() throws Exception {
+		this.jdbcTemplate.update("""
+				insert into tb_post (ID, TITLE, CONTENT, SLUG, TYPE, STATUS, AUTHOR_ID, CREATED_DATETIME, MODIFIED_DATETIME) values
+				(31, 'With image', 'Hello **world** ![pic](/public/api/v1/media/pic) end', 'with-image', 'post', 'publish', 1,
+				 '2026-12-01 00:00:00', '2026-12-01 00:00:00')""");
+		this.mockMvc.perform(get(POSTS).param("view", "card").param("limit", "2").param("offset", "0"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.posts[0].id").value(31))
+			.andExpect(jsonPath("$.posts[0].thumbnail").value("http://localhost/public/api/v1/media/pic"))
+			.andExpect(jsonPath("$.posts[0].excerpt").value("Hello world end"))
+			.andExpect(jsonPath("$.posts[1].id").value(2))
+			.andExpect(jsonPath("$.posts[1].thumbnail").doesNotExist())
+			.andExpect(jsonPath("$.posts[1].excerpt").value("about kpi and 100% done"))
+			.andExpect(jsonPath("$.hasNext").value(true));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "-1", "abc", "1.5" })
+	void rejectsAnOffsetOutsideTheSpec(String offset) throws Exception {
+		this.mockMvc.perform(get(POSTS).param("offset", offset)).andExpect(status().isBadRequest());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "CARD", "grid" })
+	void rejectsAViewOutsideTheSpec(String view) throws Exception {
+		this.mockMvc.perform(get(POSTS).param("view", view)).andExpect(status().isBadRequest());
+	}
+
 	@ParameterizedTest
 	@ValueSource(strings = { "", "   " })
 	void rejectsABlankQuery(String query) throws Exception {

@@ -8,24 +8,17 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.simpleblog.component.CacheRefresh;
-import com.simpleblog.component.LikePattern;
 import com.simpleblog.component.SlugEncoder;
 import com.simpleblog.dto.PostBody;
 import com.simpleblog.dto.PostInput;
-import com.simpleblog.dto.PostList;
-import com.simpleblog.dto.PostQueryType;
 import com.simpleblog.entity.Post;
 import com.simpleblog.entity.PostStatus;
 import com.simpleblog.exception.DuplicatePostSlugException;
 import com.simpleblog.exception.InvalidPostException;
 import com.simpleblog.exception.NotPostAuthorException;
-import com.simpleblog.exception.InvalidPostQueryException;
 import com.simpleblog.exception.PostNotFoundException;
-import com.simpleblog.exception.UnsupportedPostQueryTypeException;
 import com.simpleblog.repository.PostRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,18 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class PostService {
 
 
-	private static final int MIN_LIMIT = 1;
-
-	private static final int MAX_LIMIT = 100;
-
 	/** English letters, digits and '-' only; no space. */
 	private static final Pattern SLUG = Pattern.compile("[A-Za-z0-9-]+");
 
 	private final PostRepository postRepository;
 
 	private final SlugEncoder slugEncoder;
-
-	private final LikePattern likePattern;
 
 	private final UserService userService;
 
@@ -64,44 +51,17 @@ public class PostService {
 
 	private final int slugMaxLength;
 
-	public PostService(PostRepository postRepository, SlugEncoder slugEncoder, LikePattern likePattern, UserService userService,
+	public PostService(PostRepository postRepository, SlugEncoder slugEncoder, UserService userService,
 			CacheRefresh cacheRefresh, MediaService mediaService, Clock clock, @Value("${simpleblog.post.title.max-length}") int titleMaxLength,
 			@Value("${simpleblog.post.slug.max-length}") int slugMaxLength) {
 		this.postRepository = postRepository;
 		this.slugEncoder = slugEncoder;
-		this.likePattern = likePattern;
 		this.userService = userService;
 		this.cacheRefresh = cacheRefresh;
 		this.mediaService = mediaService;
 		this.clock = clock;
 		this.titleMaxLength = titleMaxLength;
 		this.slugMaxLength = slugMaxLength;
-	}
-
-	/** The published posts plus every post of the viewer whatever its status. Without a query every one of them matches. Without a limit every match is returned. */
-	@Transactional(readOnly = true)
-	public PostList listOfPosts(long viewerId, PostQueryType queryType, String query, Integer limit) {
-		if (query != null && query.isBlank()) {
-			throw new InvalidPostQueryException("query must contain at least one non-whitespace character");
-		}
-		if (queryType != PostQueryType.KEYWORD) {
-			throw new UnsupportedPostQueryTypeException(queryType);
-		}
-		String pattern = this.likePattern.containing(query == null ? "" : query);
-		return new PostList(this.postRepository.listOfPostsContaining(pattern, viewerId, pageOf(limit))
-			.stream()
-			.map((summary) -> summary.inZone(this.clock.getZone()))
-			.toList());
-	}
-
-	private Pageable pageOf(Integer limit) {
-		if (limit == null) {
-			return Pageable.unpaged();
-		}
-		if (limit < MIN_LIMIT || limit > MAX_LIMIT) {
-			throw new InvalidPostQueryException("limit must be from " + MIN_LIMIT + " to " + MAX_LIMIT);
-		}
-		return PageRequest.ofSize(limit);
 	}
 
 	/** A published post to anyone; a draft or private one only to its author, to anyone else it is as if it did not exist. */
