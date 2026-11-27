@@ -5,6 +5,7 @@ import {
   CodeToggle,
   CreateLink,
   InsertCodeBlock,
+  InsertTable,
   ListsToggle,
   MDXEditor,
   UndoRedo,
@@ -18,6 +19,7 @@ import {
   listsPlugin,
   markdownShortcutPlugin,
   quotePlugin,
+  tablePlugin,
   thematicBreakPlugin,
   toolbarPlugin,
 } from '@mdxeditor/editor'
@@ -90,6 +92,7 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
     listsPlugin(),
     quotePlugin(),
     thematicBreakPlugin(),
+    tablePlugin(),
     linkPlugin(),
     linkDialogPlugin(),
     // imagePlugin types EditImageToolbar as taking no props, yet renders it with the image's props, as its own
@@ -110,6 +113,7 @@ function editorPlugins(onImageFailed: (error: unknown) => void) {
             <ListsToggle />
             <CreateLink />
             <MediaPanel />
+            <InsertTable />
             <InsertCodeBlock />
             <InsertMermaid />
             <InsertDrawio />
