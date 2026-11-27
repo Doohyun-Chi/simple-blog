@@ -1,8 +1,10 @@
 import { ApiError, apiUrl, requestJson } from './apiClient.ts'
+import { csrfHeaders } from './csrfToken.ts'
 import type { Identity } from './Identity.ts'
 
 const ME_PATH = '/public/api/v1/me'
 const GOOGLE_LOGIN_PATH = '/public/auth/google'
+const LOGOUT_PATH = '/public/auth/logout'
 
 /**
  * Calls `GET /public/api/v1/me` (operationId: me) with the session cookie. Resolves to null when nobody is signed in
@@ -25,4 +27,12 @@ export async function identity(signal?: AbortSignal): Promise<Identity | null> {
  */
 export function googleLoginUrl(): string {
   return apiUrl(GOOGLE_LOGIN_PATH)
+}
+
+/** Calls `POST /public/auth/logout` (operationId: logout): the backend ends the session. The response has no body. */
+export async function logout(signal?: AbortSignal): Promise<void> {
+  const response = await fetch(apiUrl(LOGOUT_PATH), { method: 'POST', headers: csrfHeaders(), credentials: 'include', signal })
+  if (!response.ok) {
+    throw new ApiError(`POST ${LOGOUT_PATH} failed with ${response.status}`, response.status)
+  }
 }

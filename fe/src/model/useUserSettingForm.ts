@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { canSaveFields, fieldsOfSetting, inputOfFields, type SettingFields, settingFailureText, type UserSetting } from './UserSetting.ts'
+import { logout } from './identityApi.ts'
 import { renewMcpAccessKey, updateUserSetting } from './userApi.ts'
 
 export interface UserSettingForm {
@@ -14,10 +15,12 @@ export interface UserSettingForm {
   save: () => Promise<void>
   /** Revoke: replaces the key once `confirmed` says yes. The server stores the new one. */
   renewKey: (confirmed: () => boolean) => Promise<void>
+  /** 로그아웃: ends the session, then `onSignedOut`. */
+  signOut: () => Promise<void>
 }
 
-/** The state of the personalization form, from the setting the server holds, and the calls that save it and renew the key. */
-export function useUserSettingForm(setting: UserSetting, onSaved: () => void): UserSettingForm {
+/** The state of the personalization form, from the setting the server holds, and the calls that save it, renew the key and sign out. */
+export function useUserSettingForm(setting: UserSetting, onSaved: () => void, onSignedOut: () => void): UserSettingForm {
   const [fields, updateFields] = useState(fieldsOfSetting(setting))
   const [accessKey, updateAccessKey] = useState(setting.mcpAccessKey)
   const [busy, updateBusy] = useState(false)
@@ -47,6 +50,11 @@ export function useUserSettingForm(setting: UserSetting, onSaved: () => void): U
     }
   }
 
+  const signOut = () => attempt(async () => {
+    await logout()
+    onSignedOut()
+  })
+
   return {
     fields,
     edit: (changes) => updateFields((current) => ({ ...current, ...changes })),
@@ -56,5 +64,6 @@ export function useUserSettingForm(setting: UserSetting, onSaved: () => void): U
     canSave: canSaveFields(fields) && !busy,
     save,
     renewKey,
+    signOut,
   }
 }

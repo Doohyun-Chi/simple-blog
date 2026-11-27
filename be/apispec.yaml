@@ -127,6 +127,22 @@ paths:
               description: The session cookie, only on success
               schema:
                 type: string
+  /public/auth/logout:
+    post:
+      summary: Sign out
+      description: >
+        Ends the session of the caller: the server invalidates it and clears the session cookie (JSESSIONID), so the
+        cookie no longer signs anyone in. Send the request with credentials (cookies) and the CSRF token. It answers
+        204 whether or not the caller was signed in, so signing out twice is not an error. A browser that is already
+        navigating away needs no body.
+      operationId: logout
+      tags:
+        - Authentication
+      responses:
+        '204':
+          description: Signed out. There is no response body.
+        '403':
+          description: The request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The session is kept. The response body is not part of the contract.
   /public/share/{slug}:
     get:
       summary: Open Graph and Twitter card tags of a post or a page, for sharing its link

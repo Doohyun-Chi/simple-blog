@@ -1,4 +1,4 @@
-import { IconCheck, IconCopy } from '@tabler/icons-react'
+import { IconCheck, IconCopy, IconLogout } from '@tabler/icons-react'
 import { PostType } from '../model/Post.ts'
 import { contentPath } from '../model/route.ts'
 import {
@@ -16,6 +16,8 @@ interface UserSettingFormProps {
   onSaved: () => void
   /** 돌아가기: leaves without saving. */
   onBack: () => void
+  /** Called after 로그아웃 ended the session. */
+  onSignedOut: () => void
 }
 
 interface TextFieldProps {
@@ -81,8 +83,8 @@ function AccessKeyField({ accessKey, busy, onRevoke }: { accessKey: string | nul
 }
 
 /** The personalization of the signed-in user: nick name, the two titles, the text and page of the about and working links, and the MCP key. */
-export function UserSettingForm({ setting, onSaved, onBack }: UserSettingFormProps) {
-  const form = useUserSettingForm(setting, onSaved)
+export function UserSettingForm({ setting, onSaved, onBack, onSignedOut }: UserSettingFormProps) {
+  const form = useUserSettingForm(setting, onSaved, onSignedOut)
   const { fields, edit } = form
   return (
     <form className="user-setting" aria-label="개인화" onSubmit={(event) => event.preventDefault()}>
@@ -97,6 +99,9 @@ export function UserSettingForm({ setting, onSaved, onBack }: UserSettingFormPro
       <AccessKeyField accessKey={form.accessKey} busy={form.busy} onRevoke={() => void form.renewKey(() => window.confirm(REVOKE_QUESTION))} />
       {form.failure !== null && <p className="user-setting-failure" role="alert">{form.failure}</p>}
       <div className="user-setting-actions">
+        <button type="button" className="user-setting-sign-out" disabled={form.busy} onClick={() => void form.signOut()}>
+          <IconLogout size="1.1em" aria-hidden="true" />로그아웃
+        </button>
         <button type="button" disabled={!form.canSave} onClick={() => void form.save()}>변경</button>
         <button type="button" onClick={onBack}>돌아가기</button>
       </div>

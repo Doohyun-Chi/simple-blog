@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
@@ -37,6 +38,8 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
 public class SecurityConfig {
 
 	static final String LOGIN_BASE_URI = "/public/auth";
+
+	static final String LOGOUT_URI = "/public/auth/logout";
 
 	static final String CALLBACK_URI = "/public/auth/google/callback";
 
@@ -64,6 +67,9 @@ public class SecurityConfig {
 				.anyRequest()
 				.permitAll())
 			.exceptionHandling((errors) -> errors.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+			.logout((logout) -> logout.logoutUrl(LOGOUT_URI)
+				.deleteCookies("JSESSIONID")
+				.logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
 			.requestCache((cache) -> cache.requestCache(new NullRequestCache()));
 		if (clients.getIfAvailable() != null) {
 			http.oauth2Login((login) -> googleLogin(login, userService, frontendUrl.replaceAll("/+$", "")));

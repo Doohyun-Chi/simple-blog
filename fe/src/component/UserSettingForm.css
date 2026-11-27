@@ -76,4 +76,12 @@
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
+
+  /* 로그아웃 sits at the left end, apart from 변경 and 돌아가기. */
+  & .user-setting-sign-out {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    margin-right: auto;
+  }
 }
