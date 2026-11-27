@@ -27,7 +27,8 @@ class UserSettingControllerTests {
 	private static final String USER = "/public/api/v1/user";
 
 	private static final String BODY = """
-			{"nick": " Chi ", "mainTheme": "My Blog", "subTheme": "", "aboutSlug": "me", "workingSlug": "work-1"}""";
+			{"nick": " Chi ", "mainTheme": "My Blog", "subTheme": "", "aboutName": " About me ", "aboutSlug": "me",
+			 "workingName": "Work", "workingSlug": "work-1"}""";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -63,24 +64,25 @@ class UserSettingControllerTests {
 			.andExpect(jsonPath("$.nick").value("Chi"))
 			.andExpect(jsonPath("$.mainTheme").value("My Blog"))
 			.andExpect(jsonPath("$.subTheme").value(""))
+			.andExpect(jsonPath("$.aboutName").value("About me"))
 			.andExpect(jsonPath("$.aboutSlug").value("me"))
-			.andExpect(jsonPath("$.workingSlug").value("work-1"))
-			.andExpect(jsonPath("$.aboutName").value("나의 꿈"));
+			.andExpect(jsonPath("$.workingName").value("Work"))
+			.andExpect(jsonPath("$.workingSlug").value("work-1"));
 		this.mockMvc.perform(get(USER).with(owner()))
 			.andExpect(jsonPath("$.workingSlug").value("work-1"))
 			.andExpect(jsonPath("$.modifiedDate").isNotEmpty());
 	}
 
 	@Test
-	void clearsTheNickWhenItIsBlankAndIgnoresFieldsItMayNotChange() throws Exception {
+	void clearsTheNickWhenItIsBlankAndIgnoresTheKey() throws Exception {
 		this.mockMvc.perform(update(BODY, owner())).andExpect(status().isOk());
 		String body = """
-				{"nick": "  ", "mainTheme": "My Blog", "subTheme": "s", "aboutSlug": "me", "workingSlug": "w",
-				 "aboutName": "Changed", "mcpAccessKey": "forged"}""";
+				{"nick": "  ", "mainTheme": "My Blog", "subTheme": "s", "aboutName": "A", "aboutSlug": "me", "workingName": "W",
+				 "workingSlug": "w", "mcpAccessKey": "forged"}""";
 		this.mockMvc.perform(update(body, owner()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.nick").value(org.hamcrest.Matchers.nullValue()))
-			.andExpect(jsonPath("$.aboutName").value("나의 꿈"))
+			.andExpect(jsonPath("$.aboutName").value("A"))
 			.andExpect(jsonPath("$.mcpAccessKey").value(org.hamcrest.Matchers.nullValue()));
 	}
 
@@ -90,7 +92,8 @@ class UserSettingControllerTests {
 		for (String body : new String[] {
 				BODY.replace("Chi", longNick), BODY.replace("My Blog", " "), BODY.replace("My Blog", "t".repeat(257)),
 				BODY.replace("\"me\"", "\"has space\""), BODY.replace("\"me\"", "\"한글\""), BODY.replace("work-1", "w".repeat(201)),
-				BODY.replace("\"work-1\"", "null"), BODY.replace("\"subTheme\": \"\"", "\"subTheme\": \"" + "s".repeat(257) + "\"") }) {
+				BODY.replace("\"work-1\"", "null"), BODY.replace("About me", " "), BODY.replace("\"Work\"", "\"" + "w".repeat(101) + "\""),
+				BODY.replace("\"subTheme\": \"\"", "\"subTheme\": \"" + "s".repeat(257) + "\"") }) {
 			this.mockMvc.perform(update(body, owner())).andExpect(status().isBadRequest());
 		}
 	}

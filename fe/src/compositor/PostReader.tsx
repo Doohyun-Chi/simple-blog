@@ -8,15 +8,18 @@ import { usePostBody } from '../model/usePostBody.ts'
 
 interface PostReaderProps {
   slug: string
+  /** The user's main title, which ends the web page title. */
+  siteName: string
 }
 
 /**
  * The content area for /post/{slug} and /page/{slug}: loads the body and shows it. The 편집하기 link follows its `canEdit`; the
- * share buttons show for a published post only, as a draft has no share page. The web page title is `{post title} | {site name}`.
+ * share buttons show for a published post only, as a draft has no share page. The web page title is `{post title} | {site name}`, the
+ * site name being the user's main title.
  */
-export function PostReader({ slug }: PostReaderProps) {
+export function PostReader({ slug, siteName }: PostReaderProps) {
   const post = usePostBody(slug)
-  useDocumentTitle(post.state === 'loaded' ? post.value.title : null)
+  useDocumentTitle(siteName, post.state === 'loaded' ? post.value.title : null)
   switch (post.state) {
     case 'loading':
       return <StatusMessage>불러오는 중…</StatusMessage>

@@ -1,0 +1,79 @@
+.user-setting {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.user-setting-title {
+  margin: 0;
+  color: var(--text-strong);
+}
+
+.user-setting-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-setting-label {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.user-setting-input {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 0.25em 0.75em;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+
+  &[readonly] {
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+  }
+}
+
+.user-setting-hint {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+/* The text of a link and its slug share one line. */
+.user-setting-link {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* The key and the buttons that copy and replace it share one line. */
+.user-setting-key {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  & button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    flex: 0 0 auto;
+  }
+}
+
+.user-setting-failure {
+  margin: 0;
+  color: #b3261e;
+}
+
+.user-setting-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}

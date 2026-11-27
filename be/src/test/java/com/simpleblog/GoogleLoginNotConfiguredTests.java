@@ -31,7 +31,7 @@ class GoogleLoginNotConfiguredTests {
 
 	@Test
 	void anonymousReadsStartNoSession() throws Exception {
-		MvcResult result = this.mockMvc.perform(get("/public/api/v1/pages")).andExpect(status().isOk()).andReturn();
+		MvcResult result = this.mockMvc.perform(get("/public/api/v1/posts")).andExpect(status().isOk()).andReturn();
 		assertThat(result.getRequest().getSession(false)).isNull();
 	}
 

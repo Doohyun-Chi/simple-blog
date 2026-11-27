@@ -1,12 +1,12 @@
 .search-nav {
+  position: relative;
   flex: 0 0 auto;
   height: 1.5em;
   display: flex;
   align-items: center;
-  gap: 1em;
+  gap: 1rem;
   padding: 0 1em;
   border-block: 1px solid var(--border);
-  overflow: hidden;
   white-space: nowrap;
 }
 
@@ -29,22 +29,28 @@
   color: var(--text-strong);
 }
 
-.search-nav-pages {
-  flex: 0 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  margin: 0;
-  padding: 0;
-  font-size: 0.75em;
-  list-style: none;
-  overflow-x: auto;
+/* The navigation items. On a wide screen they sit in the row itself, after the search box. */
+.search-nav-items {
+  display: contents;
+}
 
-  /* '|' between pages. The empty alt text after '/' keeps screen readers from announcing it. */
-  & > li + li::before {
-    content: '|' / '';
-    margin: 0 0.6em;
-    color: var(--border);
+/* The button that opens the items; only a narrow screen has it. */
+.search-nav-more {
+  display: none;
+  align-items: center;
+  gap: 0.25em;
+  flex: 0 0 auto;
+  padding: 0;
+  font: inherit;
+  font-size: 0.75em;
+  color: var(--text);
+  background: none;
+  border: 0;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--accent);
   }
 }
 
@@ -66,8 +72,8 @@
   }
 }
 
-/* The link to the bookshelf, after the pages. */
-.search-nav-books {
+/* An item of the navigation: the about and working links, and the bookshelf. */
+.search-nav-item {
   display: inline-flex;
   align-items: center;
   gap: 0.25em;
@@ -82,11 +88,8 @@
   gap: 0.25em;
   flex: 0 0 auto;
   margin-left: auto;
+  padding-right: 1em;
   font-size: 0.75em;
-}
-
-span.search-nav-identity {
-  color: var(--text-strong);
 }
 
 .search-nav-notice {
@@ -98,4 +101,35 @@ span.search-nav-identity {
 
 .search-nav-notice + .search-nav-identity {
   margin-left: 0.75em;
+}
+
+/* On a narrow screen the items are behind the More button and open as a list under the area. */
+@media (max-width: 45em) {
+  .search-nav-more {
+    display: inline-flex;
+  }
+
+  .search-nav-items {
+    display: none;
+  }
+
+  .search-nav-items[data-open='true'] {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1em;
+    background: var(--paper);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .search-nav-identity {
+    margin-left: 0;
+    padding-right: 0;
+  }
 }

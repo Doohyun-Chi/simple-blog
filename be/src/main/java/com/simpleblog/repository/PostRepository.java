@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import com.simpleblog.dto.FeedRow;
 import com.simpleblog.dto.SitemapRow;
-import com.simpleblog.dto.PageSummary;
 import com.simpleblog.dto.PostSummary;
 import com.simpleblog.entity.Post;
 import org.springframework.data.domain.Pageable;
@@ -17,14 +16,6 @@ import org.springframework.data.repository.Repository;
  * {@link #delete}, and nothing can delete rows in bulk.
  */
 public interface PostRepository extends Repository<Post, Long> {
-
-	/** The published pages and, whatever their status, the pages of this viewer. Selects summaries only, so page content is never loaded. */
-	@Query("""
-			select new com.simpleblog.dto.PageSummary(p.id, p.title, p.slug, p.createdAt, p.modifiedAt) from Post p
-			where p.type = com.simpleblog.entity.PostType.PAGE
-			  and (p.status = com.simpleblog.entity.PostStatus.PUBLISH or p.authorId = :viewerId)
-			order by p.id""")
-	List<PageSummary> listOfPagesVisibleTo(long viewerId);
 
 	/**
 	 * Published posts, and whatever their status the posts of this viewer, whose title or content matches the LIKE pattern, newest first. The pattern must be lowercase and

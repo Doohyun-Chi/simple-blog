@@ -16,35 +16,35 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @AutoConfigureMockMvc
 class CorsConfigTests {
 
-	private static final String PAGES = "/public/api/v1/pages";
+	private static final String POSTS = "/public/api/v1/posts";
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Test
 	void allowsPreflightFromConfiguredOrigin() throws Exception {
-		this.mockMvc.perform(preflight(PAGES, "http://localhost:5173"))
+		this.mockMvc.perform(preflight(POSTS, "http://localhost:5173"))
 			.andExpect(status().isOk())
 			.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"));
 	}
 
 	@Test
 	void allowsPreflightFromAnyLocalhostPort() throws Exception {
-		this.mockMvc.perform(preflight(PAGES, "http://localhost:3000"))
+		this.mockMvc.perform(preflight(POSTS, "http://localhost:3000"))
 			.andExpect(status().isOk())
 			.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000"));
 	}
 
 	@Test
 	void rejectsPreflightFromOtherHostOnSamePort() throws Exception {
-		this.mockMvc.perform(preflight(PAGES, "http://localhost.evil.example:5173"))
+		this.mockMvc.perform(preflight(POSTS, "http://localhost.evil.example:5173"))
 			.andExpect(status().isForbidden())
 			.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
 	}
 
 	@Test
 	void rejectsPreflightFromOtherOrigin() throws Exception {
-		this.mockMvc.perform(preflight(PAGES, "http://evil.example"))
+		this.mockMvc.perform(preflight(POSTS, "http://evil.example"))
 			.andExpect(status().isForbidden())
 			.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
 	}

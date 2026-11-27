@@ -4,7 +4,7 @@
  */
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
 
-/** Resolves an API path such as `/public/api/v1/pages` against the configured backend endpoint. */
+/** Resolves an API path such as `/public/api/v1/posts` against the configured backend endpoint. */
 export function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`
 }

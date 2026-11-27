@@ -74,14 +74,20 @@ public class UserSetting {
 		return setting;
 	}
 
-	/** Replaces what the user may edit; the display texts of the two links and the key stay. */
-	public void change(String nick, String mainTheme, String subTheme, String aboutSlug, String workingSlug, LocalDateTime utcNow) {
+	/** Replaces what the user may edit; the key stays. */
+	public void change(String nick, String mainTheme, String subTheme, LinkSetting about, LinkSetting working, LocalDateTime utcNow) {
 		this.nick = nick;
 		this.mainTheme = mainTheme;
 		this.subTheme = subTheme;
-		this.aboutSlug = aboutSlug;
-		this.workingSlug = workingSlug;
+		this.aboutName = about.name();
+		this.aboutSlug = about.slug();
+		this.workingName = working.name();
+		this.workingSlug = working.slug();
 		this.modifiedDate = utcNow;
+	}
+
+	/** The display text and the post slug of one navigation link. */
+	public record LinkSetting(String name, String slug) {
 	}
 
 	/** Puts a new MCP access key in place of the old one, which stops working. */

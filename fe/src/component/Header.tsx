@@ -1,20 +1,20 @@
 import { PostType } from '../model/Post.ts'
 import { contentPath } from '../model/route.ts'
+import type { BlogTheme } from '../model/UserSetting.ts'
 import './Header.css'
 
-/** Slug of the page the subtitle links to (fe/DESIGN.md). */
-const ABOUT_SLUG = 'about'
-
-/** The title links to home and the subtitle to the about page. Both keep the plain text look; see Header.css. */
-export function Header() {
+/** The main title links to home and the sub title to the about page (fe/DESIGN.md). Both keep the plain text look; see Header.css. */
+export function Header({ theme }: { theme: BlogTheme }) {
   return (
     <header className="header">
       <h1 className="header-title">
-        <a className="header-link" href="/">Dreaming for the Future</a>
+        <a className="header-link" href="/">{theme.mainTheme}</a>
       </h1>
-      <p className="header-subtitle">
-        <a className="header-link" href={contentPath(PostType.PAGE, ABOUT_SLUG)}>영원한 개발자를 향해</a>
-      </p>
+      {theme.subTheme !== '' && (
+        <p className="header-subtitle">
+          <a className="header-link" href={contentPath(PostType.POST, theme.aboutSlug)}>{theme.subTheme}</a>
+        </p>
+      )}
     </header>
   )
 }

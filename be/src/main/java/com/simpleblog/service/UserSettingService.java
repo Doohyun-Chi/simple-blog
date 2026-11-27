@@ -10,6 +10,7 @@ import com.simpleblog.dto.McpAccessKey;
 import com.simpleblog.dto.UserSettingInfo;
 import com.simpleblog.dto.UserSettingInput;
 import com.simpleblog.entity.UserSetting;
+import com.simpleblog.entity.UserSetting.LinkSetting;
 import com.simpleblog.exception.InvalidUserSettingException;
 import com.simpleblog.repository.UserSettingRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,8 @@ public class UserSettingService {
 	static final int NICK_MAX = 60;
 
 	static final int THEME_MAX = 256;
+
+	static final int LINK_NAME_MAX = 100;
 
 	private static final Pattern SLUG = Pattern.compile("[A-Za-z0-9-]+");
 
@@ -52,8 +55,9 @@ public class UserSettingService {
 	@Transactional
 	public UserSettingInfo update(long userId, String email, UserSettingInput input) {
 		UserSetting setting = this.settingRepository.findById(userId).orElseGet(() -> UserSetting.defaultsFor(userId));
-		setting.change(nickOf(input.nick()), requiredText(input.mainTheme(), "mainTheme"), optionalText(input.subTheme(), "subTheme"),
-				slugOf(input.aboutSlug(), "aboutSlug"), slugOf(input.workingSlug(), "workingSlug"), now());
+		setting.change(nickOf(input.nick()), requiredText(input.mainTheme(), "mainTheme", THEME_MAX),
+				optionalText(input.subTheme(), "subTheme", THEME_MAX), link(input.aboutName(), input.aboutSlug(), "about"),
+				link(input.workingName(), input.workingSlug(), "working"), now());
 		return UserSettingInfo.from(email, this.settingRepository.save(setting));
 	}
 
@@ -74,18 +78,22 @@ public class UserSettingService {
 		return text.isEmpty() ? null : text;
 	}
 
-	private String requiredText(String value, String field) {
-		String text = optionalText(value, field);
+	private LinkSetting link(String name, String slug, String field) {
+		return new LinkSetting(requiredText(name, field + "Name", LINK_NAME_MAX), slugOf(slug, field + "Slug"));
+	}
+
+	private String requiredText(String value, String field, int max) {
+		String text = optionalText(value, field, max);
 		if (text.isEmpty()) {
 			throw new InvalidUserSettingException(field + " is required");
 		}
 		return text;
 	}
 
-	private String optionalText(String value, String field) {
+	private String optionalText(String value, String field, int max) {
 		String text = value == null ? "" : value.trim();
-		if (text.length() > THEME_MAX) {
-			throw new InvalidUserSettingException(field + " is limited to " + THEME_MAX + " characters");
+		if (text.length() > max) {
+			throw new InvalidUserSettingException(field + " is limited to " + max + " characters");
 		}
 		return text;
 	}

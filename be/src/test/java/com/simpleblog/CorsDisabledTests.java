@@ -20,7 +20,7 @@ class CorsDisabledTests {
 
 	@Test
 	void allowsNoOriginByDefault() throws Exception {
-		this.mockMvc.perform(options("/public/api/v1/pages").header(HttpHeaders.ORIGIN, "http://localhost:5173")
+		this.mockMvc.perform(options("/public/api/v1/posts").header(HttpHeaders.ORIGIN, "http://localhost:5173")
 				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
 			.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
 	}

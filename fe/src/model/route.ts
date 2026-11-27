@@ -6,6 +6,7 @@ export type Route =
   | { kind: 'list' }
   | { kind: 'write'; starter: PostStarter | null }
   | { kind: 'books' }
+  | { kind: 'user' }
   | { kind: 'edit'; slug: string }
   | { kind: 'search'; queryType: PostQueryType; query: string }
   | { kind: 'notFound'; path: string }
@@ -18,6 +19,9 @@ export const WRITE_PATH = '/write'
 
 /** The bookshelf, linked as `서재` from the navigation. */
 export const BOOKS_PATH = '/books'
+
+/** The personalization page of the signed-in user, linked from the email in the navigation. */
+export const USER_PATH = '/user'
 
 /** Matches /edit/{slug}: the area for revising an existing post, linked as `편집하기` from the post. */
 const EDIT_PATH = /^\/edit\/([^/]+)\/?$/
@@ -43,7 +47,7 @@ function homeRoute(pathname: string): Route | null {
 }
 
 /** A route at a fixed path, with or without a trailing slash. */
-function fixedRoute(path: string, kind: 'list' | 'books'): RouteMatcher {
+function fixedRoute(path: string, kind: 'list' | 'books' | 'user'): RouteMatcher {
   return (pathname) => (trimmedPath(pathname) === path ? { kind } : null)
 }
 
@@ -83,6 +87,7 @@ const ROUTE_MATCHERS: RouteMatcher[] = [
   fixedRoute(LIST_PATH, 'list'),
   writeRoute,
   fixedRoute(BOOKS_PATH, 'books'),
+  fixedRoute(USER_PATH, 'user'),
   searchRoute,
   slugRoute(EDIT_PATH, 1, (_match, slug) => ({ kind: 'edit', slug })),
   slugRoute(CONTENT_PATH, SLUG_INDEX, (match, slug) => ({ kind: 'content', type: match[TYPE_INDEX] as PostType, slug })),
@@ -104,9 +109,9 @@ export function isEditorRoute(route: Route): boolean {
   return route.kind === 'write' || route.kind === 'edit'
 }
 
-/** Whether the info area is shown beside the content: not for the editor and the bookshelf, which take the whole width. */
+/** Whether the info area is shown beside the content: not for the editor, the bookshelf and the personalization page, which take the whole width. */
 export function hasAside(route: Route): boolean {
-  return !isEditorRoute(route) && route.kind !== 'books'
+  return !isEditorRoute(route) && route.kind !== 'books' && route.kind !== 'user'
 }
 
 /** Builds the URL path for writing a new post, starting from a title and slug when given. */
@@ -119,9 +124,18 @@ export function showsAsideAd(route: Route): boolean {
   return route.kind === 'home' || route.kind === 'content'
 }
 
-/** The slug of the page being shown, or null when the route is not a page (home, a post, or not found). */
-export function currentPageSlug(route: Route): string | null {
-  return route.kind === 'content' && route.type === PostType.PAGE ? route.slug : null
+/** The slug of the post or page being shown, or null when the route is not one (home, a list, or not found). */
+export function currentContentSlug(route: Route): string | null {
+  return route.kind === 'content' ? route.slug : null
+}
+
+/** Where to go back to from the personalization page: the page the visitor came from on this site, else home. */
+export function returnPathOf(referrer: string, origin: string): string {
+  if (!referrer.startsWith(`${origin}/`)) {
+    return '/'
+  }
+  const path = referrer.slice(origin.length)
+  return routeOf(path.split(/[?#]/)[0]).kind === 'user' ? '/' : path
 }
 
 /** Builds the URL path for a piece of content, encoding the slug so non-ASCII slugs stay valid. */

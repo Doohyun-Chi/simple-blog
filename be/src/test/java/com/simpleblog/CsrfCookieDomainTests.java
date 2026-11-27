@@ -19,7 +19,7 @@ class CsrfCookieDomainTests {
 
 	@Test
 	void publishesTheTokenForTheParentDomainSoAFrontendOnAnotherHostCanRead() throws Exception {
-		String cookie = this.mockMvc.perform(get("/public/api/v1/pages")).andReturn().getResponse().getHeader(HttpHeaders.SET_COOKIE);
+		String cookie = this.mockMvc.perform(get("/public/api/v1/posts")).andReturn().getResponse().getHeader(HttpHeaders.SET_COOKIE);
 		assertThat(cookie).startsWith("XSRF-TOKEN=").contains("Domain=chidoo.me");
 	}
 

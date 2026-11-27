@@ -1,16 +1,17 @@
-import { IconBooks, IconLogin } from '@tabler/icons-react'
+import { IconBooks, IconLogin, IconMenu2 } from '@tabler/icons-react'
+import { type FormEvent, useState } from 'react'
 import { googleLoginUrl } from '../model/identityApi.ts'
 import type { LoginFailure, SessionState } from '../model/Identity.ts'
-import type { PageSummary } from '../model/Page.ts'
 import { PostType } from '../model/Post.ts'
-import { BOOKS_PATH, contentPath, searchPath } from '../model/route.ts'
-import type { FormEvent } from 'react'
+import { BOOKS_PATH, contentPath, searchPath, USER_PATH } from '../model/route.ts'
+import type { BlogTheme } from '../model/UserSetting.ts'
 import './SearchNavigation.css'
 
 interface SearchNavigationProps {
-  pages: PageSummary[]
-  /** Slug of the page being shown; its link is marked as the current page. */
-  currentPageSlug: string | null
+  /** The about and working links the user personalizes. */
+  theme: BlogTheme
+  /** Slug of the post or page being shown; the navigation link to it is marked as the current page. */
+  currentSlug: string | null
   /** The query of the search being shown, kept in the input; empty when not on a search. */
   currentQuery: string
   /** Whether the bookshelf is the content shown; its link is marked as the current page. */
@@ -24,7 +25,7 @@ const LOGIN_FAILURE_MESSAGES: Record<LoginFailure, string> = {
   unauthorized: '허용되지 않은 사용자입니다. (Unauthorized user)',
 }
 
-/** The right end of the area: the signed-in email, or the link that starts the Google sign-in. Nothing while checking. */
+/** The user's item: the sign-in link, or the signed-in email, which opens the personalization page. Nothing while checking. */
 function Identity({ session }: { session: SessionState }) {
   switch (session.status) {
     case 'loading':
@@ -39,8 +40,17 @@ function Identity({ session }: { session: SessionState }) {
         </>
       )
     case 'signedIn':
-      return <span className="search-nav-identity" title="로그인한 계정">{session.email}</span>
+      return <a className="search-nav-link search-nav-identity" href={USER_PATH} title="내 정보">{session.email}</a>
   }
+}
+
+/** A navigation link to a post or page, marked when it is the one being shown. */
+function PostLink({ name, slug, currentSlug }: { name: string; slug: string; currentSlug: string | null }) {
+  return (
+    <a className="search-nav-link search-nav-item" href={contentPath(PostType.POST, slug)} page-current={slug === currentSlug ? 'selected' : undefined}>
+      {name}
+    </a>
+  )
 }
 
 /** Pressing Enter searches posts by keyword. A blank input sends nothing, as the spec requires. */
@@ -52,36 +62,28 @@ function submitSearch(event: FormEvent<HTMLFormElement>) {
   }
 }
 
-export function SearchNavigation({ pages, currentPageSlug, currentQuery, booksShown, session }: SearchNavigationProps) {
+/**
+ * The search box and the navigation items: the about and working links, the bookshelf and the user. On a narrow screen the
+ * items are behind a More button (see SearchNavigation.css).
+ */
+export function SearchNavigation({ theme, currentSlug, currentQuery, booksShown, session }: SearchNavigationProps) {
+  const [open, updateOpen] = useState(false)
   return (
     <nav className="search-nav" aria-label="Site">
       <form className="search-nav-form" role="search" onSubmit={submitSearch}>
-        <input
-          className="search-nav-input"
-          type="search"
-          name="query"
-          defaultValue={currentQuery}
-          placeholder="Search"
-          aria-label="Search"
-        />
+        <input className="search-nav-input" type="search" name="query" defaultValue={currentQuery} placeholder="Search" aria-label="Search" />
       </form>
-      <ul className="search-nav-pages">
-        {pages.map((page) => (
-          <li key={page.id}>
-            <a
-              className="search-nav-link"
-              href={contentPath(PostType.PAGE, page.slug)}
-              page-current={page.slug === currentPageSlug ? 'selected' : undefined}
-            >
-              {page.title}
-            </a>
-          </li>
-        ))}
-      </ul>
-      <a className="search-nav-link search-nav-books" href={BOOKS_PATH} page-current={booksShown ? 'selected' : undefined}>
-        <IconBooks size="1.1em" aria-hidden="true" />서재
-      </a>
-      <Identity session={session} />
+      <button className="search-nav-more" type="button" aria-expanded={open} aria-controls="search-nav-items" onClick={() => updateOpen(!open)}>
+        <IconMenu2 size="1.1em" aria-hidden="true" />More
+      </button>
+      <div className="search-nav-items" id="search-nav-items" data-open={open}>
+        <PostLink name={theme.aboutName} slug={theme.aboutSlug} currentSlug={currentSlug} />
+        <PostLink name={theme.workingName} slug={theme.workingSlug} currentSlug={currentSlug} />
+        <a className="search-nav-link search-nav-item" href={BOOKS_PATH} page-current={booksShown ? 'selected' : undefined}>
+          <IconBooks size="1.1em" aria-hidden="true" />내서재
+        </a>
+        <Identity session={session} />
+      </div>
     </nav>
   )
 }
