@@ -1,0 +1,12 @@
+.post-list-pager {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  padding: 0.5em 1rem 0.5em 0;
+  margin: 1rem 2rem 0 2rem;
+  font-size: 1.5em;
+}
+
+.post-list-pager-next {
+  margin-left: auto;
+}

@@ -22,11 +22,21 @@ export interface PostSummary {
   /** publish, or draft or private for the signed-in user's own posts. */
   status: PostStatus
   date: string
+  /** Only in the card view, and only when the post has an image: its absolute URL. */
+  thumbnail?: string
+  /** Only in the card view: the first 200 characters of the content as plain text. */
+  excerpt?: string
 }
+
+/** Values of the `view` parameter of `GET /public/api/v1/posts` in be/apispec.yaml. */
+export const PostListView = { LIST: 'list', CARD: 'card' } as const
+export type PostListView = (typeof PostListView)[keyof typeof PostListView]
 
 /** Mirrors `PostList` in be/apispec.yaml. */
 export interface PostList {
   posts: PostSummary[]
+  /** Whether a post follows the last one of this list. */
+  hasNext: boolean
 }
 
 /** Mirrors `PostBody` in be/apispec.yaml. `content` is stored WordPress markup, not rendered HTML. */

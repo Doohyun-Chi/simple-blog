@@ -1,6 +1,6 @@
 import { ApiError, apiUrl, requestJson } from './apiClient.ts'
 import { csrfHeaders } from './csrfToken.ts'
-import type { PostBody, PostInput, PostList, PostQueryType, PostSummary } from './Post.ts'
+import type { PostBody, PostInput, PostList, PostListView, PostQueryType, PostSummary } from './Post.ts'
 
 const POSTS_PATH = '/public/api/v1/posts'
 const POST_PATH = '/public/api/v1/post'
@@ -11,6 +11,10 @@ export interface PostListRequest {
   /** Must not be blank; leave it out to match every post. */
   query?: string
   limit?: number
+  /** How many of the newest matches to skip; 0 when left out. */
+  offset?: number
+  /** `card` adds a thumbnail and an excerpt to every post, which costs the server more. */
+  view?: PostListView
 }
 
 /**
@@ -18,12 +22,16 @@ export interface PostListRequest {
  * along, as the backend adds the signed-in user's own unpublished posts to the list.
  */
 export async function listOfPosts(request: PostListRequest, signal?: AbortSignal): Promise<PostSummary[]> {
+  return (await pageOfPosts(request, signal)).posts
+}
+
+/** The same call as {@link listOfPosts}, with whether a post follows the list. */
+export async function pageOfPosts(request: PostListRequest, signal?: AbortSignal): Promise<PostList> {
   const params = new URLSearchParams()
   for (const [name, value] of Object.entries(request)) {
     params.set(name, String(value))
   }
-  const body = await requestJson<PostList>(`${POSTS_PATH}?${params}`, { signal, credentials: 'include' })
-  return body.posts
+  return requestJson<PostList>(`${POSTS_PATH}?${params}`, { signal, credentials: 'include' })
 }
 
 /**

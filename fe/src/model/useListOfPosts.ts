@@ -1,21 +1,24 @@
-import type { PostQueryType, PostSummary } from './Post.ts'
-import { listOfPosts } from './postApi.ts'
+import type { PostList, PostListView, PostQueryType, PostSummary } from './Post.ts'
+import { listOfPosts, pageOfPosts } from './postApi.ts'
 import { type Remote, useRemote } from './useRemote.ts'
 
 /** How many posts the info area shows. The spec allows 1 to 100. */
 const RECENT_POST_LIMIT = 7
 
-/** The most posts the list view shows (fe/DESIGN.md). Search is not capped. Paging with PREV and NEXT needs an offset in the spec first. */
-const LIST_POST_LIMIT = 20
+/** How many posts a page of the list view holds (fe/DESIGN.md). */
+export const LIST_POST_LIMIT = 20
 
-/** Loads every published post matching the query, newest first. The query must not be blank; see the spec. */
-export function useListOfPosts(queryType: PostQueryType, query: string): Remote<PostSummary[]> {
-  return useRemote(JSON.stringify([queryType, query]), (signal) => listOfPosts({ queryType, query }, signal))
+/** Which page of the list view to load: every post when there is no query, else the matches. */
+export interface PostPageRequest {
+  queryType?: PostQueryType
+  query?: string
+  offset: number
+  view: PostListView
 }
 
-/** Loads the newest published posts for the list view, using the same endpoint as search but with no query. */
-export function useListOfAllPosts(): Remote<PostSummary[]> {
-  return useRemote('all', (signal) => listOfPosts({ limit: LIST_POST_LIMIT }, signal))
+/** Loads one page of the list view, newest first. A query must not be blank; see the spec. */
+export function useListOfPostPage(request: PostPageRequest): Remote<PostList> {
+  return useRemote(JSON.stringify(request), (signal) => pageOfPosts({ ...request, limit: LIST_POST_LIMIT }, signal))
 }
 
 /** Loads the newest published posts for the info area and the home page. */

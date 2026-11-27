@@ -1,0 +1,18 @@
+.post-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5em 1.5em;
+  margin: 0;
+  padding: 0 1rem 0 0;
+  list-style: none;
+}
+
+.post-summary-card-none {
+  color: var(--ds-color-text-tertiary);
+}
+
+@media (max-width: 700px) {
+  .post-summary-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

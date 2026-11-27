@@ -1,28 +1,38 @@
 import type { ReactNode } from 'react'
-import { dayOf, type PostSummary, PostType, readerSlug, statusLabelOf } from '../model/Post.ts'
-import { contentPath } from '../model/route.ts'
+import { type PostListView, type PostSummary, PostListView as Views } from '../model/Post.ts'
+import { PostListPager } from './PostListPager.tsx'
+import { PostListViewToggle } from './PostListViewToggle.tsx'
+import { PostSummaryCards } from './PostSummaryCards.tsx'
+import { PostSummaryRows } from './PostSummaryRows.tsx'
 import './PostSummaryList.css'
 
 interface PostSummaryListProps {
-  /** The search condition or the list's name. It stays at the top while the list scrolls. */
-  heading: ReactNode
+  /** 글 목록 or 검색 목록. */
+  title: string
+  /** The search condition, shown under the title; none for the list of all posts. */
+  condition?: ReactNode
   posts: PostSummary[]
+  view: PostListView
+  hasPrevious: boolean
+  hasNext: boolean
+  onChooseView: (view: PostListView) => void
+  onPrevious: () => void
+  onNext: () => void
 }
 
-/** The list view: a heading, then each post's title linking to its body, with its date. */
-export function PostSummaryList({ heading, posts }: PostSummaryListProps) {
+/** The list view: its title with the choice of the view, the posts as rows or cards, and PREV and NEXT. */
+export function PostSummaryList({ title, condition, posts, view, hasPrevious, hasNext, onChooseView, onPrevious, onNext }: PostSummaryListProps) {
   return (
     <section className="post-summary-list">
-      <h2 className="post-summary-list-heading">{heading}</h2>
-      <ol className="post-summary-list-items">
-        {posts.map((post) => (
-          <li key={post.id} className="post-summary-list-item">
-            <a className="post-summary-list-link" href={contentPath(PostType.POST, readerSlug(post.slug))}>{post.title}</a>
-            {statusLabelOf(post.status) !== null && <span className="post-summary-list-tag">{statusLabelOf(post.status)}</span>}
-            <time className="post-summary-list-date" dateTime={post.date}>{dayOf(post.date)}</time>
-          </li>
-        ))}
-      </ol>
+      <div className="post-summary-list-bar">
+        <h2 className="post-summary-list-heading">{title}</h2>
+        <PostListViewToggle view={view} onChoose={onChooseView} />
+      </div>
+      {condition !== undefined && <p className="post-summary-list-condition">{condition}</p>}
+      <div className="post-summary-list-body">
+        {view === Views.CARD ? <PostSummaryCards posts={posts} /> : <PostSummaryRows posts={posts} />}
+      </div>
+      <PostListPager hasPrevious={hasPrevious} hasNext={hasNext} onPrevious={onPrevious} onNext={onNext} />
     </section>
   )
 }

@@ -1,7 +1,5 @@
-import { PostSummaryList } from '../component/PostSummaryList.tsx'
-import { StatusMessage } from '../component/StatusMessage.tsx'
 import type { PostQueryType } from '../model/Post.ts'
-import { useListOfPosts } from '../model/useListOfPosts.ts'
+import { PostListPage } from './PostListPage.tsx'
 
 interface PostSearchProps {
   queryType: PostQueryType
@@ -10,13 +8,8 @@ interface PostSearchProps {
 
 /** The content area for /search: loads the matching posts and lists them. */
 export function PostSearch({ queryType, query }: PostSearchProps) {
-  const posts = useListOfPosts(queryType, query)
-  switch (posts.state) {
-    case 'loading':
-      return <StatusMessage>검색 중…</StatusMessage>
-    case 'failed':
-      return <StatusMessage>검색 결과를 불러오지 못했습니다.</StatusMessage>
-    case 'loaded':
-      return <PostSummaryList heading={<><q>{query}</q> 검색 결과</>} posts={posts.value} />
-  }
+  return (
+    <PostListPage title="검색 목록" search={{ queryType, query }} condition={<><q>{query}</q> 검색 결과</>} loadingText="검색 중…"
+      failedText="검색 결과를 불러오지 못했습니다." />
+  )
 }
