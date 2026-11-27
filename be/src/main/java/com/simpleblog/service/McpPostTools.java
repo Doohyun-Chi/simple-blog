@@ -70,11 +70,7 @@ public class McpPostTools {
 
 	/** The post when the user may see it: it is published, or the user wrote it. Otherwise it is as if it did not exist. */
 	private PostBody visible(String slug) {
-		PostBody body = this.postService.postBody(slug);
-		if (body.status() != PostStatus.PUBLISH && !body.canEdit()) {
-			throw new PostNotFoundException(slug);
-		}
-		return body;
+		return this.postService.postBody(slug);
 	}
 
 	/** A new post: always a draft, whatever else is asked. */

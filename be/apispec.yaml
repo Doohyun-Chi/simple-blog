@@ -604,7 +604,10 @@ paths:
     get:
       summary: Read a body of a post or a page.
       description: >
-        Returns the tb_post row whose slug matches, whatever its type or status. The slug is unique across all types. For unknown slugs, it responds with 404.
+        Returns the tb_post row whose slug matches, whatever its type. The slug is unique across all types. A published
+        row is returned to everyone. A draft or a private row is returned only to its author (tb_post.author_id), who
+        must send the session cookie; to anyone else, including an anonymous visitor, it answers 404 exactly as for a slug
+        no row has, so its existence is not revealed. For unknown slugs, it responds with 404.
       operationId: postBody
       tags:
         - Posts
@@ -636,7 +639,7 @@ paths:
                 hashTags: 경영,KPI,조직
                 canEdit: false
         '404':
-          description: No row in tb_post has this slug. The response body is not part of the contract.
+          description: No row in tb_post has this slug, or the row is a draft or private one of another author. The response body is not part of the contract.
   /public/api/v1/medias:
     get:
       summary: List all media items
@@ -1222,7 +1225,7 @@ components:
             - draft
             - publish
             - private
-          description: tb_post.status; rows of any status are returned
+          description: tb_post.status; a draft or private row is only ever returned to its author
           examples:
             - publish
         type:

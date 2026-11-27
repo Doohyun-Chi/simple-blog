@@ -104,10 +104,12 @@ public class PostService {
 		return PageRequest.ofSize(limit);
 	}
 
+	/** A published post to anyone; a draft or private one only to its author, to anyone else it is as if it did not exist. */
 	@Transactional(readOnly = true)
 	public PostBody postBody(String slug) {
 		long viewerId = this.userService.currentViewerId();
 		return this.postRepository.post(this.slugEncoder.encode(slug))
+			.filter((post) -> post.status() == PostStatus.PUBLISH || post.editableBy(viewerId))
 			.map((post) -> PostBody.from(post, this.clock.getZone(), viewerId))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 	}

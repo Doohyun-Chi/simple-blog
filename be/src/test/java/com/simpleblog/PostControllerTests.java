@@ -82,6 +82,22 @@ class PostControllerTests {
 	}
 
 	@ParameterizedTest
+	@ValueSource(strings = { "a-draft", "a-private" })
+	void hidesADraftOrPrivatePostFromAnonymousVisitorsAndOtherUsers(String slug) throws Exception {
+		this.mockMvc.perform(get("/public/api/v1/post/{slug}", slug)).andExpect(status().isNotFound());
+		this.mockMvc.perform(get("/public/api/v1/post/{slug}", slug).with(TestUsers.signedInWithId("other@example.com", 2)))
+			.andExpect(status().isNotFound());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "a-draft", "a-private" })
+	void showsADraftOrPrivatePostToItsAuthorOnly(String slug) throws Exception {
+		this.mockMvc.perform(get("/public/api/v1/post/{slug}", slug).with(TestUsers.signedInWithId("owner@example.com", 1)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.canEdit").value(true));
+	}
+
+	@ParameterizedTest
 	@ValueSource(strings = { "no-such-post" })
 	void answersNotFoundForAnUnknownSlug(String slug) throws Exception {
 		this.mockMvc.perform(get("/public/api/v1/post/{slug}", slug)).andExpect(status().isNotFound());
