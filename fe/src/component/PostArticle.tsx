@@ -4,6 +4,7 @@ import Markdown, { type ExtraProps } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
+import remarkGfm from 'remark-gfm'
 import { mermaidSourceOf } from '../model/mermaid.ts'
 import { dayOf, isClassicContent, type PostBody } from '../model/Post.ts'
 import { AdSlot } from './AdSlot.tsx'
@@ -38,8 +39,8 @@ const HIGHLIGHT_OPTIONS = { aliases: { typescript: ['ts', 'tsx'], bash: ['sh'] }
 const ARTICLE_COMPONENTS = { pre: ArticleCodeBlock }
 
 /**
- * A post or page body: the title as h1, the date, then the content. The content is Markdown, as the editor writes it
- * (images and YouTube thumbnails included). Posts migrated from WordPress still hold HTML, so raw HTML is kept, but
+ * A post or page body: the title as h1, the date, then the content. The content is Markdown with GitHub's extensions (tables, task lists,
+ * strikethrough, bare links), as the editor writes it (images and YouTube thumbnails included). Posts migrated from WordPress still hold HTML, so raw HTML is kept, but
  * sanitized: scripts, event handlers and the like never reach the page. A ```mermaid block is drawn as a diagram after
  * sanitizing. Classic-editor content keeps its line breaks.
  */
@@ -55,7 +56,8 @@ export function PostArticle({ post, editHref, shareHref }: PostArticleProps) {
       <div
         className={isClassicContent(post.content) ? 'post-article-content post-article-content-classic' : 'post-article-content'}
       >
-        <Markdown rehypePlugins={[rehypeRaw, rehypeSanitize, [rehypeHighlight, HIGHLIGHT_OPTIONS]]} components={ARTICLE_COMPONENTS}>{post.content}</Markdown>
+        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize, [rehypeHighlight, HIGHLIGHT_OPTIONS]]}
+          components={ARTICLE_COMPONENTS}>{post.content}</Markdown>
       </div>
       <HashTagList hashTags={post.hashTags} />
       <AdSlot position="post" />

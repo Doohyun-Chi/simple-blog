@@ -74,6 +74,20 @@
     display: block;
     max-width: 100%;
     overflow-x: auto;
+    border-collapse: collapse;
+  }
+
+  & th,
+  & td {
+    padding: 0.4em 0.75em;
+    border: 1px solid var(--ds-color-border-default);
+  }
+
+  & th {
+    font-weight: 600;
+    text-align: left;
+    color: var(--ds-color-text-primary);
+    background: var(--ds-color-bg-subtle);
   }
 }
 
