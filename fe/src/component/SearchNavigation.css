@@ -107,6 +107,7 @@
 @media (max-width: 45em) {
   .search-nav-more {
     display: inline-flex;
+    margin-left: auto;
   }
 
   .search-nav-items {

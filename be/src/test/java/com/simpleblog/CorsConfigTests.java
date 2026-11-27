@@ -29,6 +29,15 @@ class CorsConfigTests {
 	}
 
 	@Test
+	void allowsTheLogoutPreflightFromTheConfiguredOrigin() throws Exception {
+		this.mockMvc.perform(options("/public/auth/logout").header(HttpHeaders.ORIGIN, "http://localhost:5173")
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST").header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "x-xsrf-token"))
+			.andExpect(status().isOk())
+			.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"))
+			.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
+	}
+
+	@Test
 	void allowsPreflightFromAnyLocalhostPort() throws Exception {
 		this.mockMvc.perform(preflight(POSTS, "http://localhost:3000"))
 			.andExpect(status().isOk())
