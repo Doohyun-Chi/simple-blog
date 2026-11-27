@@ -473,6 +473,30 @@ paths:
             minimum: 1
             maximum: 100
           example: 10
+        - name: offset
+          in: query
+          required: false
+          description: >
+            The number of the newest matches to skip before limit applies, so a client can step through the list with
+            PREV and NEXT. When absent it is 0. A negative value or one that is not an integer is rejected with 400.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 20
+        - name: view
+          in: query
+          required: false
+          description: >
+            list: the summaries only, as before. card: each summary also has thumbnail and excerpt, which the server
+            takes from the content of the post, so the call costs more and the client sends card only for the card
+            view. Any other value is rejected with 400.
+          schema:
+            type: string
+            enum:
+              - list
+              - card
+            default: list
       responses:
         '200':
           description: Matching published posts; an empty list when nothing matches
@@ -481,6 +505,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PostList'
               example:
+                hasNext: true
                 posts:
                   - id: 7061
                     title: 큰기업의 배움 - KPI, 조직을 움직이는 힘
@@ -489,7 +514,7 @@ paths:
         '400':
           description: >
             query is present but empty or whitespace-only, queryType is not one of the allowed values, or limit is
-            not an integer from 1 to 100. The response body is not part of the contract.
+            not an integer from 1 to 100, offset is negative or not an integer, or view is not one of the allowed values. The response body is not part of the contract.
         '501':
           description: queryType is tag, which is not implemented yet. The response body is not part of the contract.
   /public/api/v1/post:
@@ -1154,7 +1179,13 @@ components:
       type: object
       required:
         - posts
+        - hasNext
       properties:
+        hasNext:
+          type: boolean
+          description: >
+            Whether a match follows the last post of this list, that is, whether a request with offset plus the number of
+            posts returned would find one. Without limit it is always false.
         posts:
           type: array
           items:
@@ -1192,9 +1223,21 @@ components:
             - publish
         date:
           type: string
-          description: tb_post.created_datetime in the same local format as PostBody.date
+          description: >
+            tb_post.created_datetime in the same local format as PostBody.date. It also serves as the publish date
+            until the table keeps one.
           examples:
             - '2026-11-05T09:45:11'
+        thumbnail:
+          type: [string, 'null']
+          description: >
+            Only with view=card. The absolute URL of the first image in the content, or null when there is none.
+            Absent with view=list.
+        excerpt:
+          type: string
+          description: >
+            Only with view=card. The first 200 characters of the content as plain text, cut before a word, with an
+            ellipsis when anything was cut. Absent with view=list.
     PostBody:
       type: object
       required:
