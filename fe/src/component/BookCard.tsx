@@ -1,4 +1,5 @@
 import { IconArticle, IconCalendarCheck, IconPencil, IconPencilPlus } from '@tabler/icons-react'
+import { Button, buttonClassName, Icon, IconButton } from 'design-system'
 import { type Book, insightExcerptOf, isUnread, readingPeriodOf, todayText } from '../model/Book.ts'
 import { PostType } from '../model/Post.ts'
 import { contentPath } from '../model/route.ts'
@@ -30,10 +31,10 @@ function ReadingDates({ book }: { book: Book }) {
 /** 리뷰 보기 when the book has a review post; 리뷰 적기, with an icon, for the signed-in writer when it has none. */
 function ReviewLink({ book, canWrite, onWriteReview }: Pick<BookCardProps, 'book' | 'canWrite' | 'onWriteReview'>) {
   if (book.trackbackSlug !== null) {
-    return <a className="book-card-action" href={contentPath(PostType.POST, book.trackbackSlug)}><IconArticle size="1.1em" aria-hidden="true" /> 리뷰 보기</a>
+    return <a className={buttonClassName({ variant: 'link', size: 'sm' })} href={contentPath(PostType.POST, book.trackbackSlug)}><Icon icon={IconArticle} /> 리뷰 보기</a>
   }
   return canWrite
-    ? <button type="button" className="book-card-action" onClick={() => onWriteReview(book)}><IconPencilPlus size="1.1em" aria-hidden="true" /> 리뷰 적기</button>
+    ? <Button variant="link" size="sm" icon={IconPencilPlus} onClick={() => onWriteReview(book)}>리뷰 적기</Button>
     : null
 }
 
@@ -49,9 +50,7 @@ export function BookCard({ book, canWrite, onEdit, onCheckIn, onWriteReview }: B
         <h3 className="book-card-title">
           <a className="book-card-title-link" href={book.bookstoreUrl} target="_blank" rel="noopener noreferrer">{book.title}</a>
           {canWrite && (
-            <button type="button" className="book-card-edit" aria-label="책 수정" title="책 수정" onClick={() => onEdit(book)}>
-              <IconPencil size="0.9em" aria-hidden="true" />
-            </button>
+            <IconButton className="book-card-edit" variant="ghost" size="sm" icon={IconPencil} label="책 수정" onClick={() => onEdit(book)} />
           )}
         </h3>
         {book.author !== null && <p className="book-card-author">{book.author}</p>}
@@ -60,9 +59,9 @@ export function BookCard({ book, canWrite, onEdit, onCheckIn, onWriteReview }: B
         <div className="book-card-actions">
           <ReviewLink book={book} canWrite={canWrite} onWriteReview={onWriteReview} />
           {canWrite && (
-            <button type="button" className="book-card-action" onClick={() => onCheckIn(book)}>
-              <IconCalendarCheck size="1.1em" aria-hidden="true" /> {isUnread(book) ? '체크인하기' : '체크인 수정'}
-            </button>
+            <Button variant="link" size="sm" icon={IconCalendarCheck} onClick={() => onCheckIn(book)}>
+              {isUnread(book) ? '체크인하기' : '체크인 수정'}
+            </Button>
           )}
         </div>
       </div>

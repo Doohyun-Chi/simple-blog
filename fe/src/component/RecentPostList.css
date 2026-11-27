@@ -2,7 +2,7 @@
   margin: 0 0 0.75em;
   font-size: 0.85em;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--ds-color-text-tertiary);
 }
 
 .recent-post-list {
@@ -23,18 +23,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-strong);
+  color: var(--ds-color-text-primary);
   text-decoration: none;
 
   &:hover,
   &:focus-visible {
-    color: var(--accent);
+    color: var(--ds-color-accent-default);
     text-decoration: underline;
   }
 }
 
 .recent-post-list-draft {
-  color: var(--text-draft);
+  color: var(--ds-color-text-secondary);
 }
 
 /* Sits on the text's line, in the link's colour. */
@@ -43,7 +43,7 @@
 }
 
 .recent-post-list-all {
-  color: var(--accent);
+  color: var(--ds-color-accent-default);
   font-weight: 600;
 }
 

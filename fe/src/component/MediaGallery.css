@@ -18,16 +18,16 @@
   aspect-ratio: 4 / 3;
   padding: 0;
   overflow: hidden;
-  background: var(--paper);
-  border: 1px solid var(--border);
+  background: var(--ds-color-bg-canvas);
+  border: 1px solid var(--ds-color-border-default);
   border-radius: 4px;
   cursor: pointer;
 
   &:hover,
   &:focus-visible,
   &[aria-pressed='true'] {
-    border-color: var(--accent);
-    outline: 2px solid var(--accent);
+    border-color: var(--ds-color-accent-default);
+    outline: 2px solid var(--ds-color-accent-default);
     outline-offset: -2px;
   }
 
@@ -58,13 +58,13 @@
 
     &:hover,
     &:focus-visible {
-      background: var(--accent);
+      background: var(--ds-color-accent-default);
     }
   }
 
   & .media-gallery-remove:hover,
   & .media-gallery-remove:focus-visible {
-    background: #b3261e;
+    background: var(--ds-color-danger-default);
   }
 }
 
@@ -82,5 +82,5 @@
 
 .media-gallery-note {
   margin: 1rem 0;
-  color: var(--text-muted);
+  color: var(--ds-color-text-tertiary);
 }

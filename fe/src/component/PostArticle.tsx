@@ -20,10 +20,10 @@ interface PostArticleProps {
   shareHref?: string
 }
 
-/** A code block as written, or the diagram it describes when it is a ```mermaid block. */
+/** A code block as written, in the design system's code block (its colours follow the highlight classes), or the diagram of a ```mermaid block. */
 function ArticleCodeBlock({ node, ...props }: ComponentProps<'pre'> & ExtraProps) {
   const source = mermaidSourceOf(node)
-  return source === null ? <pre {...props} /> : <MermaidDiagram source={source} />
+  return source === null ? <pre {...props} className="ds-code-block" /> : <MermaidDiagram source={source} />
 }
 
 /**

@@ -7,9 +7,9 @@
   min-height: 2em;
   padding: 0.75em;
   overflow-x: auto;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--ds-color-border-default);
   border-top: 0;
-  background: var(--paper);
+  background: var(--ds-color-bg-canvas);
 
   & svg {
     display: block;
@@ -21,5 +21,5 @@
 
 .mermaid-code-block-note {
   font-size: 0.8em;
-  color: var(--text-muted);
+  color: var(--ds-color-text-tertiary);
 }

@@ -1,3 +1,4 @@
+import { TextInput } from 'design-system'
 import type { ReactNode } from 'react'
 
 interface PostEditorFieldProps {
@@ -11,10 +12,8 @@ interface PostEditorFieldProps {
 /** A single line text input of the editor. */
 export function PostEditorField({ name, label, placeholder, value, onEdit }: PostEditorFieldProps) {
   return (
-    <input
-      className="post-editor-field"
+    <TextInput
       name={name}
-      type="text"
       placeholder={placeholder}
       aria-label={label}
       value={value}

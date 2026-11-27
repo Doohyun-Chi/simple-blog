@@ -6,7 +6,7 @@
   padding: 0 2rem;
   overflow: hidden;
   text-align: left;
-  background-color: var(--paper);
+  background-color: var(--ds-color-bg-canvas);
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E\
 %3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E\
@@ -29,7 +29,7 @@
   flex: 0 0 min(70em, 25%);
   box-sizing: border-box;
   padding: 1.5em 0 1.5em 2rem;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--ds-color-border-default);
 }
 
 /* On a narrow screen the info area goes below the reading area and the whole area scrolls. */
@@ -48,7 +48,7 @@
   .contents-aside {
     flex: 0 0 auto;
     padding-left: 0;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--ds-color-border-default);
     border-left: 0;
     overflow-y: visible;
   }

@@ -9,5 +9,5 @@
 
 .hash-tag {
   font-weight: 700;
-  color: var(--hash-tag);
+  color: var(--ds-color-success-text);
 }

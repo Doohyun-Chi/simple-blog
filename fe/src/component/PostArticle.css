@@ -1,5 +1,3 @@
-@import 'highlight.js/styles/github.css';
-
 .post-article {
   margin: 0 1rem 0 0;
 }
@@ -13,7 +11,7 @@
   font-size: 1.8em;
   font-weight: 700;
   line-height: 1.3;
-  color: var(--text-strong);
+  color: var(--ds-color-text-primary);
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -29,7 +27,7 @@
 
 /* Subdued and smaller than the body text, per fe/DESIGN.md. */
 .post-article-date {
-  color: var(--text-muted);
+  color: var(--ds-color-text-tertiary);
 }
 
 /* Icon and text share one centred line, like the share button beside it. */
@@ -37,12 +35,12 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25em;
-  color: var(--accent);
+  color: var(--ds-color-accent-default);
 }
 
 .post-article-content {
   line-height: 1.8;
-  color: var(--text-body);
+  color: var(--ds-color-text-body);
   word-break: keep-all;
   overflow-wrap: break-word;
 
@@ -53,38 +51,23 @@
     height: auto;
   }
 
-  & pre {
-    overflow-x: auto;
-    padding: 1em;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--input-bg);
-    overflow-wrap: normal;
-  }
-
-  /* The highlight theme pads and paints the code itself; the block (pre) already does. */
-  & pre code.hljs {
-    padding: 0;
-    background: none;
-  }
-
   & :not(pre) > code {
-    padding: 0.1em 0.35em;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    font-size: 0.9em;
+    padding: var(--ds-code-inline-padding);
+    background: var(--ds-color-bg-surface);
+    border: 1px solid var(--ds-color-border-default);
+    border-radius: var(--ds-radius-sm);
+    font-size: var(--ds-code-inline-font-size);
   }
 
   & a {
-    color: var(--accent);
+    color: var(--ds-color-accent-default);
   }
 
   & blockquote {
     margin: 1em 0;
     padding: 0.2em 1em;
-    border-left: 4px solid var(--text-quote);
-    color: var(--text-quote);
+    border-left: 4px solid var(--ds-color-text-body);
+    color: var(--ds-color-text-body);
   }
 
   & table {

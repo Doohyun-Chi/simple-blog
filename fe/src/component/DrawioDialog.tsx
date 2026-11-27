@@ -1,3 +1,4 @@
+import { Button, Text } from 'design-system'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DRAWIO_EDITOR_URL, pngFileOf } from '../model/drawio.ts'
@@ -38,9 +39,9 @@ export function DrawioDialog({ initialPng, onSave, onClose }: DrawioDialogProps)
   return createPortal(
     <dialog ref={dialog} className="drawio-dialog" aria-label="draw.io 다이어그램" onClose={onClose}>
       <div className="drawio-dialog-header">
-        <strong>draw.io 다이어그램</strong>
-        <span className="drawio-dialog-note" role="status">{note}</span>
-        <button type="button" onClick={onClose}>닫기</button>
+        <Text variant="label">draw.io 다이어그램</Text>
+        <Text variant="small" tone="tertiary" className="drawio-dialog-note" role="status">{note}</Text>
+        <Button onClick={onClose}>닫기</Button>
       </div>
       <iframe ref={frame} className="drawio-dialog-frame" src={DRAWIO_EDITOR_URL} title="draw.io" />
     </dialog>,

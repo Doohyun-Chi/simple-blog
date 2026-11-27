@@ -1,3 +1,4 @@
+import { Button, Field, Text, TextInput } from 'design-system'
 import { type SubmitEvent } from 'react'
 import type { Media } from '../model/Media.ts'
 import { cleanMediaSlug, MEDIA_SLUG_MAX_LENGTH } from '../model/mediaSlug.ts'
@@ -22,16 +23,14 @@ export function ImageSlugRenameDialog({ slug, onRenamed, onClose }: ImageSlugRen
   return (
     <ModalDialog label="이미지 slug 변경" onClose={onClose}>
       <form className="modal-dialog-form" onSubmit={submit}>
-        <label className="modal-dialog-label">
-          이미지 slug
-          <input className="modal-dialog-input" name="image-slug" type="text" autoFocus maxLength={MEDIA_SLUG_MAX_LENGTH} value={form.typed}
+        <Field label="이미지 slug" hint="영문 소문자, 숫자, -만 쓸 수 있습니다. 다른 글에서 이전 slug로 쓰고 있다면 그 글의 이미지는 더 이상 보이지 않습니다.">
+          <TextInput name="image-slug" autoFocus maxLength={MEDIA_SLUG_MAX_LENGTH} value={form.typed}
             onChange={(event) => form.edit(cleanMediaSlug(event.target.value))} />
-        </label>
-        <p className="modal-dialog-note">영문 소문자, 숫자, -만 쓸 수 있습니다. 다른 글에서 이전 slug로 쓰고 있다면 그 글의 이미지는 더 이상 보이지 않습니다.</p>
-        {form.failure !== null && <p className="modal-dialog-failure" role="alert">{form.failure}</p>}
+        </Field>
+        {form.failure !== null && <Text variant="small" tone="danger" role="alert">{form.failure}</Text>}
         <div className="modal-dialog-actions">
-          <button type="submit" disabled={!form.canRename}>변경</button>
-          <button type="button" onClick={onClose}>닫기</button>
+          <Button type="submit" disabled={!form.canRename}>변경</Button>
+          <Button onClick={onClose}>닫기</Button>
         </div>
       </form>
     </ModalDialog>

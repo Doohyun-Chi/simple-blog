@@ -1,3 +1,4 @@
+import { Select } from 'design-system'
 import './BookYearFilter.css'
 
 interface BookYearFilterProps {
@@ -15,7 +16,7 @@ const ALL = 'all'
 export function BookYearFilter({ years, year, onSelect }: BookYearFilterProps) {
   const choices: { label: string; value: number | null }[] = [{ label: 'All', value: null }, ...years.map((y) => ({ label: String(y), value: y }))]
   return (
-    <select
+    <Select
       className="book-year-filter"
       name="book-year"
       aria-label="연도"
@@ -25,6 +26,6 @@ export function BookYearFilter({ years, year, onSelect }: BookYearFilterProps) {
       {choices.map((choice) => (
         <option key={choice.label} value={choice.value === null ? ALL : String(choice.value)}>{choice.label}</option>
       ))}
-    </select>
+    </Select>
   )
 }

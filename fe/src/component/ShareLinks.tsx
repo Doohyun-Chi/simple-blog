@@ -1,4 +1,5 @@
 import { IconCheck, IconCopy } from '@tabler/icons-react'
+import { Button } from 'design-system'
 import { LinkedInLogo } from './LinkedInLogo.tsx'
 import { linkedInShareUrl, openLinkedInShare } from '../model/share.ts'
 import { useCopyToClipboard } from '../model/useCopyToClipboard.ts'
@@ -14,10 +15,7 @@ export function ShareLinks({ url }: ShareLinksProps) {
   const { copied, copy } = useCopyToClipboard(url)
   return (
     <span className="share-links">
-      <button type="button" className="share-links-copy" onClick={copy}>
-        {copied ? <IconCheck size="1.1em" aria-hidden="true" /> : <IconCopy size="1.1em" aria-hidden="true" />}
-        {copied ? '복사됨' : '공유하기'}
-      </button>
+      <Button variant="link" icon={copied ? IconCheck : IconCopy} onClick={copy}>{copied ? '복사됨' : '공유하기'}</Button>
       <a
         className="share-links-linkedin"
         href={linkedInShareUrl(url)}

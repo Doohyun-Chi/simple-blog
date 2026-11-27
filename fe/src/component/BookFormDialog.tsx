@@ -1,3 +1,4 @@
+import { Button, Field, Text, TextArea, TextInput } from 'design-system'
 import {
   BOOK_AUTHOR_MAX_LENGTH,
   BOOK_DESCRIPTION_MAX_LENGTH,
@@ -27,26 +28,25 @@ export function BookFormDialog({ book, onSaved, onClose }: BookFormDialogProps) 
   return (
     <ModalDialog label={book === null ? '새로운 책' : '책 수정'} onClose={onClose}>
       <form className="modal-dialog-form" onSubmit={(event) => { event.preventDefault(); void form.register() }}>
-        <label className="modal-dialog-label">
-          <strong>책 상세 정보 URL</strong>
-          <input className="modal-dialog-input" type="url" name="book-url" autoFocus value={form.url}
-            onChange={(event) => form.editUrl(event.target.value)} placeholder="https://www.yes24.com/Product/Goods/..." />
-        </label>
+        <Field label="책 상세 정보 URL">
+          <TextInput type="url" name="book-url" autoFocus value={form.url} onChange={(event) => form.editUrl(event.target.value)}
+            placeholder="https://www.yes24.com/Product/Goods/..." />
+        </Field>
         <div className="modal-dialog-actions">
-          <button type="button" disabled={form.fetching || form.url.trim() === ''} onClick={() => void form.fetchPreview()}>
+          <Button disabled={form.fetching || form.url.trim() === ''} onClick={() => void form.fetchPreview()}>
             {form.fetching ? '가져오는 중…' : '정보 가져오기'}
-          </button>
+          </Button>
         </div>
-        {form.previewFailure !== null && <p className="modal-dialog-failure" role="alert">{form.previewFailure}</p>}
+        {form.previewFailure !== null && <Text variant="small" tone="danger" role="alert">{form.previewFailure}</Text>}
         {form.fields !== null && <BookFields form={form} />}
-        {form.failure !== null && <p className="modal-dialog-failure" role="alert">{form.failure}</p>}
+        {form.failure !== null && <Text variant="small" tone="danger" role="alert">{form.failure}</Text>}
         <div className="modal-dialog-actions">
           {book !== null && (
-            <button type="button" className="modal-dialog-remove" disabled={form.busy}
-              onClick={() => void form.remove(() => window.confirm(REMOVE_QUESTION))}>삭제</button>
+            <Button variant="danger" className="modal-dialog-remove" disabled={form.busy}
+              onClick={() => void form.remove(() => window.confirm(REMOVE_QUESTION))}>삭제</Button>
           )}
-          <button type="button" onClick={onClose}>취소</button>
-          <button type="submit" disabled={!form.canRegister}>확인</button>
+          <Button onClick={onClose}>취소</Button>
+          <Button type="submit" disabled={!form.canRegister}>확인</Button>
         </div>
       </form>
     </ModalDialog>
@@ -62,26 +62,22 @@ function BookFields({ form }: { form: BookForm }) {
   return (
     <>
       <BookThumbnail title={fields.title} thumbnailUrl={fields.thumbnailUrl} storeUrl={form.url} />
-      <label className="modal-dialog-label">
-        <strong>썸네일 URL</strong>
-        <input className="modal-dialog-input" type="url" name="book-thumbnail" value={fields.thumbnailUrl ?? ''}
+      <Field label="썸네일 URL">
+        <TextInput type="url" name="book-thumbnail" value={fields.thumbnailUrl ?? ''}
           onChange={(event) => form.editFields({ thumbnailUrl: event.target.value })} />
-      </label>
-      <label className="modal-dialog-label">
-        <strong>제목</strong>
-        <input className="modal-dialog-input" name="book-title" maxLength={BOOK_TITLE_MAX_LENGTH} value={fields.title}
+      </Field>
+      <Field label="제목">
+        <TextInput name="book-title" maxLength={BOOK_TITLE_MAX_LENGTH} value={fields.title}
           onChange={(event) => form.editFields({ title: event.target.value })} />
-      </label>
-      <label className="modal-dialog-label">
-        <strong>저자</strong>
-        <input className="modal-dialog-input" name="book-author" maxLength={BOOK_AUTHOR_MAX_LENGTH} value={fields.author ?? ''}
+      </Field>
+      <Field label="저자">
+        <TextInput name="book-author" maxLength={BOOK_AUTHOR_MAX_LENGTH} value={fields.author ?? ''}
           onChange={(event) => form.editFields({ author: event.target.value })} />
-      </label>
-      <label className="modal-dialog-label">
-        <strong>소개글</strong>
-        <textarea className="modal-dialog-input" name="book-description" rows={4} maxLength={BOOK_DESCRIPTION_MAX_LENGTH}
-          value={fields.description ?? ''} onChange={(event) => form.editFields({ description: event.target.value })} />
-      </label>
+      </Field>
+      <Field label="소개글">
+        <TextArea name="book-description" rows={4} maxLength={BOOK_DESCRIPTION_MAX_LENGTH} value={fields.description ?? ''}
+          onChange={(event) => form.editFields({ description: event.target.value })} />
+      </Field>
     </>
   )
 }

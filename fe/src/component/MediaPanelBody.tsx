@@ -1,3 +1,4 @@
+import { Button, buttonClassName, Text, TextInput } from 'design-system'
 import { type ChangeEvent, type DragEvent, useState } from 'react'
 import { deleteFailureText, type Media, uploadFailureText } from '../model/Media.ts'
 import { deleteMedia, listOfMedias, registerVideo, uploadImage } from '../model/mediaApi.ts'
@@ -59,9 +60,7 @@ export function MediaPanelBody({ onInsert }: MediaPanelBodyProps) {
 
   return (
     <div className="media-panel-body">
-      <input
-        className="media-panel-field"
-        type="text"
+      <TextInput
         placeholder="제목 (이미지 설명, 영상 제목)"
         aria-label="제목"
         value={title}
@@ -69,7 +68,7 @@ export function MediaPanelBody({ onInsert }: MediaPanelBodyProps) {
       />
       <ImageUpload busy={busy} onFile={(file) => void insertFrom(() => uploadImage(file), uploadFailureText)} />
       <VideoLink busy={busy} onLink={(url) => void insertFrom(() => registerVideo(url), () => VIDEO_FAILURE)} />
-      {failure !== null && <p className="media-panel-failure" role="alert">{failure}</p>}
+      {failure !== null && <Text variant="small" tone="danger" role="alert">{failure}</Text>}
       <MediaGallery medias={medias} selected={selected} onSelect={updateSelected}
         onInsert={(media) => onInsert(markdownOfMedia(media, title))} onRemove={(media) => void remove(media)} />
     </div>
@@ -96,11 +95,11 @@ function ImageUpload({ busy, onFile }: { busy: boolean; onFile: (file: File) => 
 
   return (
     <div className="media-panel-upload" onDragOver={(event) => event.preventDefault()} onDrop={dropped}>
-      <label className="media-panel-file">
+      <label className={buttonClassName()}>
         새 이미지 올리기
         <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" disabled={busy} onChange={picked} />
       </label>
-      <span className="media-panel-hint">또는 이미지 파일을 여기에 놓으세요.</span>
+      <Text variant="small" tone="tertiary">또는 이미지 파일을 여기에 놓으세요.</Text>
     </div>
   )
 }
@@ -112,8 +111,7 @@ function VideoLink({ busy, onLink }: { busy: boolean; onLink: (url: string) => v
 
   return (
     <div className="media-panel-link">
-      <input
-        className="media-panel-field"
+      <TextInput
         type="url"
         placeholder="YouTube 주소"
         aria-label="YouTube 주소"
@@ -128,7 +126,7 @@ function VideoLink({ busy, onLink }: { busy: boolean; onLink: (url: string) => v
           }
         }}
       />
-      <button type="button" disabled={!canAdd} onClick={() => onLink(link)}>영상 추가</button>
+      <Button disabled={!canAdd} onClick={() => onLink(link)}>영상 추가</Button>
     </div>
   )
 }

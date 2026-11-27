@@ -1,3 +1,4 @@
+import { Button, Field, Text, TextInput } from 'design-system'
 import type { Book } from '../model/Book.ts'
 import { POST_SLUG_MAX_LENGTH } from '../model/Post.ts'
 import { useReviewForm } from '../model/useReviewForm.ts'
@@ -16,17 +17,15 @@ export function BookReviewDialog({ book, onLinked, onClose }: BookReviewDialogPr
   return (
     <ModalDialog label="리뷰 적기" onClose={onClose}>
       <form className="modal-dialog-form" onSubmit={(event) => { event.preventDefault(); void form.link() }}>
-        <strong>{book.title}</strong>
-        <label className="modal-dialog-label">
-          리뷰 slug
-          <input className="modal-dialog-input" name="review-slug" autoFocus maxLength={POST_SLUG_MAX_LENGTH} value={form.slug}
+        <Text variant="label">{book.title}</Text>
+        <Field label="리뷰 slug" hint="영문, 숫자, -만 쓸 수 있습니다. 저장하면 이 slug로 리뷰 글 작성 화면이 열립니다.">
+          <TextInput name="review-slug" autoFocus maxLength={POST_SLUG_MAX_LENGTH} value={form.slug}
             onChange={(event) => form.editSlug(event.target.value)} />
-        </label>
-        <p className="modal-dialog-note">영문, 숫자, -만 쓸 수 있습니다. 저장하면 이 slug로 리뷰 글 작성 화면이 열립니다.</p>
-        {form.failure !== null && <p className="modal-dialog-failure" role="alert">{form.failure}</p>}
+        </Field>
+        {form.failure !== null && <Text variant="small" tone="danger" role="alert">{form.failure}</Text>}
         <div className="modal-dialog-actions">
-          <button type="button" onClick={onClose}>취소</button>
-          <button type="submit" disabled={!form.canLink}>저장</button>
+          <Button onClick={onClose}>취소</Button>
+          <Button type="submit" disabled={!form.canLink}>저장</Button>
         </div>
       </form>
     </ModalDialog>

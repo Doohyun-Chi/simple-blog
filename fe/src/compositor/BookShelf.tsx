@@ -1,4 +1,5 @@
 import { IconPlus } from '@tabler/icons-react'
+import { Button } from 'design-system'
 import { useState } from 'react'
 import { BookCard } from '../component/BookCard.tsx'
 import { BookCheckInDialog } from '../component/BookCheckInDialog.tsx'
@@ -35,9 +36,7 @@ export function BookShelf({ canWrite }: BookShelfProps) {
       <div className="book-shelf-header">
         {shelf.state === 'loaded' && <BookYearFilter years={shelf.value.years} year={year} onSelect={selectYear} />}
         {canWrite && (
-          <button type="button" className="book-shelf-new" onClick={() => openDialog({ kind: 'new' })}>
-            <IconPlus size="1.1em" aria-hidden="true" /> 새로운 책
-          </button>
+          <Button variant="link" icon={IconPlus} onClick={() => openDialog({ kind: 'new' })}>새로운 책</Button>
         )}
       </div>
       <Books shelf={shelf} canWrite={canWrite} onEdit={(book) => openDialog({ kind: 'edit', book })} onCheckIn={(book) => openDialog({ kind: 'checkIn', book })}

@@ -1,25 +1,5 @@
-.view-mode-title {
-  font-size: 0.85em;
-  color: var(--text-muted);
-}
-
 /* The first of the toolbar's right-hand buttons: it takes the free space to its left, the full screen button follows. */
 .view-mode-toggle {
   flex: 0 0 auto;
   margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25em;
-  color: var(--text-body);
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover,
-  &:focus-visible {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
 }

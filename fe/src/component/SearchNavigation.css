@@ -1,4 +1,6 @@
 .search-nav {
+  /* The design system's base makes every box border-box; this one was sized, with its padding and border outside the height. */
+  box-sizing: content-box;
   position: relative;
   flex: 0 0 auto;
   height: 1.5em;
@@ -6,7 +8,7 @@
   align-items: center;
   gap: 1rem;
   padding: 0 1em;
-  border-block: 1px solid var(--border);
+  border-block: 1px solid var(--ds-color-border-default);
   white-space: nowrap;
 }
 
@@ -17,16 +19,8 @@
 
 .search-nav-input {
   flex: 0 0 auto;
-  box-sizing: border-box;
   width: 10em;
   height: 1.25em;
-  padding: 0 0.4em;
-  font: inherit;
-  font-size: 0.85em;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  background: var(--input-bg);
-  color: var(--text-strong);
 }
 
 /* The navigation items. On a wide screen they sit in the row itself, after the search box. */
@@ -37,35 +31,24 @@
 /* The button that opens the items; only a narrow screen has it. */
 .search-nav-more {
   display: none;
-  align-items: center;
-  gap: 0.25em;
   flex: 0 0 auto;
+  height: 1.25em;
   padding: 0;
-  font: inherit;
   font-size: 0.75em;
-  color: var(--text);
-  background: none;
-  border: 0;
-  cursor: pointer;
-
-  &:hover,
-  &:focus-visible {
-    color: var(--accent);
-  }
 }
 
 .search-nav-link {
-  color: var(--text);
+  color: var(--ds-color-text-secondary);
   text-decoration: none;
 
   &:hover,
   &:focus-visible {
-    color: var(--accent);
+    color: var(--ds-color-accent-default);
   }
 
   /* The page currently shown in the content area. */
   &[page-current='selected'] {
-    color: var(--accent);
+    color: var(--ds-color-accent-default);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 4px;
@@ -96,7 +79,7 @@
   flex: 0 0 auto;
   margin-left: auto;
   font-size: 0.75em;
-  color: var(--text-strong);
+  color: var(--ds-color-text-primary);
 }
 
 .search-nav-notice + .search-nav-identity {
@@ -125,8 +108,8 @@
     align-items: flex-start;
     gap: 0.75rem;
     padding: 0.75rem 1em;
-    background: var(--paper);
-    border-bottom: 1px solid var(--border);
+    background: var(--ds-color-bg-canvas);
+    border-bottom: 1px solid var(--ds-color-border-default);
   }
 
   .search-nav-identity {

@@ -6,13 +6,13 @@ const MERMAID_CLASS = 'language-mermaid'
 
 /** Mermaid theme variables and the CSS tokens of index.css they take their value from, so colours stay in the CSS. */
 const THEME_TOKENS: Record<string, string> = {
-  fontFamily: '--font-main',
-  background: '--paper',
-  primaryColor: '--input-bg',
-  primaryBorderColor: '--accent',
-  primaryTextColor: '--text-strong',
-  textColor: '--text-body',
-  lineColor: '--text',
+  fontFamily: '--ds-font-family-sans',
+  background: '--ds-color-bg-canvas',
+  primaryColor: '--ds-color-bg-surface',
+  primaryBorderColor: '--ds-color-accent-default',
+  primaryTextColor: '--ds-color-text-primary',
+  textColor: '--ds-color-text-body',
+  lineColor: '--ds-color-text-secondary',
 }
 
 function textOf(node: ElementContent): string {

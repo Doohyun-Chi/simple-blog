@@ -1,4 +1,6 @@
-import { iconComponentFor$, insertMarkdown$, useCellValue, usePublisher } from '@mdxeditor/editor'
+import { IconPhotoPlus } from '@tabler/icons-react'
+import { insertMarkdown$, usePublisher } from '@mdxeditor/editor'
+import { Button, IconButton, Text } from 'design-system'
 import { useEffect, useRef, useState } from 'react'
 import { MediaPanelBody } from './MediaPanelBody.tsx'
 import './MediaPanel.css'
@@ -9,7 +11,6 @@ import './MediaPanel.css'
  * Its body is mounted only while it is open, so the gallery is loaded fresh each time.
  */
 export function MediaPanel() {
-  const iconComponentFor = useCellValue(iconComponentFor$)
   const insertMarkdown = usePublisher(insertMarkdown$)
   const dialog = useRef<HTMLDialogElement>(null)
   const [open, updateOpen] = useState(false)
@@ -24,13 +25,11 @@ export function MediaPanel() {
 
   return (
     <>
-      <button className="media-panel-button" type="button" title="이미지·영상" aria-label="이미지·영상" onClick={() => updateOpen(true)}>
-        {iconComponentFor('add_photo')}
-      </button>
+      <IconButton variant="ghost" icon={IconPhotoPlus} label="이미지·영상" onClick={() => updateOpen(true)} />
       <dialog ref={dialog} className="media-panel" aria-label="이미지·영상" onClose={() => updateOpen(false)}>
         <div className="media-panel-header">
-          <strong>이미지·영상</strong>
-          <button type="button" onClick={() => updateOpen(false)}>닫기</button>
+          <Text variant="label">이미지·영상</Text>
+          <Button onClick={() => updateOpen(false)}>닫기</Button>
         </div>
         {open && <MediaPanelBody onInsert={(markdown) => { insertMarkdown(markdown); updateOpen(false) }} />}
       </dialog>

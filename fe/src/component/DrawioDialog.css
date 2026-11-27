@@ -5,9 +5,9 @@
   max-width: none;
   max-height: none;
   padding: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--ds-color-border-default);
   border-radius: 6px;
-  background: var(--paper);
+  background: var(--ds-color-bg-canvas);
 
   &[open] {
     display: flex;
@@ -20,13 +20,11 @@
   align-items: center;
   gap: 1em;
   padding: 0.5em 1em;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--ds-color-border-default);
 }
 
 .drawio-dialog-note {
   flex: 1 1 auto;
-  font-size: 0.8em;
-  color: var(--text-muted);
 }
 
 .drawio-dialog-frame {

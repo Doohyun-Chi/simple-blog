@@ -1,4 +1,6 @@
 .header {
+  /* The design system's base makes every box border-box; this one was sized, with its padding and border outside the height. */
+  box-sizing: content-box;
   flex: 0 0 auto;
   padding: 1em;
   height: 6em;
@@ -17,14 +19,14 @@
   font-weight: 600;
   line-height: 1;
   display: block;
-  color: var(--text-strong);
+  color: var(--ds-color-text-primary);
 }
 
 .header-subtitle {
   margin: 0.5rem;
   font-size: 1.2em;
   line-height: 1;
-  color: var(--text);
+  color: var(--ds-color-text-secondary);
 }
 
 /* A link with no link look: it keeps the text's colour and has no underline or hover effect. The pointer is the default link one. */

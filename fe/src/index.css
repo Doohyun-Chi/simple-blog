@@ -1,38 +1,6 @@
-:root {
-  --text: #5b5560;
-  --text-strong: #1d1a20;
-  --text-body: #34303a;
-  --text-muted: #a39c92;
-  --text-draft: #555;
-  --text-quote: #444;
-  --accent: #8a4b1f;
-  --hash-tag: #0a7a2f;
-  --border: #e3ded4;
-  --paper: #fbf8f1;
-  --input-bg: #fff;
-  --font-main: 'Pretendard Variable', system-ui, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-  --font-mono: 'D2Coding', ui-monospace, Menlo, Consolas, monospace;
-
-  font: 16px/1.5 var(--font-main);
-  color-scheme: light;
-  color: var(--text);
-  background: var(--paper);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
+/* The colours, fonts and base styles come from the design system (design-system/styles.css, imported in main.tsx). */
 /* The page is exactly one viewport tall and its areas scroll inside themselves, so the page itself never scrolls.
    This also keeps what MDXEditor appends to the body (its popup container) from adding an outer scrollbar. */
 body {
-  margin: 0;
   overflow: hidden;
-}
-
-code,
-kbd,
-pre,
-samp {
-  font-family: var(--font-mono);
 }

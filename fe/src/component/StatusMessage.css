@@ -1,4 +1,4 @@
 .status-message {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--ds-color-text-tertiary);
 }

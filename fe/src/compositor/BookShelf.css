@@ -14,24 +14,6 @@
   margin-bottom: 1.5em;
 }
 
-.book-shelf-new {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25em;
-  padding: 0;
-  font: inherit;
-  font-weight: 600;
-  color: var(--accent);
-  background: none;
-  border: 0;
-  cursor: pointer;
-
-  &:hover,
-  &:focus-visible {
-    text-decoration: underline;
-  }
-}
-
 /* Two columns, one on a narrow screen. */
 .book-shelf-books {
   display: grid;

@@ -1,4 +1,5 @@
 import { IconCheck, IconCopy, IconLogout } from '@tabler/icons-react'
+import { Button, Field, FieldRow, Text, TextInput } from 'design-system'
 import { PostType } from '../model/Post.ts'
 import { contentPath } from '../model/route.ts'
 import {
@@ -25,17 +26,14 @@ interface TextFieldProps {
   label: string
   value: string
   maxLength: number
-  hint?: string
   onEdit: (value: string) => void
 }
 
-function TextField({ name, label, value, maxLength, hint, onEdit }: TextFieldProps) {
+function TextField({ name, label, value, maxLength, onEdit }: TextFieldProps) {
   return (
-    <label className="user-setting-field">
-      <span className="user-setting-label">{label}</span>
-      <input className="user-setting-input" name={name} type="text" value={value} maxLength={maxLength} onChange={(event) => onEdit(event.target.value)} />
-      {hint !== undefined && <span className="user-setting-hint">{hint}</span>}
-    </label>
+    <Field label={label}>
+      <TextInput name={name} value={value} maxLength={maxLength} onChange={(event) => onEdit(event.target.value)} />
+    </Field>
   )
 }
 
@@ -51,16 +49,14 @@ interface LinkFieldsProps {
 /** The text of a navigation link and the slug of the post it opens, on one line; the post's path is shown under them. */
 function LinkFields({ name, label, text, slug, onText, onSlug }: LinkFieldsProps) {
   return (
-    <div className="user-setting-field">
-      <span className="user-setting-label">{label}</span>
-      <div className="user-setting-link">
-        <input className="user-setting-input" name={`${name}-name`} type="text" aria-label={`${label} 표시 문구`} placeholder="표시 문구"
-          value={text} maxLength={LINK_NAME_MAX_LENGTH} onChange={(event) => onText(event.target.value)} />
-        <input className="user-setting-input" name={`${name}-slug`} type="text" aria-label={`${label} slug`} placeholder="slug"
-          value={slug} maxLength={SETTING_SLUG_MAX_LENGTH} onChange={(event) => onSlug(event.target.value)} />
-      </div>
-      <span className="user-setting-hint">{contentPath(PostType.POST, slug)}</span>
-    </div>
+    <Field label={label} hint={contentPath(PostType.POST, slug)}>
+      <FieldRow>
+        <TextInput name={`${name}-name`} aria-label={`${label} 표시 문구`} placeholder="표시 문구" value={text} maxLength={LINK_NAME_MAX_LENGTH}
+          onChange={(event) => onText(event.target.value)} />
+        <TextInput name={`${name}-slug`} aria-label={`${label} slug`} placeholder="slug" value={slug} maxLength={SETTING_SLUG_MAX_LENGTH}
+          onChange={(event) => onSlug(event.target.value)} />
+      </FieldRow>
+    </Field>
   )
 }
 
@@ -68,17 +64,15 @@ function LinkFields({ name, label, text, slug, onText, onSlug }: LinkFieldsProps
 function AccessKeyField({ accessKey, busy, onRevoke }: { accessKey: string | null; busy: boolean; onRevoke: () => void }) {
   const { copied, copy } = useCopyToClipboard(accessKey ?? '')
   return (
-    <div className="user-setting-field">
-      <span className="user-setting-label">MCP 조회키</span>
-      <div className="user-setting-key">
-        <input className="user-setting-input" name="mcp-access-key" type="text" readOnly value={accessKey ?? ''} placeholder="아직 발급되지 않았습니다." />
-        <button type="button" disabled={accessKey === null} onClick={copy}>
-          {copied ? <IconCheck size="1.1em" aria-hidden="true" /> : <IconCopy size="1.1em" aria-hidden="true" />}
-          {copied ? '복사됨' : '복사'}
-        </button>
-        <button type="button" disabled={busy} onClick={onRevoke}>{accessKey === null ? '발급' : 'Revoke'}</button>
-      </div>
-    </div>
+    <Field label="MCP 조회키">
+      <FieldRow>
+        <TextInput mono readOnly name="mcp-access-key" aria-label="MCP 조회키" value={accessKey ?? ''} placeholder="아직 발급되지 않았습니다." />
+        <Button icon={copied ? IconCheck : IconCopy} disabled={accessKey === null} onClick={copy}>{copied ? '복사됨' : '복사'}</Button>
+        <Button variant={accessKey === null ? 'secondary' : 'danger'} disabled={busy} onClick={onRevoke}>
+          {accessKey === null ? '발급' : 'Revoke'}
+        </Button>
+      </FieldRow>
+    </Field>
   )
 }
 
@@ -88,7 +82,7 @@ export function UserSettingForm({ setting, onSaved, onBack, onSignedOut }: UserS
   const { fields, edit } = form
   return (
     <form className="user-setting" aria-label="개인화" onSubmit={(event) => event.preventDefault()}>
-      <h2 className="user-setting-title">개인화</h2>
+      <Text variant="heading">개인화</Text>
       <TextField name="nick" label="닉네임" value={fields.nick} maxLength={NICK_MAX_LENGTH} onEdit={(nick) => edit({ nick })} />
       <TextField name="main-theme" label="표제어" value={fields.mainTheme} maxLength={THEME_MAX_LENGTH} onEdit={(mainTheme) => edit({ mainTheme })} />
       <TextField name="sub-theme" label="부제어" value={fields.subTheme} maxLength={THEME_MAX_LENGTH} onEdit={(subTheme) => edit({ subTheme })} />
@@ -97,13 +91,11 @@ export function UserSettingForm({ setting, onSaved, onBack, onSignedOut }: UserS
       <LinkFields name="working" label="이력 설명 페이지 (working)" text={fields.workingName} slug={fields.workingSlug}
         onText={(workingName) => edit({ workingName })} onSlug={(workingSlug) => edit({ workingSlug: cleanSettingSlug(workingSlug) })} />
       <AccessKeyField accessKey={form.accessKey} busy={form.busy} onRevoke={() => void form.renewKey(() => window.confirm(REVOKE_QUESTION))} />
-      {form.failure !== null && <p className="user-setting-failure" role="alert">{form.failure}</p>}
+      {form.failure !== null && <Text variant="small" tone="danger" role="alert">{form.failure}</Text>}
       <div className="user-setting-actions">
-        <button type="button" className="user-setting-sign-out" disabled={form.busy} onClick={() => void form.signOut()}>
-          <IconLogout size="1.1em" aria-hidden="true" />로그아웃
-        </button>
-        <button type="button" disabled={!form.canSave} onClick={() => void form.save()}>변경</button>
-        <button type="button" onClick={onBack}>돌아가기</button>
+        <Button icon={IconLogout} className="user-setting-sign-out" disabled={form.busy} onClick={() => void form.signOut()}>로그아웃</Button>
+        <Button variant="primary" disabled={!form.canSave} onClick={() => void form.save()}>변경</Button>
+        <Button onClick={onBack}>돌아가기</Button>
       </div>
     </form>
   )

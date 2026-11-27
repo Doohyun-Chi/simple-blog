@@ -4,9 +4,9 @@
   max-height: 92vh;
   padding: 1rem;
   overflow-y: auto;
-  color: var(--text-body);
-  background: var(--paper);
-  border: 1px solid var(--border);
+  color: var(--ds-color-text-body);
+  background: var(--ds-color-bg-canvas);
+  border: 1px solid var(--ds-color-border-default);
   border-radius: 6px;
 
   &::backdrop {
@@ -24,62 +24,13 @@
   gap: 0.75rem;
 }
 
-.modal-dialog-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.modal-dialog-input {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0.4em 0.6em;
-  font: inherit;
-  color: var(--text-strong);
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-}
-
-textarea.modal-dialog-input {
-  resize: vertical;
-}
-
-.modal-dialog-note {
-  margin: 0;
-  font-size: 0.85em;
-  color: var(--text-muted);
-}
-
-.modal-dialog-failure {
-  margin: 0;
-  font-size: 0.85em;
-  color: #b3261e;
-}
-
 .modal-dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
-
-  & button {
-    padding: 0.2em 0.8em;
-    font: inherit;
-    color: var(--text-strong);
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    cursor: pointer;
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.5;
-    }
-  }
 }
 
 /* A button that deletes sits at the left end of the buttons, away from the others. */
 .modal-dialog-actions .modal-dialog-remove {
   margin-right: auto;
-  color: #b3261e;
 }
