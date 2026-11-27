@@ -1,3 +1,5 @@
+@import 'highlight.js/styles/github.css';
+
 .post-article {
   margin: 0 1rem 0 0;
 }
@@ -58,6 +60,20 @@
     border-radius: 4px;
     background: var(--input-bg);
     overflow-wrap: normal;
+  }
+
+  /* The highlight theme pads and paints the code itself; the block (pre) already does. */
+  & pre code.hljs {
+    padding: 0;
+    background: none;
+  }
+
+  & :not(pre) > code {
+    padding: 0.1em 0.35em;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 0.9em;
   }
 
   & a {
