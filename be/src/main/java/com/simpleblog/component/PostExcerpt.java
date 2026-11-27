@@ -75,7 +75,7 @@ public class PostExcerpt {
 		if (source.startsWith("//")) {
 			return Optional.of("https:" + source);
 		}
-		if (source.isEmpty() || lower.startsWith("data:") || lower.startsWith("javascript:") || source.contains(":")) {
+		if (source.isEmpty() || source.contains(":")) {
 			return Optional.empty();
 		}
 		return Optional.of(origin + (source.startsWith("/") ? "" : "/") + source);
