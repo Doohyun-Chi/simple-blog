@@ -315,6 +315,98 @@ paths:
                 email: owner@example.com
         '401':
           description: Not signed in. No session is created. The response body is not part of the contract.
+  /public/api/v1/user:
+    get:
+      summary: Get the personalization of the signed-in user
+      description: >
+        Returns the signed-in user's row of tb_user_setting together with the email, for the personalization page.
+        Until the user has saved anything there is no row, and the defaults of `UserSetting` are answered with
+        `modifiedDate` null, which is how the frontend knows it is the user's first visit and sends them to this page. The MCP access
+        key is part of the answer so it can be shown read only and copied; it cannot be changed here (see
+        `/public/api/v1/user/access-token`). Send the request with credentials (cookies).
+      operationId: userSetting
+      tags:
+        - Personalization
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The personalization of the signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSetting'
+              example:
+                email: owner@example.com
+                nick: Dreaming for the Future
+                mainTheme: Dreaming for the Future
+                subTheme: 영원한 개발자를 향해
+                aboutName: 나의 꿈
+                aboutSlug: about
+                workingName: 제가 일하는 곳은?
+                workingSlug: my-working-places
+                mcpAccessKey: eyJhbGciOiJIUzI1NiJ9.example
+                modifiedDate: '2026-11-27T01:30:00Z'
+        '401':
+          description: Not signed in. The response body is not part of the contract.
+    put:
+      summary: Update the personalization of the signed-in user
+      description: >
+        Saves the nick name, the main and sub theme of the blog and the slugs the about and the working place links
+        point to, in tb_user_setting for the signed-in user; the row is created by the first save. All five fields are
+        sent every time and replace what was stored. The display texts of the two links (`aboutName`, `workingName`)
+        and the MCP access key are not changed here: a field of the body that is not in `UserSettingInput` is ignored.
+        The slugs are not checked against tb_post, so a slug may name a page that is written later. Answers the saved
+        `UserSetting`.
+      operationId: updateUserSetting
+      tags:
+        - Personalization
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettingInput'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSetting'
+        '400':
+          description: A field is missing, longer than its limit, or a slug has a character other than English letters, digits and '-'. The response body is not part of the contract.
+        '401':
+          description: Not signed in. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+  /public/api/v1/user/access-token:
+    put:
+      summary: Renew the MCP access key
+      description: >
+        Revokes the signed-in user's MCP access key, so the old one stops working at once, and answers the renewed one.
+        The server stores it (tb_user_setting.mcp_access_key); the caller has nothing to save. The row is created if the
+        user has none yet, with the defaults of `UserSetting`. There is no request body.
+      operationId: renewMcpAccessKey
+      tags:
+        - Personalization
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The renewed key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpAccessKey'
+              example:
+                mcpAccessKey: eyJhbGciOiJIUzI1NiJ9.renewed
+        '401':
+          description: Not signed in. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
   /public/api/v1/pages:
     get:
       summary: List all published pages
@@ -801,6 +893,107 @@ components:
         email:
           type: string
           description: The email address of the signed-in Google account
+    UserSetting:
+      type: object
+      required:
+        - email
+        - nick
+        - mainTheme
+        - subTheme
+        - aboutName
+        - aboutSlug
+        - workingName
+        - workingSlug
+        - mcpAccessKey
+        - modifiedDate
+      properties:
+        email:
+          type: string
+          description: tb_user.email of the signed-in user
+        nick:
+          type:
+            - string
+            - 'null'
+          maxLength: 60
+          description: tb_user_setting.nick, the user's nick name in the blog. null until the user sets one.
+        mainTheme:
+          type: string
+          maxLength: 256
+          description: tb_user_setting.main_theme, the main title of the blog shown in the header. Default `Dreaming for the Future`.
+        subTheme:
+          type: string
+          maxLength: 256
+          description: tb_user_setting.sub_theme, the sub title shown under it, linked to the about page. Default `영원한 개발자를 향해`.
+        aboutName:
+          type: string
+          description: tb_user_setting.about_name, the text of the about link in the navigation. Default `나의 꿈`.
+        aboutSlug:
+          type: string
+          description: tb_user_setting.about_slug, the slug of the post the about link opens (`/post/{aboutSlug}`). Default `about`.
+        workingName:
+          type: string
+          description: tb_user_setting.working_name, the text of the working place link. Default `제가 일하는 곳은?`.
+        workingSlug:
+          type: string
+          description: tb_user_setting.working_slug, the slug of the post the working place link opens. Default `my-working-places`.
+        mcpAccessKey:
+          type:
+            - string
+            - 'null'
+          description: >
+            tb_user_setting.mcp_access_key, the key MCP clients present. Read only here; null until one is issued with
+            `/public/api/v1/user/access-token`.
+        modifiedDate:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: tb_user_setting.modified_date in UTC, when the row was created or last changed. null while there is no row.
+    UserSettingInput:
+      type: object
+      required:
+        - nick
+        - mainTheme
+        - subTheme
+        - aboutSlug
+        - workingSlug
+      properties:
+        nick:
+          type:
+            - string
+            - 'null'
+          maxLength: 60
+          description: tb_user_setting.nick; at most 60 characters. null or a blank text clears it (stored as null).
+        mainTheme:
+          type: string
+          minLength: 1
+          maxLength: 256
+          pattern: '\S'
+          description: tb_user_setting.main_theme; must contain a non-whitespace character
+        subTheme:
+          type: string
+          maxLength: 256
+          description: tb_user_setting.sub_theme; may be empty, which hides the sub title
+        aboutSlug:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: '^[A-Za-z0-9-]+$'
+          description: tb_user_setting.about_slug; the slug rule of `PostInput.slug`
+        workingSlug:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: '^[A-Za-z0-9-]+$'
+          description: tb_user_setting.working_slug; the slug rule of `PostInput.slug`
+    McpAccessKey:
+      type: object
+      required:
+        - mcpAccessKey
+      properties:
+        mcpAccessKey:
+          type: string
+          description: The renewed tb_user_setting.mcp_access_key
     MediaList:
       type: object
       required:

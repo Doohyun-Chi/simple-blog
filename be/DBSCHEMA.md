@@ -82,3 +82,17 @@ columns
 indexes
 - unique index for id
 - index for registered_date with desc order
+
+## User's personalization
+table name: tb_user_setting
+columns:
+- user_id: unique identifier from the user table
+- nick: personal nick name, default is null. Less than 60 chars. 
+- main_theme: main title for the blog, less than 256 chars. Default is 'Dreaming for the Future'.
+- sub_theme: sub title for the blog, less than 256 chars. Default is '영원한 개발자를 향해'.
+- about_name: display text for the about in the heading area, default is '나의 꿈'
+- about_slug: slug for the about, default is 'about';
+- working_name: display text for the working palce in the heading area, default is '제가 일하는 곳은?'
+- working_slug: slug for the working place, default is 'my-working-places'
+- mcp_access_key: access key such as jwt token, backend only manipulate it with revoke request.
+- modified_date: datetime for creation and modification.
