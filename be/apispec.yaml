@@ -75,9 +75,22 @@ paths:
         For browsers, not for API clients: navigate here (a plain link) to sign in with a Google account. The server
         redirects to Google with the OpenID Connect authorization request (scope openid, profile and email, plus state
         and nonce). Not available (404) when the server has no Google client configured.
+        With returnTo the browser comes back to that page of the frontend after a successful sign-in, instead of the home page.
       operationId: startGoogleLogin
       tags:
         - Authentication
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          description: >
+            The path, with its query, of the frontend page to come back to, such as /post/hello or /search?query=KPI. It
+            must start with a single / and have no backslash, whitespace or control character, and be at most 2000
+            characters long; any other value is ignored and the sign-in ends at the home page. It is kept in the session
+            of the browser until the callback.
+          schema:
+            type: string
+          example: /post/hello
       responses:
         '302':
           description: Redirect to the Google authorization endpoint
@@ -93,7 +106,7 @@ paths:
       description: >
         The redirect URI registered for the Google OAuth client; only Google's redirect should reach it. The server
         checks state, exchanges the code for tokens with its client secret and validates the ID token. On success it
-        starts a session (cookie JSESSIONID) and redirects to the frontend's home page. Only Google accounts whose
+        starts a session (cookie JSESSIONID) and redirects to the frontend's personalization page (/user) when the user has not saved a personalization yet (no row in tb_user_setting), else to the frontend's page given as returnTo when the sign-in started, else to its home page. Only Google accounts whose
         verified email is on the server's list of allowed users may sign in; any other account is turned away with the
         query login=unauthorized. On any other failure, including the user declining, it redirects to the frontend's
         home page with the query login=failed. Neither starts a session. The client secret never leaves the server.

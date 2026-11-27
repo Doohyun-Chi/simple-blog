@@ -23,10 +23,20 @@ export async function identity(signal?: AbortSignal): Promise<Identity | null> {
 
 /**
  * Where the 로그인 link goes: the backend's `/public/auth/google` (operationId: startGoogleLogin). The backend runs the
- * whole Google sign-in and sends the browser back here, so the frontend holds no OAuth code, token or secret.
+ * whole Google sign-in and sends the browser back here, so the frontend holds no OAuth code, token or secret. With
+ * `returnTo`, a path of this site such as `/post/hello`, it sends the browser back to that page instead of the home page.
  */
-export function googleLoginUrl(): string {
-  return apiUrl(GOOGLE_LOGIN_PATH)
+export function googleLoginUrl(returnTo?: string): string {
+  const params = returnTo === undefined ? '' : `?${new URLSearchParams({ returnTo })}`
+  return `${apiUrl(GOOGLE_LOGIN_PATH)}${params}`
+}
+
+/** The page being shown as a path with its query, for `returnTo`; the `login` flag of a failed sign-in is left out. */
+export function returnPathOf(location: Pick<Location, 'pathname' | 'search'>): string {
+  const params = new URLSearchParams(location.search)
+  params.delete('login')
+  const query = params.toString()
+  return query === '' ? location.pathname : `${location.pathname}?${query}`
 }
 
 /** Calls `POST /public/auth/logout` (operationId: logout): the backend ends the session. The response has no body. */

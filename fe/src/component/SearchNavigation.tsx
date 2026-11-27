@@ -1,7 +1,7 @@
 import { IconBooks, IconLogin, IconMenu2 } from '@tabler/icons-react'
 import { Button, Icon, TextInput } from 'design-system'
 import { type FormEvent, useState } from 'react'
-import { googleLoginUrl } from '../model/identityApi.ts'
+import { googleLoginUrl, returnPathOf } from '../model/identityApi.ts'
 import type { LoginFailure, SessionState } from '../model/Identity.ts'
 import { PostType } from '../model/Post.ts'
 import { BOOKS_PATH, contentPath, searchPath, USER_PATH } from '../model/route.ts'
@@ -35,7 +35,8 @@ function Identity({ session }: { session: SessionState }) {
       return (
         <>
           {session.failure && <span className="search-nav-notice" role="alert">{LOGIN_FAILURE_MESSAGES[session.failure]}</span>}
-          <a className="search-nav-link search-nav-identity" href={googleLoginUrl()}>
+          <a className="search-nav-link search-nav-identity" href={googleLoginUrl()}
+            onClick={(event) => { event.currentTarget.href = googleLoginUrl(returnPathOf(window.location)) }}>
             <Icon icon={IconLogin} />로그인
           </a>
         </>

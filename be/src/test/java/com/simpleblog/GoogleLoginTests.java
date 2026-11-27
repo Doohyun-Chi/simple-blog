@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.simpleblog.component.LoginReturn;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,6 +40,12 @@ class GoogleLoginTests {
 		assertThat(uri.getQueryParams().getFirst("scope")).isEqualTo("openid%20profile%20email");
 		assertThat(uri.getQueryParams().getFirst("state")).isNotBlank();
 		assertThat(uri.getQueryParams().getFirst("nonce")).isNotBlank();
+	}
+
+	@Test
+	void startKeepsThePageToComeBackTo() throws Exception {
+		MvcResult result = this.mockMvc.perform(get("/public/auth/google").param("returnTo", "/post/hello")).andExpect(status().isFound()).andReturn();
+		assertThat(result.getRequest().getSession().getAttribute(LoginReturn.ATTRIBUTE)).isEqualTo("/post/hello");
 	}
 
 	@Test

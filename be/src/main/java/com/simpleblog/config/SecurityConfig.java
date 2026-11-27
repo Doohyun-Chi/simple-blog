@@ -1,6 +1,7 @@
 package com.simpleblog.config;
 
 import com.simpleblog.component.AllowedOidcUserService;
+import com.simpleblog.component.LoginReturn;
 import com.simpleblog.component.McpAccessFilter;
 import com.simpleblog.repository.UserRepository;
 import com.simpleblog.repository.UserSettingRepository;
@@ -15,6 +16,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -79,7 +81,8 @@ public class SecurityConfig {
 				.logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
 			.requestCache((cache) -> cache.requestCache(new NullRequestCache()));
 		if (clients.getIfAvailable() != null) {
-			http.oauth2Login((login) -> googleLogin(login, userService, frontendUrl.replaceAll("/+$", "")));
+			http.addFilterBefore(LoginReturn.remembering(LOGIN_BASE_URI + "/google"), OAuth2AuthorizationRequestRedirectFilter.class)
+				.oauth2Login((login) -> googleLogin(login, userService, settings, frontendUrl.replaceAll("/+$", "")));
 		}
 		return http.build();
 	}
@@ -96,12 +99,13 @@ public class SecurityConfig {
 		return tokens;
 	}
 
-	/** The sign-in URLs, and where the browser goes afterwards: the frontend's home page, flagged when it failed. */
-	private void googleLogin(OAuth2LoginConfigurer<HttpSecurity> login, AllowedOidcUserService userService, String frontendUrl) {
+	/** The sign-in URLs, and where the browser goes afterwards: the personalization page for a new user, else the page the sign-in started from (else the frontend's home page), flagged on the home page when it failed. */
+	private void googleLogin(OAuth2LoginConfigurer<HttpSecurity> login, AllowedOidcUserService userService, UserSettingRepository settings,
+			String frontendUrl) {
 		login.authorizationEndpoint((endpoint) -> endpoint.baseUri(LOGIN_BASE_URI))
 			.redirectionEndpoint((endpoint) -> endpoint.baseUri(CALLBACK_URI))
 			.userInfoEndpoint((endpoint) -> endpoint.oidcUserService(userService))
-			.defaultSuccessUrl(frontendUrl + "/", true)
+			.successHandler(LoginReturn.redirecting(frontendUrl, (userId) -> settings.findById(userId).isEmpty()))
 			.failureHandler(failureRedirect(frontendUrl));
 	}
 
