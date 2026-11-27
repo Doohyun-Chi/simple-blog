@@ -1,0 +1,74 @@
+[
+  {
+    "name": "list_posts",
+    "title": "List posts",
+    "description": "Lists the newest posts of the blog, newest first: the published ones and the drafts of the key's user.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10, "description": "How many of the newest posts to list." }
+      }
+    },
+    "annotations": { "readOnlyHint": true }
+  },
+  {
+    "name": "search_posts",
+    "title": "Search posts",
+    "description": "Lists the posts whose title or content contains the query, case-insensitive, newest first.",
+    "inputSchema": {
+      "type": "object",
+      "required": ["query"],
+      "properties": {
+        "query": { "type": "string", "minLength": 1, "description": "The text to look for; it must contain a non-whitespace character." },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10, "description": "How many of the newest matches to list." }
+      }
+    },
+    "annotations": { "readOnlyHint": true }
+  },
+  {
+    "name": "read_post",
+    "title": "Read a post",
+    "description": "Reads one post or page by its slug, with its Markdown content.",
+    "inputSchema": {
+      "type": "object",
+      "required": ["slug"],
+      "properties": {
+        "slug": { "type": "string", "description": "The slug of the post or page, as list_posts and search_posts give it." }
+      }
+    },
+    "annotations": { "readOnlyHint": true }
+  },
+  {
+    "name": "create_post",
+    "title": "Create a draft post",
+    "description": "Writes a new post. It is always a draft; the user publishes it in the editor. The slug has only English letters, digits and '-'.",
+    "inputSchema": {
+      "type": "object",
+      "required": ["title", "slug", "content"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 130, "description": "The title." },
+        "slug": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[A-Za-z0-9-]+$", "description": "The unique URL name." },
+        "content": { "type": "string", "description": "The Markdown of the post." },
+        "hashTags": { "type": "string", "maxLength": 200, "description": "The hash tags separated by commas, without #." }
+      }
+    },
+    "annotations": { "readOnlyHint": false, "destructiveHint": false }
+  },
+  {
+    "name": "update_post",
+    "title": "Update a draft post",
+    "description": "Changes a draft the key's user wrote. Only the arguments that are given change. A published post, a page and someone else's post are refused.",
+    "inputSchema": {
+      "type": "object",
+      "required": ["slug"],
+      "properties": {
+        "slug": { "type": "string", "description": "The current slug of the draft." },
+        "newSlug": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[A-Za-z0-9-]+$", "description": "A new slug." },
+        "title": { "type": "string", "minLength": 1, "maxLength": 130, "description": "A new title." },
+        "content": { "type": "string", "description": "The new Markdown of the whole post." },
+        "hashTags": { "type": "string", "maxLength": 200, "description": "The new hash tags; an empty text removes them." }
+      }
+    },
+    "annotations": { "readOnlyHint": false, "destructiveHint": true }
+  }
+]

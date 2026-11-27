@@ -43,6 +43,11 @@ class AllowedOidcUserServiceTests {
 			return Optional.ofNullable(AllowedOidcUserServiceTests.this.users.get(email));
 		}
 
+		@Override
+		public Optional<BlogUser> findById(Long id) {
+			return AllowedOidcUserServiceTests.this.users.values().stream().filter((user) -> id.equals(user.id())).findFirst();
+		}
+
 	}, Clock.systemUTC());
 
 	@Test

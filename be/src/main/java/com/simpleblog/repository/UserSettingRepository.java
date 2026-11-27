@@ -12,4 +12,7 @@ public interface UserSettingRepository extends Repository<UserSetting, Long> {
 
 	Optional<UserSetting> findById(Long userId);
 
+	/** The row whose MCP access key is exactly this one; the key is unique, so there is at most one. */
+	Optional<UserSetting> findByMcpAccessKey(String key);
+
 }

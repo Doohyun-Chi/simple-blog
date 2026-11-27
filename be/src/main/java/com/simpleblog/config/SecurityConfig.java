@@ -1,6 +1,9 @@
 package com.simpleblog.config;
 
 import com.simpleblog.component.AllowedOidcUserService;
+import com.simpleblog.component.McpAccessFilter;
+import com.simpleblog.repository.UserRepository;
+import com.simpleblog.repository.UserSettingRepository;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +21,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
@@ -45,12 +49,15 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectProvider<ClientRegistrationRepository> clients,
-			AllowedOidcUserService userService, @Value("${simpleblog.auth.frontend-url:}") String frontendUrl,
-			@Value("${simpleblog.csrf.cookie-domain:}") String csrfCookieDomain) throws Exception {
+			AllowedOidcUserService userService, UserSettingRepository settings, UserRepository users,
+			@Value("${simpleblog.auth.frontend-url:}") String frontendUrl, @Value("${simpleblog.csrf.cookie-domain:}") String csrfCookieDomain,
+			@Value("${simpleblog.cors.allowed-origin-patterns:}") String[] allowedOriginPatterns) throws Exception {
 		http.cors(Customizer.withDefaults())
 			.csrf((csrf) -> csrf.csrfTokenRepository(csrfTokens(csrfCookieDomain))
-				.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+				.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+				.ignoringRequestMatchers("/mcp/**"))
 			.addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
+			.addFilterBefore(new McpAccessFilter(settings, users, allowedOriginPatterns), UsernamePasswordAuthenticationFilter.class)
 			.authorizeHttpRequests((requests) -> requests.requestMatchers("/public/api/v1/me")
 				.authenticated()
 				.requestMatchers("/public/api/v1/medias")

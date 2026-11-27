@@ -12,4 +12,6 @@ public interface UserRepository extends Repository<BlogUser, Long> {
 
 	Optional<BlogUser> findByEmail(String email);
 
+	Optional<BlogUser> findById(Long id);
+
 }

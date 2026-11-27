@@ -96,6 +96,10 @@ public class UserSetting {
 		this.modifiedDate = utcNow;
 	}
 
+	public Long userId() {
+		return this.userId;
+	}
+
 	public String nick() {
 		return this.nick;
 	}
