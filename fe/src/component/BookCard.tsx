@@ -1,5 +1,5 @@
 import { IconArticle, IconCalendarCheck, IconPencil, IconPencilPlus } from '@tabler/icons-react'
-import { Button, buttonClassName, Icon, IconButton } from 'design-system'
+import { Button, buttonClassName, Card, Icon, IconButton } from 'design-system'
 import { type Book, insightExcerptOf, isUnread, readingPeriodOf, todayText } from '../model/Book.ts'
 import { PostType } from '../model/Post.ts'
 import { contentPath } from '../model/route.ts'
@@ -41,30 +41,32 @@ function ReviewLink({ book, canWrite, onWriteReview }: Pick<BookCardProps, 'book
 /** One book: its thumbnail with the reading dates under it, and beside it the name (a link to the store page, with the edit icon), description, date, insight and the links. */
 export function BookCard({ book, canWrite, onEdit, onCheckIn, onWriteReview }: BookCardProps) {
   return (
-    <li className="book-card">
-      <div className="book-card-cover">
-        <BookThumbnail title={book.title} thumbnailUrl={book.thumbnailUrl} storeUrl={book.bookstoreUrl} />
-        <ReadingDates book={book} />
-      </div>
-      <div className="book-card-body">
-        <h3 className="book-card-title">
-          <a className="book-card-title-link" href={book.bookstoreUrl} target="_blank" rel="noopener noreferrer">{book.title}</a>
-          {canWrite && (
-            <IconButton className="book-card-edit" variant="ghost" size="sm" icon={IconPencil} label="책 수정" onClick={() => onEdit(book)} />
-          )}
-        </h3>
-        {book.author !== null && <p className="book-card-author">{book.author}</p>}
-        <p className="book-card-description">{[book.description, book.registeredDate].filter((text) => text !== null).join(' · ')}</p>
-        {book.insight !== null && <p className="book-card-insight">{insightExcerptOf(book.insight)}</p>}
-        <div className="book-card-actions">
+    <Card
+      as="li"
+      media={(
+        <>
+          <BookThumbnail title={book.title} thumbnailUrl={book.thumbnailUrl} storeUrl={book.bookstoreUrl} />
+          <ReadingDates book={book} />
+        </>
+      )}
+      title={book.title}
+      href={book.bookstoreUrl}
+      external
+      titleAddon={canWrite && <IconButton variant="ghost" size="sm" icon={IconPencil} label="책 수정" onClick={() => onEdit(book)} />}
+      meta={book.author}
+      actions={(
+        <>
           <ReviewLink book={book} canWrite={canWrite} onWriteReview={onWriteReview} />
           {canWrite && (
             <Button variant="link" size="sm" icon={IconCalendarCheck} onClick={() => onCheckIn(book)}>
               {isUnread(book) ? '체크인하기' : '체크인 수정'}
             </Button>
           )}
-        </div>
-      </div>
-    </li>
+        </>
+      )}
+    >
+      <p className="book-card-description">{[book.description, book.registeredDate].filter((text) => text !== null).join(' · ')}</p>
+      {book.insight !== null && <p className="book-card-insight">{insightExcerptOf(book.insight)}</p>}
+    </Card>
   )
 }
