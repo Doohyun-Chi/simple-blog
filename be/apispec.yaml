@@ -571,7 +571,7 @@ paths:
         Replaces title, slug and content of the post identified by the path slug. The status is changed only when the body
         has a status ('publish' publishes the post, 'draft' makes it a draft again); otherwise it stays as it is.
         If the body slug differs from the path slug, the post is renamed; the old slug no longer resolves, and the new slug
-        must follow the slug rule of PostInput. A body slug equal to the path slug keeps the slug as it is, whatever
+        must follow the slug rule of PostInput; the post_slug of the bookmarks of the post follows it. A body slug equal to the path slug keeps the slug as it is, whatever
         characters it has, so rows migrated from WordPress can be updated.
         Only the author of the row (tb_post.author_id) can update it; every row is a post or a page.
       operationId: updatePost
@@ -615,7 +615,7 @@ paths:
       summary: Delete a post
       description: >
         Deletes the post or page identified by the path slug: its tb_post row is removed for good, whatever its status, and
-        the slug resolves no more. Only the author of the row (tb_post.author_id) can delete it. Media items it used are not touched.
+        the slug resolves no more. Only the author of the row (tb_post.author_id) can delete it. Media items it used are not touched. The bookmarks of the post (tb_bookmark.post_id) are removed with it.
       operationId: deletePost
       tags:
         - Posts
@@ -645,7 +645,8 @@ paths:
         Returns the tb_post row whose slug matches, whatever its type. The slug is unique across all types. A published
         row is returned to everyone. A draft or a private row is returned only to its author (tb_post.author_id), who
         must send the session cookie; to anyone else, including an anonymous visitor, it answers 404 exactly as for a slug
-        no row has, so its existence is not revealed. For unknown slugs, it responds with 404.
+        no row has, so its existence is not revealed. For unknown slugs, it responds with 404. A signed-in requester also gets
+        bookmarkId, the id of the post in their own bookmarks.
       operationId: postBody
       tags:
         - Posts
@@ -902,6 +903,185 @@ paths:
           description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie), or the item was registered by another user. The response body is not part of the contract.
         '404':
           description: No media item has the path slug. The response body is not part of the contract.
+  /public/api/v1/bookmarks:
+    get:
+      summary: List the bookmarks of the signed-in user
+      description: >
+        Returns the bookmarks of the caller (tb_bookmark.owner_id), pinned ones first: by order descending, then by id
+        descending (the newest first among those with the same order). Other users' bookmarks are never returned. The
+        recent bookmarks tab asks for 7 with limit; the bookmark page asks for all of them.
+      operationId: listOfBookmarks
+      tags:
+        - Bookmarks
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: >
+            The maximum number of bookmarks to return, taken from the first of the order above. When absent, every
+            bookmark is returned. A value outside 1 to 100, or not an integer, is rejected with 400.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          example: 7
+      responses:
+        '200':
+          description: The bookmarks; an empty list when the user has none
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookmarkList'
+              example:
+                bookmarks:
+                  - id: 12
+                    postId: 7061
+                    slug: '%ed%81%b0%ea%b8%b0%ec%97%85%ec%9d%98-%eb%b0%b0%ec%9b%80-kpi'
+                    name: 큰기업의 배움 - KPI, 조직을 움직이는 힘
+                    order: 2
+                    createdDate: '2026-11-20T10:00:00'
+                    modifiedDate: null
+        '400':
+          description: limit is not an integer from 1 to 100. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+    put:
+      summary: Save the names and the order of the bookmarks at once
+      description: >
+        Replaces the name and the order of each bookmark named in the body, in one transaction: either every one is
+        saved or none. This is what the 노출 순서 저장 button sends. A bookmark that is not in the body is left as it
+        is. Only the caller's own bookmarks can be changed; an id of no bookmark of the caller rejects the whole
+        request with 404. modifiedDate is not touched, as the caller is arranging the display and not renaming. A
+        single rename is `PUT /public/api/v1/bookmark/{id}`.
+      operationId: saveBookmarks
+      tags:
+        - Bookmarks
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookmarkArrangement'
+      responses:
+        '200':
+          description: The saved bookmarks, in the order of the listing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookmarkList'
+        '400':
+          description: The body has no bookmarks or more than 500, an id appears twice, a name is blank or longer than 130 characters, or an order is negative or above 1000000. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+        '404':
+          description: An id is not a bookmark of the caller. Nothing is saved. The response body is not part of the contract.
+  /public/api/v1/bookmark:
+    post:
+      summary: Bookmark a post
+      description: >
+        Adds the post with the given slug to the bookmarks of the caller. The bookmark takes the post's id and slug
+        (tb_bookmark.post_id, post_slug) and its title as the name, is not pinned (order 0), and is created now
+        (createdDate); modifiedDate is null. A post can be bookmarked once by a user. Only a post the caller can read
+        can be bookmarked: a published one, or the caller's own whatever its status.
+      operationId: createBookmark
+      tags:
+        - Bookmarks
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookmarkInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bookmark'
+        '400':
+          description: The slug is missing or blank. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+        '404':
+          description: No post or page has the slug, or it is another user's draft or private post. The response body is not part of the contract.
+        '409':
+          description: The caller has bookmarked this post already. The response body is not part of the contract.
+  /public/api/v1/bookmark/{id}:
+    put:
+      summary: Rename a bookmark
+      description: >
+        Gives the bookmark a new name and sets its modifiedDate to now. This is applied at once, apart from the saving
+        of the order. Only the owner of the bookmark (tb_bookmark.owner_id) can rename it.
+      operationId: renameBookmark
+      tags:
+        - Bookmarks
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookmarkRename'
+      responses:
+        '200':
+          description: The renamed bookmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bookmark'
+        '400':
+          description: The name is missing, blank or longer than 130 characters. The response body is not part of the contract.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+        '404':
+          description: No bookmark has this id, or it is another user's. The response body is not part of the contract.
+    delete:
+      summary: Delete a bookmark
+      description: >
+        Removes the bookmark; the post is not touched. This is applied at once. Only the owner of the bookmark can
+        delete it.
+      operationId: deleteBookmark
+      tags:
+        - Bookmarks
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Deleted. There is no response body.
+        '401':
+          description: Not authenticated. The response body is not part of the contract.
+        '403':
+          description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie). The response body is not part of the contract.
+        '404':
+          description: No bookmark has this id, or it is another user's. The response body is not part of the contract.
 components:
   securitySchemes:
     sessionCookie:
@@ -1263,6 +1443,8 @@ components:
         - modified
         - hashTags
         - canEdit
+        - author
+        - bookmarkId
       properties:
         title:
           type: string
@@ -1319,6 +1501,118 @@ components:
             author. A post or a page can be updated and deleted by its author.
           examples:
             - false
+        author:
+          type:
+            - string
+            - 'null'
+          description: >
+            tb_post.author_nick: the nick name of the author at the time the post was saved. null when the author had set
+            none, and for rows saved before this field existed. The client shows nothing for null.
+        bookmarkId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: >
+            The id of this post in the bookmarks of the requester (tb_bookmark.id), so the star can be switched off with
+            `DELETE /public/api/v1/bookmark/{id}`. null when the post is not bookmarked by the requester, and for an
+            anonymous visitor.
+    BookmarkInput:
+      type: object
+      required:
+        - slug
+      properties:
+        slug:
+          type: string
+          description: The slug of the post to bookmark as readers see it, not URL-encoded.
+          example: kpi-power-in-big-company
+    BookmarkRename:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 130
+          description: The new name; surrounding whitespace is removed and what is left must not be empty.
+    BookmarkArrangement:
+      type: object
+      required:
+        - bookmarks
+      properties:
+        bookmarks:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - order
+            properties:
+              id:
+                type: integer
+                format: int64
+              name:
+                type: string
+                maxLength: 130
+              order:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                description: See Bookmark.order.
+    BookmarkList:
+      type: object
+      required:
+        - bookmarks
+      properties:
+        bookmarks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bookmark'
+    Bookmark:
+      type: object
+      required:
+        - id
+        - postId
+        - slug
+        - name
+        - order
+        - createdDate
+        - modifiedDate
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: tb_bookmark.id
+        postId:
+          type: integer
+          format: int64
+          description: tb_bookmark.post_id
+        slug:
+          type: string
+          description: >
+            tb_bookmark.post_slug, a copy of the slug of the post as stored (see PostSummary.slug: decode it once to get the
+            slug readers see). It follows the post when the post is renamed.
+        name:
+          type: string
+          maxLength: 130
+          description: tb_bookmark.name, the title of the post when it was bookmarked unless the user renamed it
+        order:
+          type: integer
+          minimum: 0
+          description: >
+            tb_bookmark.sort_order. 0 is a bookmark that is not pinned; a value above 0 pins it, and the larger the value
+            the earlier it is listed.
+        createdDate:
+          type: string
+          description: tb_bookmark.created_date in the site's local time, formatted as PostBody.date
+        modifiedDate:
+          type:
+            - string
+            - 'null'
+          description: tb_bookmark.modified_date in the same format; null until the bookmark is renamed
     Health:
       type: object
       required:

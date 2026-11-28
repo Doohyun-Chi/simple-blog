@@ -1,0 +1,17 @@
+-- Bookmark table, see DBSCHEMA.md. The schema is not managed by Hibernate (ddl-auto=none): run this once.
+-- SORT_ORDER 0 is a bookmark that is not pinned, a value above 0 pins it. POST_SLUG is a copy of TB_POST.SLUG that follows a rename.
+-- No foreign key holds POST_ID: the application removes the bookmarks of a post that is deleted.
+CREATE TABLE IF NOT EXISTS TB_BOOKMARK (
+  ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  OWNER_ID BIGINT UNSIGNED NOT NULL,
+  POST_ID BIGINT UNSIGNED NOT NULL,
+  POST_SLUG VARCHAR(200) NOT NULL,
+  NAME VARCHAR(130) NOT NULL,
+  SORT_ORDER INT NOT NULL DEFAULT 0,
+  CREATED_DATE DATETIME(6) NOT NULL COMMENT 'UTC',
+  MODIFIED_DATE DATETIME(6) NULL COMMENT 'UTC',
+  PRIMARY KEY (ID),
+  UNIQUE INDEX IDX_TB_BOOKMARK_OWNER_POST (OWNER_ID, POST_ID),
+  INDEX IDX_TB_BOOKMARK_OWNER_ORDER (OWNER_ID, SORT_ORDER DESC, ID DESC),
+  INDEX IDX_TB_BOOKMARK_POST (POST_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

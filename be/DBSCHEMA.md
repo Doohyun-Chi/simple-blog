@@ -71,12 +71,13 @@ columns
 - post_id: bookmarked post ID
 - post_slug: slug for the post, redundency for performance
 - name: bookmark name, usually from the post's title
-- order: display order, integer and default is 0
+- sort_order: display order, integer and default is 0
 - created_date: created date and time
 - owner_id: owner's user id
 
 indexes
 - unique index for id
+- unique index with owner_id and post_id
 - clustered index for owner_id and order
 
 ## Bookshelf scheme
