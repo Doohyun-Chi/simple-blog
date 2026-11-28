@@ -12,7 +12,7 @@ export type ArrangementFailure = 'rename' | 'remove' | 'save'
  */
 export function useBookmarkArrangement(initial: Bookmark[]) {
   const [groups, updateGroups] = useState<BookmarkGroups>(() => groupsOf(initial))
-  const [savedLayout, updateSavedLayout] = useState(() => layoutOf(groupsOf(initial)))
+  const [saved, updateSaved] = useState<BookmarkGroups>(() => groupsOf(initial))
   const [savedNames, updateSavedNames] = useState(() => new Map(initial.map((bookmark) => [bookmark.id, bookmark.name])))
   const [busy, updateBusy] = useState(false)
   const [failure, updateFailure] = useState<ArrangementFailure | null>(null)
@@ -47,13 +47,14 @@ export function useBookmarkArrangement(initial: Bookmark[]) {
   const remove = (id: number) => attempt('remove', async () => {
     await deleteBookmark(id)
     updateGroups((now) => without(now, id))
+    updateSaved((now) => without(now, id))
     announceBookmarkChange()
   })
 
   const save = () => attempt('save', async () => {
-    const saved = groupsOf(await saveBookmarks(arrangementOf(groups)))
-    updateGroups(saved)
-    updateSavedLayout(layoutOf(saved))
+    const result = groupsOf(await saveBookmarks(arrangementOf(groups)))
+    updateGroups(result)
+    updateSaved(result)
     announceBookmarkChange()
   })
 
@@ -61,7 +62,7 @@ export function useBookmarkArrangement(initial: Bookmark[]) {
     groups,
     busy,
     failure,
-    changed: layoutOf(groups) !== savedLayout,
+    changed: layoutOf(groups) !== layoutOf(saved),
     pin: (id: number) => updateGroups((now) => pinned(now, id)),
     unpin: (id: number) => updateGroups((now) => unpinned(now, id)),
     move: (id: number, targetId: number) => updateGroups((now) => moved(now, id, targetId)),
