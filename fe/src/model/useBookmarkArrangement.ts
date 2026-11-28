@@ -1,10 +1,17 @@
 import { useState } from 'react'
-import { arrangementOf, type Bookmark, type BookmarkGroups, groupsOf, layoutOf, moved, named, pinned, unpinned, without } from './Bookmark.ts'
+import {
+  arrangementOf, type Bookmark, type BookmarkArrangementItem, type BookmarkGroups, groupsOf, layoutOf, moved, named, pinned, unpinned, without,
+} from './Bookmark.ts'
 import { deleteBookmark, renameBookmark, saveBookmarks } from './bookmarkApi.ts'
 import { announceBookmarkChange } from './useBookmarks.ts'
 
 /** What went wrong last on the management page, for the component to word. */
 export type ArrangementFailure = 'rename' | 'remove' | 'save'
+
+/** A name the user emptied and left stays as the server has it: the server takes the names of a save as they are. */
+function withSavedNamesForBlank(items: BookmarkArrangementItem[], savedNames: Map<number, string>): BookmarkArrangementItem[] {
+  return items.map((item) => (item.name.trim() === '' ? { ...item, name: savedNames.get(item.id) ?? item.name } : item))
+}
 
 /**
  * The management page's state. Pinning, unpinning and moving only change what is shown until `save`; a rename and a removal are sent at
@@ -52,7 +59,7 @@ export function useBookmarkArrangement(initial: Bookmark[]) {
   })
 
   const save = () => attempt('save', async () => {
-    const result = groupsOf(await saveBookmarks(arrangementOf(groups)))
+    const result = groupsOf(await saveBookmarks(withSavedNamesForBlank(arrangementOf(groups), savedNames)))
     updateGroups(result)
     updateSaved(result)
     announceBookmarkChange()
