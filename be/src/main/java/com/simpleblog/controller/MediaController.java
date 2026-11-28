@@ -1,6 +1,7 @@
 package com.simpleblog.controller;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import com.simpleblog.dto.ExternalMediaInput;
 import com.simpleblog.dto.ImageUpload;
@@ -51,8 +52,10 @@ public class MediaController {
 	@PostMapping(path = "/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<MediaInfo> createImage(@AuthenticationPrincipal OidcUser user, @RequestPart("file") MultipartFile file,
 			@RequestParam(name = "provider", required = false) String provider, @RequestParam(name = "slug", required = false) String slug,
-			@RequestParam(name = "replace", defaultValue = "false") boolean replace) throws IOException {
-		ImageUpload upload = new ImageUpload(file.getOriginalFilename(), file.getBytes(), provider, slug, replace);
+			@RequestParam(name = "replace", defaultValue = "false") boolean replace,
+			@RequestParam(name = "source", required = false) String source,
+			@RequestParam(name = "sourceType", required = false) String sourceType) throws IOException {
+		ImageUpload upload = new ImageUpload(file.getOriginalFilename(), file.getBytes(), provider, slug, replace, source, sourceType);
 		return responseOf(this.mediaService.uploadImage(this.userService.idOf(user), upload));
 	}
 
@@ -68,8 +71,19 @@ public class MediaController {
 	@GetMapping("/media/{slug}")
 	public ResponseEntity<Resource> file(@PathVariable String slug) {
 		MediaFile file = this.mediaService.file(slug);
+		return responseOf(file, MediaType.parseMediaType(file.mimeType()));
+	}
+
+	@GetMapping("/media/{slug}/source")
+	public ResponseEntity<Resource> source(@PathVariable String slug) {
+		MediaFile source = this.mediaService.source(slug);
+		return responseOf(source, new MediaType(MediaType.parseMediaType(source.mimeType()), StandardCharsets.UTF_8));
+	}
+
+	/** A stored file, revalidated on every use: its stored name, which changes with its bytes, is the ETag. */
+	private ResponseEntity<Resource> responseOf(MediaFile file, MediaType type) {
 		return ResponseEntity.ok()
-			.contentType(MediaType.parseMediaType(file.mimeType()))
+			.contentType(type)
 			.cacheControl(CacheControl.noCache().cachePublic())
 			.eTag("\"" + file.stored() + "\"")
 			.body(file.resource());

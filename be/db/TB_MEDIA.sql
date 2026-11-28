@@ -1,4 +1,5 @@
 -- Media handling table, see DBSCHEMA.md. The schema is not managed by Hibernate (ddl-auto=none): run this once.
+-- SOURCE_TYPE is drawio or null (SourceType); the source itself is a file beside LOCATION, not a column.
 CREATE TABLE IF NOT EXISTS TB_MEDIA (
   ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   SLUG VARCHAR(200) NOT NULL,
@@ -6,9 +7,13 @@ CREATE TABLE IF NOT EXISTS TB_MEDIA (
   MIME_TYPE VARCHAR(2048) NOT NULL,
   LOCATION VARCHAR(2048) NOT NULL,
   THUMBNAIL VARCHAR(2048) NULL,
+  SOURCE_TYPE VARCHAR(20) NULL,
   DATE DATETIME(6) NOT NULL,
   OWNER_ID BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (ID),
   UNIQUE INDEX IDX_TB_MEDIA_SLUG (SLUG),
   INDEX IDX_TB_MEDIA_DATE (DATE)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- A table created before image sources were kept gets its column with:
+-- ALTER TABLE TB_MEDIA ADD COLUMN SOURCE_TYPE VARCHAR(20) NULL AFTER THUMBNAIL;

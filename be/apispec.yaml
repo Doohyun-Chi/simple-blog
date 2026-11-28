@@ -705,12 +705,14 @@ paths:
                     mimeType: https://youtu.be/dQw4w9WgXcQ
                     url: https://youtu.be/dQw4w9WgXcQ
                     thumbnail: https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg
+                    sourceType: null
                     date: '2026-11-18T02:10:00Z'
                   - slug: photo-3fa9c1d2
                     provider: internal
                     mimeType: image/png
                     url: /public/api/v1/media/photo-3fa9c1d2
                     thumbnail: null
+                    sourceType: null
                     date: '2026-11-18T01:30:00Z'
         '401':
           description: Not authenticated. The response body is not part of the contract.
@@ -729,6 +731,12 @@ paths:
         changed and the answer is 409, unless `replace` is true: then the file of that item is replaced by the new one,
         keeping its slug and provider, and the item is answered with 200. A slug held by anything else, such as another
         user's image or a video, is 422 whatever `replace` says.
+
+
+        A content image may come with its editable source, such as the draw.io diagram it was exported from: the parts
+        `source` and `sourceType` together. The source is kept as a file beside the image (not in tb_media; only
+        tb_media.source_type records that there is one) and served by `GET /public/api/v1/media/{slug}/source`. A
+        replacement replaces the source too, so a replacement without one leaves the item with none.
       operationId: createMedia
       tags:
         - Media
@@ -764,6 +772,7 @@ paths:
                     mimeType: image/png
                     url: /public/api/v1/media/photo-3fa9c1d2
                     thumbnail: null
+                    sourceType: null
                     date: '2026-11-18T01:30:00Z'
                 youtube:
                   value:
@@ -772,12 +781,15 @@ paths:
                     mimeType: https://youtu.be/dQw4w9WgXcQ
                     url: https://youtu.be/dQw4w9WgXcQ
                     thumbnail: https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg
+                    sourceType: null
                     date: '2026-11-18T01:30:00Z'
         '400':
           description: >
             The file is missing or empty, `provider` is neither internal nor content, `slug` is empty, longer than 100
             characters or has a character other than lower case English letters, digits and '-' (or starts or ends with
-            '-'), or the url is not a YouTube video link. The response body is not part of the contract.
+            '-'), the url is not a YouTube video link, or the source is wrong: only one of `source` and `sourceType` is
+            given, `source` is empty or over 1 MB in UTF-8, `sourceType` is not a known type, or the image is not content
+            (the new image's `provider`, or the provider of the image being replaced). The response body is not part of the contract.
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':
@@ -880,7 +892,7 @@ paths:
       summary: Delete a media item
       description: >
         Deletes the media item identified by the path slug: its tb_media row is removed for good and, for an image, its
-        file on the server too, whatever the provider. Only the user who registered the item (tb_media.owner_id) can
+        file on the server too, with its source if it has one, whatever the provider. Only the user who registered the item (tb_media.owner_id) can
         delete it. A post or page whose content refers to the item is not changed and then shows a broken image or link,
         so the caller is expected to warn the writer first. A YouTube video has no file; only its row is removed.
       operationId: deleteMedia
@@ -903,6 +915,35 @@ paths:
           description: Signed in, but the request has no valid CSRF token (the X-XSRF-TOKEN header must equal the XSRF-TOKEN cookie), or the item was registered by another user. The response body is not part of the contract.
         '404':
           description: No media item has the path slug. The response body is not part of the contract.
+  /public/api/v1/media/{slug}/source:
+    get:
+      summary: Get the source of an image
+      description: >
+        Returns the editable source a content image was uploaded with (see `MediaUpload.source`), as text in the mime type
+        of its `sourceType`: for drawio the uncompressed draw.io diagram XML, an `mxfile` element, as application/xml. It is
+        public like the image itself, so a reader such as an AI client can read a diagram without taking the PNG apart.
+        Like the file, the answer carries an ETag and must be revalidated on every use (Cache-Control no-cache).
+      operationId: getMediaSource
+      tags:
+        - Media
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The source, in UTF-8
+          content:
+            application/xml:
+              schema:
+                type: string
+              example: '<mxfile><diagram name="Page-1"><mxGraphModel>...</mxGraphModel></diagram></mxfile>'
+        '404':
+          description: >
+            No internal or content media item has this slug, or it has no source (`Media.sourceType` is null), as an
+            image uploaded without one. The response body is not part of the contract.
   /public/api/v1/bookmarks:
     get:
       summary: List the bookmarks of the signed-in user
@@ -1255,6 +1296,18 @@ components:
           description: >
             Optional, used with `slug`. true replaces the file of the signed-in user's image that already has the slug;
             false refuses with 409. Nothing is replaced when no image has the slug: it is created.
+        source:
+          type: string
+          description: >
+            Optional, given with `sourceType` and only for a content image. The editable source of the image as text, up
+            to 1 MB in UTF-8, such as the uncompressed draw.io diagram XML (an `mxfile` element) of a diagram drawn in
+            the editor. Kept as a file beside the image, not in tb_media, and served by `getMediaSource`.
+        sourceType:
+          type: string
+          enum: [drawio]
+          description: >
+            Optional, given with `source`: what kind of source it is, recorded in tb_media.source_type. drawio is a
+            draw.io diagram XML, served as application/xml.
     MediaRename:
       type: object
       required:
@@ -1284,6 +1337,7 @@ components:
         - mimeType
         - url
         - thumbnail
+        - sourceType
         - date
       properties:
         slug:
@@ -1311,6 +1365,14 @@ components:
             - string
             - 'null'
           description: tb_media.thumbnail. The YouTube thumbnail image URL for a YouTube video, null for an image.
+        sourceType:
+          type:
+            - string
+            - 'null'
+          enum: [drawio, null]
+          description: >
+            tb_media.source_type. The kind of the source the image was uploaded with (see `MediaUpload.sourceType`),
+            readable at `/public/api/v1/media/{slug}/source`; null when it has none.
         date:
           type: string
           format: date-time

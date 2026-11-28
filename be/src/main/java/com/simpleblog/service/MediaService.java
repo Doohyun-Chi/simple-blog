@@ -1,5 +1,8 @@
 package com.simpleblog.service;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -15,8 +18,10 @@ import com.simpleblog.dto.ImageUpload;
 import com.simpleblog.dto.MediaFile;
 import com.simpleblog.dto.MediaInfo;
 import com.simpleblog.dto.MediaList;
+import com.simpleblog.dto.MediaSource;
 import com.simpleblog.entity.Media;
 import com.simpleblog.entity.MediaProvider;
+import com.simpleblog.entity.SourceType;
 import com.simpleblog.exception.InvalidMediaException;
 import com.simpleblog.exception.MediaNotFoundException;
 import com.simpleblog.exception.NotMediaOwnerException;
@@ -32,6 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class MediaService {
 
 	private static final String YOUTUBE_SLUG_PREFIX = "youtube-";
+
+	/** The largest source of an image, in UTF-8 bytes: 1 MB, as be/apispec.yaml says. */
+	private static final int SOURCE_MAX_BYTES = 1024 * 1024;
 
 	private final MediaRepository mediaRepository;
 
@@ -58,24 +66,22 @@ public class MediaService {
 	/**
 	 * Stores an image on the server, internal or, when the upload says so, content. The type comes from the content. The
 	 * slug is the one the upload asks for, or is made of the file name. Under a slug the writer already has, the file is
-	 * replaced when the upload says so; the second element of the answer then tells it was not newly created.
+	 * replaced when the upload says so; the second element of the answer then tells it was not newly created. A content
+	 * image may come with its source, which is kept beside the file and replaced with it.
 	 */
 	@Transactional
 	public Registration uploadImage(long ownerId, ImageUpload upload) {
 		MediaProvider provider = uploadProviderOf(upload.provider());
-		if (upload.content().length == 0) {
-			throw new InvalidMediaException("The file is empty");
-		}
-		ImageType type = ImageType.of(upload.content()).orElseThrow(() -> new UnsupportedMediaFileException("Not a PNG, JPEG, GIF or WebP image"));
+		ImageFile image = imageOf(upload);
 		if (upload.slug() == null) {
-			return new Registration(storeImage(ownerId, this.mediaSlug.of(upload.fileName()), provider, type, upload.content()), true);
+			return new Registration(storeImage(ownerId, this.mediaSlug.of(upload.fileName()), provider, image), true);
 		}
 		String slug = this.mediaSlug.chosen(upload.slug());
 		Optional<Media> existing = this.mediaRepository.findBySlug(slug);
 		if (existing.isEmpty()) {
-			return new Registration(storeImage(ownerId, slug, provider, type, upload.content()), true);
+			return new Registration(storeImage(ownerId, slug, provider, image), true);
 		}
-		return new Registration(replaceImage(ownerId, existing.get(), upload.replace(), type, upload.content()), false);
+		return new Registration(replaceImage(ownerId, existing.get(), upload.replace(), image), false);
 	}
 
 	/** Registers a YouTube video by reference. The second element tells whether it was newly registered. */
@@ -100,6 +106,30 @@ public class MediaService {
 		Media media = this.mediaRepository.findBySlug(slug).filter(Media::storesFile)
 			.orElseThrow(() -> new MediaNotFoundException("No image with slug: " + slug));
 		return new MediaFile(this.storage.load(media.location()), media.mimeType(), media.location());
+	}
+
+	/** The source kept beside an image, to be served like its file; its stored name changes with it. */
+	public MediaFile source(String slug) {
+		Media media = withSource(slug);
+		String name = sourceNameOf(media.location(), media.sourceType());
+		return new MediaFile(this.storage.load(name), media.sourceType().mimeType(), name);
+	}
+
+	/** The source kept beside an image as text, for a reader that wants it in a message, such as an MCP tool. */
+	public MediaSource sourceText(String slug) {
+		Media media = withSource(slug);
+		try {
+			String text = this.storage.load(sourceNameOf(media.location(), media.sourceType())).getContentAsString(StandardCharsets.UTF_8);
+			return new MediaSource(media.slug(), media.sourceType(), text);
+		}
+		catch (IOException ex) {
+			throw new UncheckedIOException("Failed to read the source of the image " + slug, ex);
+		}
+	}
+
+	private Media withSource(String slug) {
+		return this.mediaRepository.findBySlug(slug).filter((media) -> media.sourceType() != null)
+			.orElseThrow(() -> new MediaNotFoundException("No image source has the slug: " + slug));
 	}
 
 	/**
@@ -155,14 +185,84 @@ public class MediaService {
 			.forEach(this::discard);
 	}
 
-	private MediaInfo storeImage(long ownerId, String slug, MediaProvider provider, ImageType type, byte[] content) {
-		String stored = this.storage.save(content, type.extension());
+	/** The image of an upload, checked: its type comes from the content, and its source is there in full or not at all. */
+	private ImageFile imageOf(ImageUpload upload) {
+		if (upload.content().length == 0) {
+			throw new InvalidMediaException("The file is empty");
+		}
+		ImageType type = ImageType.of(upload.content()).orElseThrow(() -> new UnsupportedMediaFileException("Not a PNG, JPEG, GIF or WebP image"));
+		if (upload.source() == null && upload.sourceType() == null) {
+			return new ImageFile(type, upload.content(), null, null);
+		}
+		return new ImageFile(type, upload.content(), sourceTypeOf(upload.sourceType()), sourceBytesOf(upload.source()));
+	}
+
+	private SourceType sourceTypeOf(String code) {
+		if (code == null) {
+			throw new InvalidMediaException("source must come with sourceType");
+		}
+		return SourceType.find(code).orElseThrow(() -> new InvalidMediaException("Unknown sourceType: " + code));
+	}
+
+	private byte[] sourceBytesOf(String source) {
+		if (source == null || source.isEmpty()) {
+			throw new InvalidMediaException("sourceType must come with a source that is not empty");
+		}
+		byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
+		if (bytes.length > SOURCE_MAX_BYTES) {
+			throw new InvalidMediaException("The source is over 1 MB");
+		}
+		return bytes;
+	}
+
+	/** Refuses a source for an image of a provider that keeps none, such as an image of the library. */
+	private void requireSourceKept(MediaProvider provider, ImageFile image) {
+		if (image.sourceType() != null && !provider.keepsSource()) {
+			throw new InvalidMediaException("Only a content image keeps a source");
+		}
+	}
+
+	private MediaInfo storeImage(long ownerId, String slug, MediaProvider provider, ImageFile image) {
+		requireSourceKept(provider, image);
+		String stored = storeFiles(image);
 		try {
-			return MediaInfo.from(this.mediaRepository.save(Media.storedImage(slug, provider, type.mimeType(), stored, now(), ownerId)));
+			Media media = Media.storedImage(slug, provider, image.type().mimeType(), stored, image.sourceType(), now(), ownerId);
+			return MediaInfo.from(this.mediaRepository.save(media));
 		}
 		catch (DataIntegrityViolationException ex) {
-			this.storage.remove(stored);
+			filesOf(stored, image.sourceType()).forEach(this.storage::remove);
 			throw new MediaSlugTakenException(slug);
+		}
+		catch (RuntimeException ex) {
+			filesOf(stored, image.sourceType()).forEach(this.storage::remove);
+			throw ex;
+		}
+	}
+
+	/** Swaps the file and the source of the writer's own image for these; the old ones go once the swap is committed. */
+	private MediaInfo replaceImage(long ownerId, Media existing, boolean replace, ImageFile image) {
+		if (!existing.storesFile() || !existing.ownedBy(ownerId)) {
+			throw new MediaSlugUnavailableException(existing.slug());
+		}
+		if (!replace) {
+			throw new MediaSlugTakenException(existing.slug());
+		}
+		requireSourceKept(existing.provider(), image);
+		List<String> old = filesOf(existing.location(), existing.sourceType());
+		existing.replaceFile(image.type().mimeType(), storeFiles(image), image.sourceType(), now());
+		old.forEach(this.storage::removeAfterCommit);
+		return MediaInfo.from(existing);
+	}
+
+	/** Writes the image file and its source, if any, beside it; returns the stored name of the image. */
+	private String storeFiles(ImageFile image) {
+		String stored = this.storage.save(image.content(), image.type().extension());
+		if (image.sourceType() == null) {
+			return stored;
+		}
+		try {
+			this.storage.saveBeside(stored, image.sourceType().extension(), image.source());
+			return stored;
 		}
 		catch (RuntimeException ex) {
 			this.storage.remove(stored);
@@ -170,18 +270,13 @@ public class MediaService {
 		}
 	}
 
-	/** Swaps the file of the writer's own image for this one; the old file goes once the swap is committed. */
-	private MediaInfo replaceImage(long ownerId, Media existing, boolean replace, ImageType type, byte[] content) {
-		if (!existing.storesFile() || !existing.ownedBy(ownerId)) {
-			throw new MediaSlugUnavailableException(existing.slug());
-		}
-		if (!replace) {
-			throw new MediaSlugTakenException(existing.slug());
-		}
-		String old = existing.location();
-		existing.replaceFile(type.mimeType(), this.storage.save(content, type.extension()), now());
-		this.storage.removeAfterCommit(old);
-		return MediaInfo.from(existing);
+	/** The files of a stored image: its own, and its source beside it when it has one. */
+	private static List<String> filesOf(String stored, SourceType sourceType) {
+		return sourceType == null ? List.of(stored) : List.of(stored, sourceNameOf(stored, sourceType));
+	}
+
+	private static String sourceNameOf(String stored, SourceType sourceType) {
+		return MediaStorage.besideName(stored, sourceType.extension());
 	}
 
 	/** The provider an upload asks for: internal when it names none, otherwise one that stores a file. */
@@ -197,7 +292,7 @@ public class MediaService {
 	private void discard(Media media) {
 		this.mediaRepository.delete(media);
 		if (media.storesFile()) {
-			this.storage.removeAfterCommit(media.location());
+			filesOf(media.location(), media.sourceType()).forEach(this.storage::removeAfterCommit);
 		}
 	}
 
@@ -217,6 +312,10 @@ public class MediaService {
 
 	/** The outcome of registering a video: the item and whether this call created it. */
 	public record Registration(MediaInfo media, boolean created) {
+	}
+
+	/** An uploaded image: its type and bytes, and its source with the kind of it, or two nulls when it has none. */
+	private record ImageFile(ImageType type, byte[] content, SourceType sourceType, byte[] source) {
 	}
 
 }

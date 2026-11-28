@@ -39,6 +39,19 @@
     "annotations": { "readOnlyHint": true }
   },
   {
+    "name": "read_media_source",
+    "title": "Read the source of an image",
+    "description": "Reads the editable source of an image in a post, such as the draw.io diagram XML of a diagram, by the image's slug.",
+    "inputSchema": {
+      "type": "object",
+      "required": ["slug"],
+      "properties": {
+        "slug": { "type": "string", "description": "The slug of the image: the end of its URL /public/api/v1/media/{slug} in a post." }
+      }
+    },
+    "annotations": { "readOnlyHint": true }
+  },
+  {
     "name": "create_post",
     "title": "Create a draft post",
     "description": "Writes a new post. It is always a draft; the user publishes it in the editor. The slug has only English letters, digits and '-'.",

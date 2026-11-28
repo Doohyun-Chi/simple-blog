@@ -14,7 +14,7 @@ import { IconVectorBezier2 } from '@tabler/icons-react'
 import { $getNodeByKey } from 'lexical'
 import { useContext, useState } from 'react'
 import { drawioPngOf } from '../model/drawio.ts'
-import { MediaProvider } from '../model/Media.ts'
+import { type ImageSource, MediaProvider } from '../model/Media.ts'
 import { mediaFileUrl, mediaSlugOf, uploadImage } from '../model/mediaApi.ts'
 import { ReplacedMediaContext } from '../model/ReplacedMedia.ts'
 import { useRemote } from '../model/useRemote.ts'
@@ -81,9 +81,9 @@ function EditDrawioButton({ nodeKey, imageSource, disabled }: { nodeKey: string;
   if (png.state !== 'loaded' || png.value === null) {
     return null
   }
-  async function keep(file: File): Promise<boolean> {
+  async function keep(file: File, diagram: ImageSource | null): Promise<boolean> {
     try {
-      const source = mediaFileUrl(await uploadImage(file, MediaProvider.CONTENT))
+      const source = mediaFileUrl(await uploadImage(file, MediaProvider.CONTENT, diagram))
       editor.update(() => {
         const node = $getNodeByKey(nodeKey)
         if ($isImageNode(node)) {

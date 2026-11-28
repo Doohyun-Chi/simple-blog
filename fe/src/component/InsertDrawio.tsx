@@ -2,7 +2,7 @@ import { ButtonWithTooltip, insertMarkdown$, usePublisher } from '@mdxeditor/edi
 import { IconVectorBezier2 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { markdownOfMedia } from '../model/mediaMarkdown.ts'
-import { MediaProvider } from '../model/Media.ts'
+import { type ImageSource, MediaProvider } from '../model/Media.ts'
 import { uploadImage } from '../model/mediaApi.ts'
 import { DrawioDialog } from './DrawioDialog.tsx'
 
@@ -13,9 +13,9 @@ export const DRAWIO_ALT = 'draw.io 다이어그램'
 export function InsertDrawio() {
   const insertMarkdown = usePublisher(insertMarkdown$)
   const [open, updateOpen] = useState(false)
-  async function keep(png: File): Promise<boolean> {
+  async function keep(png: File, source: ImageSource | null): Promise<boolean> {
     try {
-      insertMarkdown(markdownOfMedia(await uploadImage(png, MediaProvider.CONTENT), DRAWIO_ALT))
+      insertMarkdown(markdownOfMedia(await uploadImage(png, MediaProvider.CONTENT, source), DRAWIO_ALT))
       return true
     } catch (error: unknown) {
       console.error(error)

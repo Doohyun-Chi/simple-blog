@@ -2,8 +2,8 @@ import { type RefObject, useEffect, useRef } from 'react'
 import { DRAWIO_ORIGIN, drawioEventOf, nextDrawioStep } from './drawio.ts'
 
 interface DrawioHandlers {
-  /** draw.io saved: the PNG with the diagram inside, as a data URI. */
-  onSaved: (png: string) => void
+  /** draw.io saved: the PNG with the diagram inside, as a data URI, and the diagram XML when draw.io sent it. */
+  onSaved: (png: string, xml: string | null) => void
   /** draw.io was left without saving. */
   onClosed: () => void
 }
@@ -27,7 +27,7 @@ export function useDrawioMessages(frame: RefObject<HTMLIFrameElement | null>, in
       if (step.kind === 'send') {
         target.postMessage(JSON.stringify(step.message), DRAWIO_ORIGIN)
       } else if (step.kind === 'saved') {
-        latest.current.onSaved(step.png)
+        latest.current.onSaved(step.png, step.xml)
       } else if (step.kind === 'closed') {
         latest.current.onClosed()
       }

@@ -6,8 +6,9 @@ info:
     The Model Context Protocol (MCP) server of the blog, so an AI client can read the blog's posts. Draft for review. It
     follows the URL class `/mcp/v{N}/{URI}` of CLAUDE.md and the MCP Streamable HTTP transport, in its simplest form:
     one endpoint that answers every JSON-RPC 2.0 message with a plain JSON response, with no session and no server
-    sent event stream. The first version has five tools over tb_post: three that read posts and two that write them.
-    Deleting, and tools for the bookshelf and the media, are left for later versions.
+    sent event stream. The first version has five tools over tb_post, three that read posts and two that write them,
+    and one that reads the source of an image in a post. Deleting, the bookshelf and uploading media are left for later
+    versions.
 
 
     Who is calling. A client holds the MCP access key of a user (tb_user_setting.mcp_access_key, shown on the
@@ -56,6 +57,10 @@ paths:
 
         - `read_post` (`ReadPostArguments`): one post or page by its slug with its content, as `GET /public/api/v1/post/{slug}`.
 
+        - `read_media_source` (`ReadMediaSourceArguments`): the editable source of an image, such as the draw.io diagram XML
+        of a diagram in a post, as `GET /public/api/v1/media/{slug}/source` of apispec.yaml. The slug is the last part of
+        the image URL in the post's Markdown (`/public/api/v1/media/{slug}`). It answers `MediaSource`.
+
         - `create_post` (`CreatePostArguments`): writes a new post, as `POST /public/api/v1/post`. It is always a draft.
 
         - `update_post` (`UpdatePostArguments`): changes a draft the key's user wrote, as `PUT /public/api/v1/post/{slug}`;
@@ -70,14 +75,14 @@ paths:
         and '-' (up to 200 characters), the title is up to 130 characters, the hash tags up to 200, the slug is unique
         among all posts and pages, and a saved post is cached and fed like one written in the editor. `content` is Markdown;
         an image is written as a link to its file URL, and there is no tool that uploads one. Both tools answer the saved
-        post as `PostContent`. A tool lists `annotations.readOnlyHint` in `tools/list`: true for the three that read.
+        post as `PostContent`. A tool lists `annotations.readOnlyHint` in `tools/list`: true for the four that read.
 
 
         A tool answers a `ToolResult`: `structuredContent` holds the data, and `content` holds the same data as one JSON
         text, for clients that only read text. A tool that fails because of a value or a rule, so the client can act on
         it, answers a normal result with `isError` true and the reason as text: a slug no post has, a slug that is
-        already taken or has a forbidden character, a text over its limit, a post the key's user did not write, or a post
-        that is not a draft. A call
+        already taken or has a forbidden character, a text over its limit, a post the key's user did not write, a post
+        that is not a draft, or an image that has no source. A call
         that is not shaped right, such as an unknown tool, a missing required argument or an argument of the wrong type,
         is a JSON-RPC error (-32602).
 
@@ -145,6 +150,15 @@ paths:
                     name: read_post
                     arguments:
                       slug: my-first-post
+              readMediaSource:
+                value:
+                  jsonrpc: '2.0'
+                  id: 8
+                  method: tools/call
+                  params:
+                    name: read_media_source
+                    arguments:
+                      slug: diagram-drawio-3fa9c1d2
               createPost:
                 value:
                   jsonrpc: '2.0'
@@ -238,6 +252,28 @@ paths:
                       content:
                         - type: text
                           text: 'No post or page has the slug: my-first-post'
+                mediaSource:
+                  value:
+                    jsonrpc: '2.0'
+                    id: 8
+                    result:
+                      isError: false
+                      structuredContent:
+                        slug: diagram-drawio-3fa9c1d2
+                        sourceType: drawio
+                        source: '<mxfile><diagram name="Page-1"><mxGraphModel>...</mxGraphModel></diagram></mxfile>'
+                      content:
+                        - type: text
+                          text: '{"slug":"diagram-drawio-3fa9c1d2","sourceType":"drawio","source":"<mxfile>...</mxfile>"}'
+                noMediaSource:
+                  value:
+                    jsonrpc: '2.0'
+                    id: 8
+                    result:
+                      isError: true
+                      content:
+                        - type: text
+                          text: 'No image source has the slug: photo-3fa9c1d2'
                 unknownMethod:
                   value:
                     jsonrpc: '2.0'
@@ -362,7 +398,9 @@ components:
           description: true when the tool could not do what was asked and `content` says why.
         structuredContent:
           type: object
-          description: The data of the tool, as `PostSummaries` (the lists) or `PostContent` (read, create and update). Absent when `isError` is true.
+          description: >
+            The data of the tool, as `PostSummaries` (the lists), `PostContent` (read, create and update) or `MediaSource`
+            (`read_media_source`). Absent when `isError` is true.
         content:
           type: array
           description: The same data as one JSON text, or the reason of the failure.
@@ -410,6 +448,14 @@ components:
         slug:
           type: string
           description: The slug of the post or page, as `list_posts` and `search_posts` give it.
+    ReadMediaSourceArguments:
+      type: object
+      required:
+        - slug
+      properties:
+        slug:
+          type: string
+          description: The slug of the image, the last part of its URL `/public/api/v1/media/{slug}` in a post's Markdown.
     CreatePostArguments:
       type: object
       required:
@@ -531,3 +577,21 @@ components:
         hashTags:
           type: string
           description: The hash tags separated by commas, without `#`; empty when there are none.
+    MediaSource:
+      type: object
+      required:
+        - slug
+        - sourceType
+        - source
+      properties:
+        slug:
+          type: string
+          description: The slug of the image.
+        sourceType:
+          type: string
+          enum:
+            - drawio
+          description: tb_media.source_type, as `Media.sourceType` of apispec.yaml.
+        source:
+          type: string
+          description: The source as text. For drawio the uncompressed draw.io diagram XML, an `mxfile` element.

@@ -80,6 +80,34 @@ class MediaDeleteFileTests {
 		assertThat(this.jdbcTemplate.queryForList("select slug from tb_media", String.class)).isEmpty();
 	}
 
+	private void uploadDiagram(String slug, String source, boolean replace) throws Exception {
+		this.mockMvc.perform(multipart("/public/api/v1/media").file(new MockMultipartFile("file", "a.png", "image/png", PNG))
+			.param("provider", "content").param("slug", slug).param("replace", String.valueOf(replace))
+			.param("source", source).param("sourceType", "drawio")
+			.with(TestUsers.signedInWithId("a@example.com", 101)).with(csrf())).andExpect(status().is2xxSuccessful());
+	}
+
+	@Test
+	void removesTheSourceBesideTheFile() throws Exception {
+		uploadDiagram("flow", "<mxfile/>", false);
+		assertThat(files()).hasSize(2).anyMatch((name) -> name.endsWith(".drawio"));
+		this.mockMvc.perform(delete("/public/api/v1/media/flow").with(TestUsers.signedInWithId("a@example.com", 101)).with(csrf()))
+			.andExpect(status().isNoContent());
+		assertThat(files()).isEmpty();
+	}
+
+	@Test
+	void removesTheOldFileAndSourceOnceReplaced() throws Exception {
+		uploadDiagram("flow", "<mxfile/>", false);
+		List<String> before = files();
+		uploadDiagram("flow", "<mxfile><diagram/></mxfile>", true);
+		assertThat(files()).hasSize(2).doesNotContainAnyElementsOf(before);
+		this.mockMvc.perform(multipart("/public/api/v1/media").file(new MockMultipartFile("file", "a.png", "image/png", PNG))
+			.param("slug", "flow").param("replace", "true")
+			.with(TestUsers.signedInWithId("a@example.com", 101)).with(csrf())).andExpect(status().isOk());
+		assertThat(files()).hasSize(1).noneMatch((name) -> name.endsWith(".drawio"));
+	}
+
 	@Test
 	void keepsTheRowAndTheFileOfAnotherUser() throws Exception {
 		upload("team-photo", "a@example.com", 101);

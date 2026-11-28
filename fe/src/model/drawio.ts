@@ -1,15 +1,19 @@
+import { type ImageSource, SOURCE_MAX_BYTES, SourceType } from './Media.ts'
 import { mediaSlugOf } from './mediaApi.ts'
 
 /** Where draw.io's editor is served for embedding. Only messages from this origin are listened to. */
 export const DRAWIO_ORIGIN = 'https://embed.diagrams.net'
 
-/** draw.io in embed mode speaking JSON messages, in Korean, with one 저장 후 닫기 button instead of separate save and exit. */
-export const DRAWIO_EDITOR_URL = `${DRAWIO_ORIGIN}/?embed=1&proto=json&spin=1&saveAndExit=1&noSaveBtn=1&lang=ko`
+/**
+ * draw.io in embed mode speaking JSON messages, in Korean, with one 저장 후 닫기 button instead of separate save and exit.
+ * `configure=1` makes it ask for its configuration first, so the diagram XML it hands back can be asked for uncompressed.
+ */
+export const DRAWIO_EDITOR_URL = `${DRAWIO_ORIGIN}/?embed=1&proto=json&spin=1&saveAndExit=1&noSaveBtn=1&lang=ko&configure=1`
 
-/** What the page does after a message from draw.io: answer it, take the saved PNG, close, or nothing. */
+/** What the page does after a message from draw.io: answer it, take the saved PNG and diagram XML, close, or nothing. */
 export type DrawioStep =
   | { kind: 'send'; message: Record<string, unknown> }
-  | { kind: 'saved'; png: string }
+  | { kind: 'saved'; png: string; xml: string | null }
   | { kind: 'closed' }
   | { kind: 'ignore' }
 
@@ -27,22 +31,41 @@ export function drawioEventOf(data: unknown): Record<string, unknown> | null {
 }
 
 /**
- * The embed protocol: when draw.io is ready it gets the diagram, a PNG with the diagram inside or an empty one; a save
- * asks for that PNG back (`xmlpng`), which is what gets uploaded; an exit closes the editor without saving.
+ * The embed protocol: draw.io first asks for its configuration and is told to keep the diagram XML uncompressed, so it
+ * can be read as it is; when it is ready it gets the diagram, a PNG with the diagram inside or an empty one; a save asks
+ * for that PNG back (`xmlpng`), which is what gets uploaded with the diagram XML that comes along; an exit closes the
+ * editor without saving.
  */
 export function nextDrawioStep(event: Record<string, unknown> | null, initialPng: string | null): DrawioStep {
   switch (event?.event) {
+    case 'configure':
+      return { kind: 'send', message: { action: 'configure', config: { compressXml: false } } }
     case 'init':
       return { kind: 'send', message: { action: 'load', autosave: 0, ...(initialPng === null ? { xml: '' } : { xmlpng: initialPng }) } }
     case 'save':
       return { kind: 'send', message: { action: 'export', format: 'xmlpng', spinKey: 'saving' } }
     case 'export':
-      return typeof event.data === 'string' ? { kind: 'saved', png: event.data } : { kind: 'ignore' }
+      return typeof event.data === 'string' ? { kind: 'saved', png: event.data, xml: textOf(event.xml) } : { kind: 'ignore' }
     case 'exit':
       return { kind: 'closed' }
     default:
       return { kind: 'ignore' }
   }
+}
+
+function textOf(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' ? value : null
+}
+
+/**
+ * The diagram XML as the source to upload with its PNG, or null when there is none or it is over what the backend keeps:
+ * the diagram is then saved without it rather than not at all, and still reopens from the PNG.
+ */
+export function drawioSourceOf(xml: string | null): ImageSource | null {
+  if (xml === null || new TextEncoder().encode(xml).length > SOURCE_MAX_BYTES) {
+    return null
+  }
+  return { sourceType: SourceType.DRAWIO, source: xml }
 }
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]

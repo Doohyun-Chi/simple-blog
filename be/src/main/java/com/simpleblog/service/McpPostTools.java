@@ -11,6 +11,7 @@ import com.simpleblog.entity.PostType;
 import com.simpleblog.exception.DuplicatePostSlugException;
 import com.simpleblog.exception.InvalidPostException;
 import com.simpleblog.exception.InvalidPostQueryException;
+import com.simpleblog.exception.MediaNotFoundException;
 import com.simpleblog.exception.McpException;
 import com.simpleblog.exception.McpToolException;
 import com.simpleblog.exception.NotPostAuthorException;
@@ -21,7 +22,8 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The tools of the MCP server over posts (be/mcpapispec.yaml): three that read and two that write drafts. They run as the
+ * The tools of the MCP server over posts (be/mcpapispec.yaml): three that read and two that write drafts, and one that reads
+ * the source of an image a post shows, such as a draw.io diagram. They run as the
  * user of the current request, which the MCP access key filter has put in place, so they go through {@link PostService}
  * like the editor does and follow its rules. A tool that cannot do what was asked answers a result with {@code isError}.
  */
@@ -34,12 +36,16 @@ public class McpPostTools {
 
 	private final UserService userService;
 
+	private final MediaService mediaService;
+
 	private final ObjectMapper mapper;
 
-	public McpPostTools(PostService postService, PostListService postListService, UserService userService, ObjectMapper mapper) {
+	public McpPostTools(PostService postService, PostListService postListService, UserService userService, MediaService mediaService,
+			ObjectMapper mapper) {
 		this.postService = postService;
 		this.postListService = postListService;
 		this.userService = userService;
+		this.mediaService = mediaService;
 		this.mapper = mapper;
 	}
 
@@ -50,7 +56,7 @@ public class McpPostTools {
 			return resultOf(dataOf(name, args));
 		}
 		catch (PostNotFoundException | InvalidPostException | InvalidPostQueryException | DuplicatePostSlugException
-				| NotPostAuthorException | McpToolException ex) {
+				| NotPostAuthorException | McpToolException | MediaNotFoundException ex) {
 			return failureOf(ex.getMessage());
 		}
 	}
@@ -60,6 +66,7 @@ public class McpPostTools {
 			case "list_posts" -> summaries(null, args);
 			case "search_posts" -> summaries(args.requiredText("query"), args);
 			case "read_post" -> McpPostContent.from(visible(args.requiredText("slug")));
+			case "read_media_source" -> this.mediaService.sourceText(args.requiredText("slug"));
 			case "create_post" -> McpPostContent.from(create(args));
 			case "update_post" -> McpPostContent.from(update(args));
 			default -> throw McpException.invalidParams("Unknown tool: " + name);

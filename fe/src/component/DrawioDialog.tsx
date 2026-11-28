@@ -1,7 +1,8 @@
 import { Button, Text } from 'design-system'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { DRAWIO_EDITOR_URL, pngFileOf } from '../model/drawio.ts'
+import { DRAWIO_EDITOR_URL, drawioSourceOf, pngFileOf } from '../model/drawio.ts'
+import type { ImageSource } from '../model/Media.ts'
 import { useDrawioMessages } from '../model/useDrawioMessages.ts'
 import './DrawioDialog.css'
 
@@ -10,8 +11,8 @@ const SAVE_FAILURE = '저장하지 못했습니다. 로그인 상태를 확인�
 interface DrawioDialogProps {
   /** The diagram to reopen, as a PNG data URI with the diagram inside; null starts an empty one. */
   initialPng: string | null
-  /** Keeps the saved PNG (uploads it and puts it in the post); answers whether that worked. */
-  onSave: (png: File) => Promise<boolean>
+  /** Keeps the saved PNG with its diagram XML as the source, if any (uploads them and puts the image in the post); answers whether that worked. */
+  onSave: (png: File, source: ImageSource | null) => Promise<boolean>
   onClose: () => void
 }
 
@@ -28,10 +29,10 @@ export function DrawioDialog({ initialPng, onSave, onClose }: DrawioDialogProps)
     dialog.current?.showModal()
   }, [])
   useDrawioMessages(frame, initialPng, {
-    onSaved: (png) => {
+    onSaved: (png, xml) => {
       updateNote('저장 중…')
       void pngFileOf(png, 'diagram.drawio.png')
-        .then(onSave)
+        .then((file) => onSave(file, drawioSourceOf(xml)))
         .then((saved) => (saved ? onClose() : updateNote(SAVE_FAILURE)))
     },
     onClosed: onClose,

@@ -33,10 +33,30 @@ public class MediaStorage {
 	/** Writes the bytes under a new name and returns that name. */
 	public String save(byte[] content, String extension) {
 		String name = UUID.randomUUID() + "." + extension;
+		write(name, content);
+		return name;
+	}
+
+	/**
+	 * Writes the bytes beside a stored file: under its name with this extension instead of its own (see {@link #besideName}).
+	 * Returns that name.
+	 */
+	public String saveBeside(String stored, String extension, byte[] content) {
+		String name = besideName(stored, extension);
+		write(name, content);
+		return name;
+	}
+
+	/** The name of the file kept beside a stored one: {@code 3f2a….png} with the extension drawio is {@code 3f2a….drawio}. */
+	public static String besideName(String stored, String extension) {
+		int dot = stored.lastIndexOf('.');
+		return (dot < 0 ? stored : stored.substring(0, dot)) + "." + extension;
+	}
+
+	private void write(String name, byte[] content) {
 		try {
 			Files.createDirectories(this.directory);
 			Files.write(this.directory.resolve(name), content);
-			return name;
 		}
 		catch (IOException ex) {
 			throw new UncheckedIOException("Failed to store the media file", ex);

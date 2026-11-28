@@ -12,7 +12,8 @@ import jakarta.persistence.Table;
 /**
  * The {@code TB_MEDIA} table of DBSCHEMA.md. An internal or content row is an image file kept on the server ({@code MIME_TYPE}
  * is its mime type, {@code LOCATION} its stored file name; see MediaProvider); an external row is a reference ({@code MIME_TYPE} and
- * {@code LOCATION} are the URL, {@code THUMBNAIL} the YouTube thumbnail). {@code DATE} is UTC.
+ * {@code LOCATION} are the URL, {@code THUMBNAIL} the YouTube thumbnail). {@code SOURCE_TYPE} says what source file is kept beside
+ * an image file, if any (see SourceType). {@code DATE} is UTC.
  */
 @Entity
 @Table(name = "TB_MEDIA")
@@ -38,6 +39,9 @@ public class Media {
 	@Column(name = "THUMBNAIL")
 	private String thumbnail;
 
+	@Column(name = "SOURCE_TYPE")
+	private SourceType sourceType;
+
 	@Column(name = "DATE")
 	private LocalDateTime date;
 
@@ -58,20 +62,29 @@ public class Media {
 		this.ownerId = ownerId;
 	}
 
-	/** An image file kept on the server: an internal one of the library or a content one of a post. */
-	public static Media storedImage(String slug, MediaProvider provider, String mimeType, String storedName, LocalDateTime date,
-			long ownerId) {
-		return new Media(slug, provider, mimeType, storedName, null, date, ownerId);
+	/**
+	 * An image file kept on the server: an internal one of the library or a content one of a post. {@code sourceType} is
+	 * the kind of the source kept beside the file, or null when there is none.
+	 */
+	public static Media storedImage(String slug, MediaProvider provider, String mimeType, String storedName, SourceType sourceType,
+			LocalDateTime date, long ownerId) {
+		Media media = new Media(slug, provider, mimeType, storedName, null, date, ownerId);
+		media.sourceType = sourceType;
+		return media;
 	}
 
 	public static Media externalVideo(String slug, String url, String thumbnail, LocalDateTime date, long ownerId) {
 		return new Media(slug, MediaProvider.EXTERNAL, url, url, thumbnail, date, ownerId);
 	}
 
-	/** Puts another image file under the same slug and provider. The caller removes the file it replaced. */
-	public void replaceFile(String mimeType, String storedName, LocalDateTime date) {
+	/**
+	 * Puts another image file, with its source or none, under the same slug and provider. The caller removes the files it
+	 * replaced.
+	 */
+	public void replaceFile(String mimeType, String storedName, SourceType sourceType, LocalDateTime date) {
 		this.mimeType = mimeType;
 		this.location = storedName;
+		this.sourceType = sourceType;
 		this.date = date;
 	}
 
@@ -109,6 +122,11 @@ public class Media {
 
 	public String thumbnail() {
 		return this.thumbnail;
+	}
+
+	/** The kind of the source kept beside the file, or null when there is none. */
+	public SourceType sourceType() {
+		return this.sourceType;
 	}
 
 	public LocalDateTime date() {

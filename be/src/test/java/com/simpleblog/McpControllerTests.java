@@ -6,32 +6,51 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 
+import com.simpleblog.dto.ImageUpload;
 import com.simpleblog.entity.BlogUser;
 import com.simpleblog.entity.Post;
 import com.simpleblog.entity.PostStatus;
 import com.simpleblog.repository.PostRepository;
+import com.simpleblog.service.MediaService;
 import com.simpleblog.service.UserService;
 import com.simpleblog.service.UserSettingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-/** POST /mcp/v1 of be/mcpapispec.yaml against H2: the key, the protocol and the five tools. */
+/** POST /mcp/v1 of be/mcpapispec.yaml against H2: the key, the protocol and the six tools. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 class McpControllerTests {
 
 	private static final String MCP = "/mcp/v1";
+
+	private static final byte[] PNG = { (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0 };
+
+	@TempDir
+	static Path directory;
+
+	@DynamicPropertySource
+	static void storage(DynamicPropertyRegistry registry) {
+		registry.add("simpleblog.media.directory", () -> directory.toString());
+	}
+
+	@Autowired
+	private MediaService mediaService;
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -106,9 +125,11 @@ class McpControllerTests {
 		rpc(this.key, "{\"jsonrpc\": \"2.0\", \"id\": 2, \"method\": \"ping\"}").andExpect(status().isOk())
 			.andExpect(jsonPath("$.result").isEmpty());
 		rpc(this.key, "{\"jsonrpc\": \"2.0\", \"id\": 3, \"method\": \"tools/list\"}").andExpect(status().isOk())
-			.andExpect(jsonPath("$.result.tools.length()").value(5))
+			.andExpect(jsonPath("$.result.tools.length()").value(6))
 			.andExpect(jsonPath("$.result.tools[0].name").value("list_posts"))
-			.andExpect(jsonPath("$.result.tools[4].name").value("update_post"));
+			.andExpect(jsonPath("$.result.tools[3].name").value("read_media_source"))
+			.andExpect(jsonPath("$.result.tools[3].annotations.readOnlyHint").value(true))
+			.andExpect(jsonPath("$.result.tools[5].name").value("update_post"));
 	}
 
 	@Test
@@ -206,6 +227,22 @@ class McpControllerTests {
 		call("list_posts", "[]").andExpect(jsonPath("$.error.code").value(-32602));
 		rpc(this.key, "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {}}")
 			.andExpect(jsonPath("$.error.code").value(-32602));
+	}
+
+	@Test
+	void readsTheSourceOfAnImageAndSaysWhenItHasNone() throws Exception {
+		String diagram = "<mxfile><diagram name=\"흐름\"/></mxfile>";
+		this.mediaService.uploadImage(this.owner.id(), new ImageUpload("a.png", PNG, "content", "flow", false, diagram, "drawio"));
+		this.mediaService.uploadImage(this.owner.id(), new ImageUpload("b.png", PNG, "internal", "photo", false, null, null));
+		call("read_media_source", "{\"slug\": \"flow\"}")
+			.andExpect(jsonPath("$.result.isError").value(false))
+			.andExpect(jsonPath("$.result.structuredContent.slug").value("flow"))
+			.andExpect(jsonPath("$.result.structuredContent.sourceType").value("drawio"))
+			.andExpect(jsonPath("$.result.structuredContent.source").value(diagram));
+		call("read_media_source", "{\"slug\": \"photo\"}").andExpect(jsonPath("$.result.isError").value(true))
+			.andExpect(jsonPath("$.result.content[0].text").value("No image source has the slug: photo"));
+		call("read_media_source", "{\"slug\": \"nothing\"}").andExpect(jsonPath("$.result.isError").value(true));
+		call("read_media_source", "{}").andExpect(jsonPath("$.error.code").value(-32602));
 	}
 
 }

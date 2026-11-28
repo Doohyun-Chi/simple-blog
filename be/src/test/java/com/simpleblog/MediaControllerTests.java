@@ -8,12 +8,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.CRC32;
 
@@ -31,6 +33,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,6 +74,20 @@ class MediaControllerTests {
 	private RequestBuilder uploadAs(String slug, byte[] bytes, boolean replace, RequestPostProcessor user) {
 		return multipart(MEDIA).file(new MockMultipartFile("file", "image.png", "image/png", bytes)).param("slug", slug)
 			.param("replace", String.valueOf(replace)).with(user).with(csrf());
+	}
+
+	/** A diagram as the editor sends it: a content PNG with its draw.io XML. */
+	private MockMultipartHttpServletRequestBuilder uploadWithSource(String provider, String source, String sourceType) {
+		MockMultipartHttpServletRequestBuilder request = multipart(MEDIA).file(new MockMultipartFile("file", "diagram.drawio.png", "image/png", PNG));
+		request.param("provider", provider);
+		if (source != null) {
+			request.param("source", source);
+		}
+		if (sourceType != null) {
+			request.param("sourceType", sourceType);
+		}
+		request.with(TestUsers.signedIn()).with(csrf());
+		return request;
 	}
 
 	private RequestBuilder link(String url) {
@@ -345,6 +362,76 @@ class MediaControllerTests {
 		this.mockMvc.perform(uploadAs("team-photo", WEBP, true, TestUsers.signedIn())).andExpect(status().isOk());
 		this.mockMvc.perform(get(MEDIA + "/team-photo").header("If-None-Match", etag)).andExpect(status().isOk())
 			.andExpect(content().bytes(WEBP));
+	}
+
+	private static final String DIAGRAM = "<mxfile><diagram name=\"페이지-1\"><mxGraphModel/></diagram></mxfile>";
+
+	@Test
+	void keepsTheSourceOfAContentImageBesideItsFileAndServesItAsUtf8Xml() throws Exception {
+		String body = this.mockMvc.perform(uploadWithSource("content", DIAGRAM, "drawio"))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.sourceType").value("drawio"))
+			.andReturn().getResponse().getContentAsString();
+		String source = JsonPath.<String>read(body, "$.url") + "/source";
+		String etag = this.mockMvc.perform(get(source))
+			.andExpect(status().isOk())
+			.andExpect(content().contentType("application/xml;charset=UTF-8"))
+			.andExpect(content().bytes(DIAGRAM.getBytes(StandardCharsets.UTF_8)))
+			.andExpect(header().string("Cache-Control", "no-cache, public"))
+			.andReturn().getResponse().getHeader("ETag");
+		assertThat(etag).matches("\"[0-9a-f-]{36}\\.drawio\"");
+		assertThat(directory.resolve(etag.replace("\"", ""))).exists();
+		assertThat(directory.resolve(etag.replace("\"", "").replace(".drawio", ".png"))).exists();
+		this.mockMvc.perform(get(source).header("If-None-Match", etag)).andExpect(status().isNotModified());
+	}
+
+	@Test
+	void answersNoSourceForAnImageWithoutOneOrAnUnknownSlug() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn()))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.sourceType").doesNotExist());
+		this.mockMvc.perform(get(MEDIA + "/team-photo/source")).andExpect(status().isNotFound());
+		this.mockMvc.perform(get(MEDIA + "/nothing/source")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	void refusesASourceThatIsNotWholeOrNotForAContentImage() throws Exception {
+		this.mockMvc.perform(uploadWithSource("content", DIAGRAM, null)).andExpect(status().isBadRequest());
+		this.mockMvc.perform(uploadWithSource("content", null, "drawio")).andExpect(status().isBadRequest());
+		this.mockMvc.perform(uploadWithSource("content", "", "drawio")).andExpect(status().isBadRequest());
+		this.mockMvc.perform(uploadWithSource("content", DIAGRAM, "mermaid")).andExpect(status().isBadRequest());
+		this.mockMvc.perform(uploadWithSource("internal", DIAGRAM, "drawio")).andExpect(status().isBadRequest());
+		this.mockMvc.perform(get("/public/api/v1/medias").with(TestUsers.signedIn())).andExpect(jsonPath("$.medias.length()").value(0));
+		try (var listing = Files.list(directory)) {
+			assertThat(listing.map(Path::toString).filter((name) -> name.endsWith(".drawio"))).isEmpty();
+		}
+	}
+
+	@Test
+	void refusesASourceOver1MbInUtf8() throws Exception {
+		String atLimit = "가".repeat(1024 * 1024 / 3) + "a";
+		this.mockMvc.perform(uploadWithSource("content", atLimit, "drawio")).andExpect(status().isCreated());
+		this.mockMvc.perform(uploadWithSource("content", atLimit + "a", "drawio")).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void replacesTheSourceWithTheFileSoAReplacementWithoutOneHasNone() throws Exception {
+		this.mockMvc.perform(uploadWithSource("content", DIAGRAM, "drawio").param("slug", "flow")).andExpect(status().isCreated());
+		this.mockMvc.perform(uploadWithSource("content", "<mxfile/>", "drawio").param("slug", "flow").param("replace", "true"))
+			.andExpect(status().isOk());
+		this.mockMvc.perform(get(MEDIA + "/flow/source")).andExpect(content().string("<mxfile/>"));
+		this.mockMvc.perform(uploadAs("flow", WEBP, true, TestUsers.signedIn()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.sourceType").doesNotExist());
+		this.mockMvc.perform(get(MEDIA + "/flow/source")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	void refusesASourceForAReplacementOfALibraryImage() throws Exception {
+		this.mockMvc.perform(uploadAs("team-photo", PNG, false, TestUsers.signedIn())).andExpect(status().isCreated());
+		this.mockMvc.perform(uploadWithSource("content", DIAGRAM, "drawio").param("slug", "team-photo").param("replace", "true"))
+			.andExpect(status().isBadRequest());
+		this.mockMvc.perform(get(MEDIA + "/team-photo/source")).andExpect(status().isNotFound());
 	}
 
 }

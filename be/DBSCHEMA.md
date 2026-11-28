@@ -13,10 +13,14 @@ table name: tb_media
 columns
 - id: unique identifier
 - slug: unique human readable name and references
-- provider: internal for residing in the server, external for the outside such as URL
+- provider: internal for a library image residing in the server, content for an image made for one post such as a draw.io
+  diagram, external for the outside such as URL
 - mime_type: resource mime type for internal, otherwise URL
 - location: file path or URL for external
 - thumbnail: thumbnail image url especially for YouTube URL
+- source_type: kind of the editable source kept beside the file, such as drawio; null when there is none. The source
+  itself is not in the table: it is a file in the media directory named like location with the type's extension
+  (`{uuid}.png` → `{uuid}.drawio`)
 - date: registered zoned datetime
 - owner_id: registered User ID
 

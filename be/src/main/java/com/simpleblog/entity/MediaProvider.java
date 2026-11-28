@@ -41,6 +41,11 @@ public enum MediaProvider {
 		return this.discardable;
 	}
 
+	/** Whether the item may keep an editable source beside its file, such as a draw.io diagram: content only, as made in the editor. */
+	public boolean keepsSource() {
+		return this == CONTENT;
+	}
+
 	/** The provider with exactly this code, if there is one. */
 	public static Optional<MediaProvider> find(String code) {
 		return Arrays.stream(values()).filter((provider) -> provider.code.equals(code)).findFirst();

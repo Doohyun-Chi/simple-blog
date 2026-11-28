@@ -10,6 +10,19 @@ export type MediaProvider = (typeof MediaProvider)[keyof typeof MediaProvider]
 /** The providers an uploaded file may ask for: `MediaUpload.provider` in be/apispec.yaml. */
 export type UploadProvider = typeof MediaProvider.INTERNAL | typeof MediaProvider.CONTENT
 
+/** Values of `Media.sourceType` in be/apispec.yaml: the kind of the editable source kept beside an image, such as a draw.io diagram. */
+export const SourceType = { DRAWIO: 'drawio' } as const
+export type SourceType = (typeof SourceType)[keyof typeof SourceType]
+
+/** The editable source a content image is uploaded with: `MediaUpload.source` and `MediaUpload.sourceType` in be/apispec.yaml. */
+export interface ImageSource {
+  sourceType: SourceType
+  source: string
+}
+
+/** The largest source the backend keeps, in UTF-8 bytes. Mirrors the 1 MB of `MediaUpload.source` in be/apispec.yaml. */
+export const SOURCE_MAX_BYTES = 1024 * 1024
+
 /** Mirrors `Media` in be/apispec.yaml. `url` of an image is a server-relative path; see mediaFileUrl. */
 export interface Media {
   slug: string
@@ -17,6 +30,7 @@ export interface Media {
   mimeType: string
   url: string
   thumbnail: string | null
+  sourceType: SourceType | null
   date: string
 }
 
