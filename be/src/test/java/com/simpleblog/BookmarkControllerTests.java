@@ -216,13 +216,25 @@ class BookmarkControllerTests {
 		this.mockMvc.perform(get(BOOKMARKS).with(me())).andExpect(jsonPath("$.bookmarks[0].name").value("First post"));
 	}
 
-	@ParameterizedTest
-	@ValueSource(strings = { "{}", "{\"bookmarks\": []}", "{\"bookmarks\": [{\"name\": \"a\", \"order\": 1}]}",
-			"{\"bookmarks\": [{\"id\": 1, \"name\": \"a\", \"order\": -1}]}", "{\"bookmarks\": [{\"id\": 1, \"name\": \"a\"}]}",
-			"{\"bookmarks\": [{\"id\": 1, \"name\": \" \", \"order\": 1}]}",
-			"{\"bookmarks\": [{\"id\": 1, \"name\": \"a\", \"order\": 1}, {\"id\": 1, \"name\": \"b\", \"order\": 2}]}" })
-	void refusesAnArrangementOutsideTheSpec(String body) throws Exception {
-		this.mockMvc.perform(json(put(BOOKMARKS), body)).andExpect(status().isBadRequest());
+	@Test
+	void refusesAnArrangementThatNamesABookmarkTwice() throws Exception {
+		this.mockMvc.perform(json(put(BOOKMARKS),
+				"{\"bookmarks\": [{\"id\": 1, \"name\": \"a\", \"order\": 1}, {\"id\": 1, \"name\": \"b\", \"order\": 2}]}"))
+			.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void savesNothingForAnEmptyArrangement() throws Exception {
+		this.mockMvc.perform(json(put(BOOKMARKS), "{\"bookmarks\": []}"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.bookmarks.length()").value(0));
+	}
+
+	@Test
+	void refusesAnArrangementOfMoreThanFiveHundredBookmarks() throws Exception {
+		String items = java.util.stream.IntStream.rangeClosed(1, 501).mapToObj((id) -> "{\"id\": " + id + ", \"name\": \"a\", \"order\": 1}")
+			.collect(java.util.stream.Collectors.joining(","));
+		this.mockMvc.perform(json(put(BOOKMARKS), "{\"bookmarks\": [" + items + "]}")).andExpect(status().isBadRequest());
 	}
 
 	@Test

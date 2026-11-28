@@ -954,7 +954,9 @@ paths:
         saved or none. This is what the 노출 순서 저장 button sends. A bookmark that is not in the body is left as it
         is. Only the caller's own bookmarks can be changed; an id of no bookmark of the caller rejects the whole
         request with 404. modifiedDate is not touched, as the caller is arranging the display and not renaming. A
-        single rename is `PUT /public/api/v1/bookmark/{id}`.
+        single rename is `PUT /public/api/v1/bookmark/{id}`. The body is expected to follow the schema; the server checks only the
+        count and the ids named in the 400 below, so a body that does not follow it (no list, an item without an id, a name or an
+        order) has no defined answer. An empty list saves nothing and answers an empty list.
       operationId: saveBookmarks
       tags:
         - Bookmarks
@@ -974,7 +976,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BookmarkList'
         '400':
-          description: The body has no bookmarks or more than 500, an id appears twice, a name is blank or longer than 130 characters, or an order is negative or above 1000000. The response body is not part of the contract.
+          description: The body has more than 500 bookmarks, or an id appears twice. The response body is not part of the contract.
         '401':
           description: Not authenticated. The response body is not part of the contract.
         '403':

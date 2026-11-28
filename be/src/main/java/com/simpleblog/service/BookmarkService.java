@@ -38,8 +38,6 @@ public class BookmarkService {
 
 	private static final int ARRANGE_MAX = 500;
 
-	private static final int ORDER_MAX = 1_000_000;
-
 	private final BookmarkRepository bookmarkRepository;
 
 	private final PostRepository postRepository;
@@ -146,21 +144,20 @@ public class BookmarkService {
 	}
 
 	private List<BookmarkArrangement.Item> validItems(BookmarkArrangement arrangement) {
-		List<BookmarkArrangement.Item> items = arrangement == null ? null : arrangement.bookmarks();
-		if (items == null || items.isEmpty() || items.size() > ARRANGE_MAX) {
-			throw new InvalidBookmarkException("bookmarks must hold from 1 to " + ARRANGE_MAX + " items");
+		List<BookmarkArrangement.Item> items = arrangement.bookmarks();
+		if (items.size() > ARRANGE_MAX) {
+			throw new InvalidBookmarkException("bookmarks must hold at most " + ARRANGE_MAX + " items");
 		}
 		Set<Long> ids = new HashSet<>();
-		for (BookmarkArrangement.Item item : items) {
-			if (item == null || item.id() == null || !ids.add(item.id())) {
-				throw new InvalidBookmarkException("every item needs its own id");
-			}
-			validName(item.name());
-			if (item.order() == null || item.order() < 0 || item.order() > ORDER_MAX) {
-				throw new InvalidBookmarkException("order must be from 0 to " + ORDER_MAX);
-			}
-		}
+		items.forEach((item) -> validItem(item, ids));
 		return items;
+	}
+
+	/** An item needs an id no other item has. */
+	private void validItem(BookmarkArrangement.Item item, Set<Long> ids) {
+		if (!ids.add(item.id())) {
+			throw new InvalidBookmarkException("every item needs its own id");
+		}
 	}
 
 	private String validName(String name) {

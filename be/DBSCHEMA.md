@@ -70,7 +70,7 @@ columns
 - id: unique identifier
 - post_id: bookmarked post ID
 - post_slug: slug for the post, redundency for performance
-- name: bookmark name, usually from the post's title
+- name: bookmark name, not null and it comes from the post's title at the registration time.
 - sort_order: display order, integer and default is 0
 - created_date: created date and time
 - owner_id: owner's user id
