@@ -13,11 +13,13 @@ import com.simpleblog.dto.PostBody;
 import com.simpleblog.dto.PostInput;
 import com.simpleblog.entity.Post;
 import com.simpleblog.entity.PostStatus;
+import com.simpleblog.entity.UserSetting;
 import com.simpleblog.exception.DuplicatePostSlugException;
 import com.simpleblog.exception.InvalidPostException;
 import com.simpleblog.exception.NotPostAuthorException;
 import com.simpleblog.exception.PostNotFoundException;
 import com.simpleblog.repository.PostRepository;
+import com.simpleblog.repository.UserSettingRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,10 @@ public class PostService {
 
 	private final MediaService mediaService;
 
+	private final BookmarkService bookmarkService;
+
+	private final UserSettingRepository settingRepository;
+
 	private final Clock clock;
 
 	/** The most slugs one save may name in PostInput.replacedMedia, as in be/apispec.yaml. */
@@ -52,13 +58,16 @@ public class PostService {
 	private final int slugMaxLength;
 
 	public PostService(PostRepository postRepository, SlugEncoder slugEncoder, UserService userService,
-			CacheRefresh cacheRefresh, MediaService mediaService, Clock clock, @Value("${simpleblog.post.title.max-length}") int titleMaxLength,
+			CacheRefresh cacheRefresh, MediaService mediaService, BookmarkService bookmarkService,
+			UserSettingRepository settingRepository, Clock clock, @Value("${simpleblog.post.title.max-length}") int titleMaxLength,
 			@Value("${simpleblog.post.slug.max-length}") int slugMaxLength) {
 		this.postRepository = postRepository;
 		this.slugEncoder = slugEncoder;
 		this.userService = userService;
 		this.cacheRefresh = cacheRefresh;
 		this.mediaService = mediaService;
+		this.bookmarkService = bookmarkService;
+		this.settingRepository = settingRepository;
 		this.clock = clock;
 		this.titleMaxLength = titleMaxLength;
 		this.slugMaxLength = slugMaxLength;
@@ -70,7 +79,7 @@ public class PostService {
 		long viewerId = this.userService.currentViewerId();
 		return this.postRepository.post(this.slugEncoder.encode(slug))
 			.filter((post) -> post.status() == PostStatus.PUBLISH || post.editableBy(viewerId))
-			.map((post) -> PostBody.from(post, this.clock.getZone(), viewerId))
+			.map((post) -> PostBody.from(post, this.clock.getZone(), viewerId, bookmarkIdOf(viewerId, post)))
 			.orElseThrow(() -> new PostNotFoundException(slug));
 	}
 
@@ -83,11 +92,12 @@ public class PostService {
 			throw new DuplicatePostSlugException(input.slug());
 		}
 		Post post = Post.draftOf(authorId, input.title(), slug, input.content(), input.hashTags(), utcNow());
+		post.signedAs(nickOf(authorId));
 		applyStatus(post, input);
 		Post saved = this.postRepository.save(post);
 		this.mediaService.discardUnused(authorId, replacedMediaOf(input));
 		this.cacheRefresh.afterPostChange();
-		return PostBody.from(saved, this.clock.getZone(), authorId);
+		return PostBody.from(saved, this.clock.getZone(), authorId, null);
 	}
 
 	/**
@@ -106,11 +116,15 @@ public class PostService {
 		if (this.postRepository.slugInUseExcept(newSlug, post.id())) {
 			throw new DuplicatePostSlugException(input.slug());
 		}
+		if (!newSlug.equals(post.slug())) {
+			this.bookmarkService.follow(post.id(), newSlug);
+		}
 		post.revise(input.title(), newSlug, input.content(), input.hashTags(), utcNow());
+		post.signedAs(nickOf(viewerId));
 		applyStatus(post, input);
 		this.mediaService.discardUnused(viewerId, replacedMediaOf(input));
 		this.cacheRefresh.afterPostChange();
-		return PostBody.from(post, this.clock.getZone(), viewerId);
+		return PostBody.from(post, this.clock.getZone(), viewerId, bookmarkIdOf(viewerId, post));
 	}
 
 	/**
@@ -123,8 +137,19 @@ public class PostService {
 		if (!post.editableBy(this.userService.currentViewerId())) {
 			throw new NotPostAuthorException(slug);
 		}
+		this.bookmarkService.removeOfPost(post.id());
 		this.postRepository.delete(post);
 		this.cacheRefresh.afterPostChange();
+	}
+
+	/** The nick name the user has set, null when there is none. */
+	private String nickOf(long userId) {
+		return this.settingRepository.findById(userId).map(UserSetting::nick).orElse(null);
+	}
+
+	/** The requester's bookmark of the post; an anonymous visitor has none. */
+	private Long bookmarkIdOf(long viewerId, Post post) {
+		return viewerId == UserService.ANONYMOUS ? null : this.bookmarkService.bookmarkIdOf(viewerId, post.id());
 	}
 
 	/** The images the input names as replaced, none when it names none. Checked with the other fields; see requireValidFields. */

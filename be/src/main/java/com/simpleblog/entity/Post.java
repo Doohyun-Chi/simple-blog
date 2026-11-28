@@ -30,6 +30,9 @@ public class Post {
 	@Column(name = "AUTHOR_ID")
 	private Long authorId;
 
+	@Column(name = "AUTHOR_NICK")
+	private String authorNick;
+
 	@Column(name = "TITLE")
 	private String title;
 
@@ -69,6 +72,11 @@ public class Post {
 		return post;
 	}
 
+	/** Records the author's nick name as it is when the post is saved, null when the author has set none. */
+	public void signedAs(String nick) {
+		this.authorNick = nick;
+	}
+
 	/** Sets the status, which the service has checked to be one a client may set (see PostStatus#settable). */
 	public void moveTo(PostStatus status) {
 		this.status = status;
@@ -99,6 +107,11 @@ public class Post {
 
 	public Long authorId() {
 		return this.authorId;
+	}
+
+	/** The author's nick name when the post was last saved; null when there was none. */
+	public String authorNick() {
+		return this.authorNick;
 	}
 
 	public String title() {

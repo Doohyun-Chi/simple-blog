@@ -12,7 +12,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /** Without a Google client configured, which is the default, the app runs and just offers no sign-in. */
-@SpringBootTest
+// The empty client id states what the test is about, and gives it a context of its own: the csrf() of a write test swaps the CSRF token
+// repository of the context it runs in for one that keeps the token in a session, which this test must not see.
+@SpringBootTest(properties = "simpleblog.auth.google.client-id=")
 @AutoConfigureMockMvc
 class GoogleLoginNotConfiguredTests {
 
