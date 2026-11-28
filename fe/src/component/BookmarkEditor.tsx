@@ -17,10 +17,7 @@ function EditorNotes() {
   return (
     <div className="bookmark-editor-notes">
       <Text variant="small" tone="tertiary">
-        이름 변경과 삭제는 바로 반영됩니다. 이름을 바꾸면 변경 시간이 현재 시간으로 기록됩니다.
-      </Text>
-      <Text variant="small" tone="tertiary">
-        고정, 고정 해제와 순서 변경은 `노출 순서 저장`을 눌러야 반영되며, 이때 변경 시간은 바뀌지 않습니다.
+        이름 변경과 삭제는 바로 반영됩니다. 고정, 고정 해제와 순서 변경은 `순서 업데이트`을 눌러야 반영됩니다.
       </Text>
     </div>
   )
@@ -46,7 +43,7 @@ export function BookmarkEditor({ initial }: { initial: Bookmark[] }) {
       <BookmarkGroup title="책갈피" empty="아직 책갈피가 없습니다." bookmarks={arrangement.groups.others} pinned={false} {...shared} />
       {arrangement.failure !== null && <Text variant="small" tone="danger" role="alert">{FAILURE_TEXT[arrangement.failure]}</Text>}
       <div className="bookmark-editor-actions">
-        <Button disabled={!arrangement.changed || arrangement.busy} onClick={() => void arrangement.save()}>노출 순서 저장</Button>
+        <Button disabled={!arrangement.changed || arrangement.busy} onClick={() => void arrangement.save()}>순서 업데이트</Button>
       </div>
     </div>
   )
