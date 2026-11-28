@@ -1,0 +1,48 @@
+.bookmark-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.4em 0;
+  border-bottom: 1px solid var(--ds-color-border-default);
+  transition: opacity 0.15s;
+}
+
+/* The row being dragged stays in the list, faded, while its whole self follows the pointer. */
+.bookmark-row[data-dragging='true'] {
+  opacity: 0.4;
+}
+
+/* At least 20em to type in, the rest of the row to the slug. */
+.bookmark-row-name {
+  flex: 0 1 24em;
+  min-width: 20em;
+}
+
+/* A long slug ends with an ellipsis instead of pushing the icons out. */
+.bookmark-row-slug {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85em;
+  color: var(--ds-color-text-secondary);
+}
+
+.bookmark-row-handle {
+  display: inline-flex;
+  align-items: center;
+  cursor: grab;
+  color: var(--ds-color-text-tertiary);
+}
+
+@media (max-width: 700px) {
+  .bookmark-row {
+    flex-wrap: wrap;
+  }
+
+  .bookmark-row-slug {
+    flex-basis: 100%;
+    order: 2;
+  }
+}

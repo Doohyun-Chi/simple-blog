@@ -7,6 +7,7 @@ export type Route =
   | { kind: 'write'; starter: PostStarter | null }
   | { kind: 'books' }
   | { kind: 'user' }
+  | { kind: 'bookmark' }
   | { kind: 'edit'; slug: string }
   | { kind: 'search'; queryType: PostQueryType; query: string }
   | { kind: 'notFound'; path: string }
@@ -22,6 +23,9 @@ export const BOOKS_PATH = '/books'
 
 /** The personalization page of the signed-in user, linked from the email in the navigation. */
 export const USER_PATH = '/user'
+
+/** The management page of the signed-in user's bookmarks, linked as `책갈피` from the navigation. */
+export const BOOKMARK_PATH = '/bookmark'
 
 /** Matches /edit/{slug}: the area for revising an existing post, linked as `편집하기` from the post. */
 const EDIT_PATH = /^\/edit\/([^/]+)\/?$/
@@ -47,7 +51,7 @@ function homeRoute(pathname: string): Route | null {
 }
 
 /** A route at a fixed path, with or without a trailing slash. */
-function fixedRoute(path: string, kind: 'list' | 'books' | 'user'): RouteMatcher {
+function fixedRoute(path: string, kind: 'list' | 'books' | 'user' | 'bookmark'): RouteMatcher {
   return (pathname) => (trimmedPath(pathname) === path ? { kind } : null)
 }
 
@@ -88,6 +92,7 @@ const ROUTE_MATCHERS: RouteMatcher[] = [
   writeRoute,
   fixedRoute(BOOKS_PATH, 'books'),
   fixedRoute(USER_PATH, 'user'),
+  fixedRoute(BOOKMARK_PATH, 'bookmark'),
   searchRoute,
   slugRoute(EDIT_PATH, 1, (_match, slug) => ({ kind: 'edit', slug })),
   slugRoute(CONTENT_PATH, SLUG_INDEX, (match, slug) => ({ kind: 'content', type: match[TYPE_INDEX] as PostType, slug })),
@@ -109,9 +114,12 @@ export function isEditorRoute(route: Route): boolean {
   return route.kind === 'write' || route.kind === 'edit'
 }
 
-/** Whether the info area is shown beside the content: not for the editor, the bookshelf and the personalization page, which take the whole width. */
+/**
+ * Whether the info area is shown beside the content: not for the editor, the bookshelf, the bookmark page and the personalization
+ * page, which take the whole width.
+ */
 export function hasAside(route: Route): boolean {
-  return !isEditorRoute(route) && route.kind !== 'books' && route.kind !== 'user'
+  return !isEditorRoute(route) && route.kind !== 'books' && route.kind !== 'user' && route.kind !== 'bookmark'
 }
 
 /** Builds the URL path for writing a new post, starting from a title and slug when given. */

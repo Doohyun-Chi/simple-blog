@@ -1,0 +1,4 @@
+/* A bookmarked post's star is yellow so it is seen at a glance. */
+.bookmark-star[data-bookmarked='true'] {
+  color: var(--ds-color-warning-default);
+}

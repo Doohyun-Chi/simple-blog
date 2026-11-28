@@ -1,10 +1,10 @@
-import { IconBooks, IconLogin, IconMenu2 } from '@tabler/icons-react'
+import { IconBookmarks, IconBooks, IconLogin, IconMenu2 } from '@tabler/icons-react'
 import { Button, Icon, TextInput } from 'design-system'
 import { type FormEvent, useState } from 'react'
 import { googleLoginUrl, returnPathOf } from '../model/identityApi.ts'
 import type { LoginFailure, SessionState } from '../model/Identity.ts'
 import { PostType } from '../model/Post.ts'
-import { BOOKS_PATH, contentPath, searchPath, USER_PATH } from '../model/route.ts'
+import { BOOKMARK_PATH, BOOKS_PATH, contentPath, searchPath, USER_PATH } from '../model/route.ts'
 import type { BlogTheme } from '../model/UserSetting.ts'
 import './SearchNavigation.css'
 
@@ -17,6 +17,8 @@ interface SearchNavigationProps {
   currentQuery: string
   /** Whether the bookshelf is the content shown; its link is marked as the current page. */
   booksShown: boolean
+  /** Whether the bookmark page is the content shown; its link is marked as the current page. */
+  bookmarkShown: boolean
   /** Who is signed in; shown at the right end of the area. */
   session: SessionState
 }
@@ -68,7 +70,7 @@ function submitSearch(event: FormEvent<HTMLFormElement>) {
  * The search box and the navigation items: the about and working links, the bookshelf and the user. On a narrow screen the
  * items are behind a More button (see SearchNavigation.css).
  */
-export function SearchNavigation({ theme, currentSlug, currentQuery, booksShown, session }: SearchNavigationProps) {
+export function SearchNavigation({ theme, currentSlug, currentQuery, booksShown, bookmarkShown, session }: SearchNavigationProps) {
   const [open, updateOpen] = useState(false)
   return (
     <nav className="search-nav" aria-label="Site">
@@ -80,6 +82,9 @@ export function SearchNavigation({ theme, currentSlug, currentQuery, booksShown,
       <div className="search-nav-items" id="search-nav-items" data-open={open}>
         <PostLink name={theme.aboutName} slug={theme.aboutSlug} currentSlug={currentSlug} />
         <PostLink name={theme.workingName} slug={theme.workingSlug} currentSlug={currentSlug} />
+        <a className="search-nav-link search-nav-item" href={BOOKMARK_PATH} page-current={bookmarkShown ? 'selected' : undefined}>
+          <Icon icon={IconBookmarks} />책갈피
+        </a>
         <a className="search-nav-link search-nav-item" href={BOOKS_PATH} page-current={booksShown ? 'selected' : undefined}>
           <Icon icon={IconBooks} />내서재
         </a>

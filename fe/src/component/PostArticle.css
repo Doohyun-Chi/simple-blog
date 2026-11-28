@@ -25,6 +25,11 @@
   font-size: 0.8em;
 }
 
+/* The author's nick name, a little stronger than the date beside it. */
+.post-article-author {
+  color: var(--ds-color-text-secondary);
+}
+
 /* Subdued and smaller than the body text, per fe/DESIGN.md. */
 .post-article-date {
   color: var(--ds-color-text-tertiary);

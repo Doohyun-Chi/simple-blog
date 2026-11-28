@@ -9,6 +9,7 @@ interface HomePostProps {
   recent: Remote<PostSummary[]>
   /** The user's main title, the web page title while no post is open. */
   siteName: string
+  signedIn: boolean
 }
 
 /** What is shown while no post is: the site name as the web page title, and the message if any. */
@@ -22,7 +23,7 @@ function WithoutPost({ siteName, children }: { siteName: string; children?: Reac
 }
 
 /** The reading area for the home route: the body of the newest post (fe/DESIGN.md). */
-export function HomePost({ recent, siteName }: HomePostProps) {
+export function HomePost({ recent, siteName, signedIn }: HomePostProps) {
   switch (recent.state) {
     case 'loading':
       return <WithoutPost siteName={siteName}><StatusMessage>불러오는 중…</StatusMessage></WithoutPost>
@@ -31,6 +32,6 @@ export function HomePost({ recent, siteName }: HomePostProps) {
     case 'loaded':
       return recent.value.length === 0
         ? <WithoutPost siteName={siteName} />
-        : <PostReader slug={readerSlug(recent.value[0].slug)} siteName={siteName} />
+        : <PostReader slug={readerSlug(recent.value[0].slug)} siteName={siteName} signedIn={signedIn} />
   }
 }

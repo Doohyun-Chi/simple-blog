@@ -6,11 +6,14 @@ import { SiteTitle } from '../component/SiteTitle.tsx'
 import { SearchNavigation } from '../component/SearchNavigation.tsx'
 import { StatusMessage } from '../component/StatusMessage.tsx'
 import type { SessionState } from '../model/Identity.ts'
+import type { Bookmark } from '../model/Bookmark.ts'
 import type { PostSummary } from '../model/Post.ts'
 import { currentContentSlug, currentQuery, hasAside, type Route, routeOf, showsAsideAd } from '../model/route.ts'
 import { useBlogTheme } from '../model/useBlogTheme.ts'
+import { useListOfRecentBookmarks } from '../model/useBookmarks.ts'
 import { useListOfRecentPosts } from '../model/useListOfPosts.ts'
 import { useSession } from '../model/useSession.ts'
+import { BookmarkPage } from './BookmarkPage.tsx'
 import { BookShelf } from './BookShelf.tsx'
 import { HomePost } from './HomePost.tsx'
 import { PostList } from './PostList.tsx'
@@ -26,6 +29,8 @@ import './MainPage.css'
 /** What every route view may need besides the route itself. */
 interface RouteContext {
   recent: Remote<PostSummary[]>
+  /** The newest bookmarks of the signed-in user. */
+  bookmarks: Remote<Bookmark[]>
   session: SessionState
   /** The user's main title: the web page title where no post is open, and what a post's title is followed by. */
   siteName: string
@@ -36,15 +41,18 @@ type RouteView<K extends Route['kind']> = (route: Extract<Route, { kind: K }>, c
 
 /** The content area for each kind of route; the mapped type makes sure every kind has one. A page and a post share the body endpoint. */
 const ROUTE_VIEWS: { [K in Route['kind']]: RouteView<K> } = {
-  home: (_route, { recent, siteName }) => <HomePost recent={recent} siteName={siteName} />,
+  home: (_route, { recent, siteName, session }) => <HomePost recent={recent} siteName={siteName} signedIn={session.status === 'signedIn'} />,
   list: () => <PostList />,
   write: (route, { session }) => <SignInGate session={session} need="글을 쓰려면"><PostWriter starter={route.starter ?? undefined} /></SignInGate>,
   books: (_route, { session }) => <BookShelf canWrite={session.status === 'signedIn'} />,
   edit: (route, { session }) => <SignInGate session={session} need="글을 쓰려면"><PostReviser key={route.slug} slug={route.slug} /></SignInGate>,
+  bookmark: (_route, { session }) => <SignInGate session={session} need="책갈피를 보려면"><BookmarkPage /></SignInGate>,
   user: (_route, { session }) => <SignInGate session={session} need="사용자 정보를 보려면"><UserSettingPage /></SignInGate>,
   notFound: (route) => <StatusMessage>Not found: <code>{route.path}</code></StatusMessage>,
   search: (route) => <PostSearch key={`${route.queryType}:${route.query}`} queryType={route.queryType} query={route.query} />,
-  content: (route, { siteName }) => <PostReader key={route.slug} slug={route.slug} siteName={siteName} />,
+  content: (route, { siteName, session }) => (
+    <PostReader key={route.slug} slug={route.slug} siteName={siteName} signedIn={session.status === 'signedIn'} />
+  ),
 }
 
 /** What the content area shows for a route. */
@@ -54,11 +62,11 @@ function RouteContent({ route, ...context }: { route: Route } & RouteContext) {
 }
 
 /** The info area beside the content: none for the editor, which takes the whole width. */
-function asideOf(route: Route, { recent, session }: RouteContext): ReactNode {
+function asideOf(route: Route, { recent, bookmarks, session }: RouteContext): ReactNode {
   if (!hasAside(route)) {
     return undefined
   }
-  return <RecentPostsAside recent={recent} canWrite={session.status === 'signedIn'} showAd={showsAsideAd(route)} />
+  return <RecentPostsAside recent={recent} bookmarks={bookmarks} signedIn={session.status === 'signedIn'} showAd={showsAsideAd(route)} />
 }
 
 /** Whether the web page title is just the site name: not where a post is read (home or a post), whose reader sets it. */
@@ -70,9 +78,10 @@ function showsSiteTitle(route: Route): boolean {
 export function MainPage() {
   const session = useSession()
   const recent = useListOfRecentPosts()
+  const bookmarks = useListOfRecentBookmarks(session.status === 'signedIn')
   const route = routeOf(window.location.pathname, window.location.search)
   const { theme } = useBlogTheme(session, route.kind === 'user')
-  const context = { recent, session, siteName: theme.mainTheme }
+  const context = { recent, bookmarks, session, siteName: theme.mainTheme }
   return (
     <div className="main-page">
       {showsSiteTitle(route) && <SiteTitle name={theme.mainTheme} />}
@@ -82,6 +91,7 @@ export function MainPage() {
         currentSlug={currentContentSlug(route)}
         currentQuery={currentQuery(route)}
         booksShown={route.kind === 'books'}
+        bookmarkShown={route.kind === 'bookmark'}
         session={context.session}
       />
       <Contents aside={asideOf(route, context)}>

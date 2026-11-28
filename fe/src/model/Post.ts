@@ -51,6 +51,10 @@ export interface PostBody {
   hashTags: string
   /** Whether the visitor may revise and delete this post: signed in and its author. Decided by the backend. */
   canEdit: boolean
+  /** The author's nick name as kept with the post when it was saved; null when there is none. */
+  author: string | null
+  /** The id of this post in the visitor's bookmarks; null when it is not bookmarked, and for a visitor who is not signed in. */
+  bookmarkId: number | null
 }
 
 /** The hash tags of the comma separated stored text: each trimmed, empty ones skipped. */

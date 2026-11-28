@@ -1,5 +1,5 @@
 import { IconEdit } from '@tabler/icons-react'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import Markdown, { type ExtraProps } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
@@ -19,6 +19,8 @@ interface PostArticleProps {
   editHref?: string
   /** The link the share buttons copy and post to LinkedIn; without it they are not shown. */
   shareHref?: string
+  /** The star that bookmarks the post, shown first under the title; without it nothing is shown. */
+  bookmark?: ReactNode
 }
 
 /** A code block as written, in the design system's code block (its colours follow the highlight classes), or the diagram of a ```mermaid block. */
@@ -44,11 +46,13 @@ const ARTICLE_COMPONENTS = { pre: ArticleCodeBlock }
  * sanitized: scripts, event handlers and the like never reach the page. A ```mermaid block is drawn as a diagram after
  * sanitizing. Classic-editor content keeps its line breaks.
  */
-export function PostArticle({ post, editHref, shareHref }: PostArticleProps) {
+export function PostArticle({ post, editHref, shareHref, bookmark }: PostArticleProps) {
   return (
     <article className="post-article">
       <h1 className="post-article-title">{post.title}</h1>
       <div className="post-article-meta">
+        {bookmark}
+        {post.author !== null && <span className="post-article-author">{post.author}</span>}
         <time className="post-article-date" dateTime={post.date}>{dayOf(post.date)}</time>
         {shareHref !== undefined && <ShareLinks url={shareHref} />}
         {editHref !== undefined && <a className="post-article-edit" href={editHref}><IconEdit size="1.1em" aria-hidden="true" />편집하기</a>}

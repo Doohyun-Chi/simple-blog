@@ -1,3 +1,4 @@
+import { BookmarkStar } from '../component/BookmarkStar.tsx'
 import { PostArticle } from '../component/PostArticle.tsx'
 import { StatusMessage } from '../component/StatusMessage.tsx'
 import { PostStatus } from '../model/Post.ts'
@@ -10,6 +11,8 @@ interface PostReaderProps {
   slug: string
   /** The user's main title, which ends the web page title. */
   siteName: string
+  /** Whether the visitor is signed in, which the star under the title needs. */
+  signedIn: boolean
 }
 
 /**
@@ -17,7 +20,7 @@ interface PostReaderProps {
  * share buttons show for a published post only, as a draft has no share page. The web page title is `{post title} | {site name}`, the
  * site name being the user's main title.
  */
-export function PostReader({ slug, siteName }: PostReaderProps) {
+export function PostReader({ slug, siteName, signedIn }: PostReaderProps) {
   const post = usePostBody(slug)
   useDocumentTitle(siteName, post.state === 'loaded' ? post.value.title : null)
   switch (post.state) {
@@ -31,6 +34,7 @@ export function PostReader({ slug, siteName }: PostReaderProps) {
           post={post.value}
           editHref={post.value.canEdit ? editPath(slug) : undefined}
           shareHref={post.value.status === PostStatus.PUBLISH ? shareUrl(slug) : undefined}
+          bookmark={<BookmarkStar key={slug} slug={slug} bookmarkId={post.value.bookmarkId} signedIn={signedIn} />}
         />
       )
   }

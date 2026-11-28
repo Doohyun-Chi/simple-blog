@@ -1,7 +1,55 @@
-.recent-post-list-heading {
+.recent-post-list-tabs {
+  display: flex;
+  gap: 1em;
   margin: 0 0 0.75em;
+  border-bottom: 1px solid var(--ds-color-border-default);
+}
+
+.recent-post-list-tab {
+  margin-bottom: -1px;
+  padding: 0 0 0.4em;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
   font-size: 0.85em;
   font-weight: 600;
+  color: var(--ds-color-text-tertiary);
+  cursor: pointer;
+
+  &[aria-selected='true'] {
+    border-bottom-color: var(--ds-color-accent-default);
+    color: var(--ds-color-text-primary);
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--ds-color-accent-default);
+  }
+}
+
+/*
+ * As high as seven titles (1.4em lines and 0.6em gaps at 0.9em) and the space above the line, so the links under it stay put
+ * whichever tab is shown. The line sets the links apart from the list.
+ */
+.recent-post-list-panel {
+  box-sizing: border-box;
+  height: calc((7 * 1.4em + 6 * 0.6em) * 0.9 + 0.75em);
+  margin-bottom: 0.75em;
+  padding-bottom: 0.75em;
+  border-bottom: 1px solid var(--ds-color-border-default);
+  overflow: hidden;
+}
+
+/* The note of an empty or unavailable list sits in the middle of the box. */
+.recent-post-list-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0;
+  font-size: 0.85em;
+  text-align: center;
   color: var(--ds-color-text-tertiary);
 }
 
