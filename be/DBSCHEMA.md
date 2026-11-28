@@ -51,6 +51,7 @@ columns
 - no CHECK constraint on any column, status and type included
 - content: longtext for markdown contents
 - author_id: user id referenced from tb_user
+- author_nick: user's nick name configured in the tb_user. If not specified, null as well.
 - hash_tags: comma separated hash tags in text
 - sns_link: linked LinkedIn link if exists
 - created_datetime: zoned datetime
@@ -62,6 +63,21 @@ indexes
 - created_datetime for descending query
 - clustered index for type for query
 - clustered index for status for query
+
+## Bookmark schema
+table name: tb_bookmark
+columns
+- id: unique identifier
+- post_id: bookmarked post ID
+- post_slug: slug for the post, redundency for performance
+- name: bookmark name, usually from the post's title
+- order: display order, integer and default is 0
+- created_date: created date and time
+- owner_id: owner's user id
+
+indexes
+- unique index for id
+- clustered index for owner_id and order
 
 ## Bookshelf scheme
 table name: tb_book
